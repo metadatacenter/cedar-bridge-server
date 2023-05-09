@@ -25,7 +25,7 @@ public class BridgeServerApplication extends CedarMicroserviceApplicationWithMon
   @Override
   protected void initializeWithBootstrap(Bootstrap<BridgeServerConfiguration> bootstrap, CedarConfig cedarConfig) {
   }
-
+  
   @Override
   public void initializeApp() {
     MongoConfig artifactServerConfig = cedarConfig.getArtifactServerConfig();

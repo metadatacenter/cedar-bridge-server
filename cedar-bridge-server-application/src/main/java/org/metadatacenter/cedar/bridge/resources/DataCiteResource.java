@@ -53,17 +53,20 @@ public class DataCiteResource extends CedarMicroserviceResource {
     Map<String, Object> dataCiteReponse = new HashMap<>();
     response.put("dataCiteResponse", dataCiteReponse);
 
-    if ("badDOI".equals(id)) {
-      return CedarResponse.notFound().errorMessage("DOI not found by ID").parameter("id", id).build();
-    } else if ("extraBadDOI".equals(id)) {
-        try {
-          if (true) {
-            throw new Exception("Something happened");
-          }
-        } catch (Exception e) {
-          return CedarResponse.internalServerError().exception(e).build();
-        }
-    }
+    response.put("repositoryId", cedarConfig.getBridgeConfig().getDataCite().getRepositoryId());
+
+
+//    if ("badDOI".equals(id)) {
+//      return CedarResponse.notFound().errorMessage("DOI not found by ID").parameter("id", id).build();
+//    } else if ("extraBadDOI".equals(id)) {
+//        try {
+//          if (true) {
+//            throw new Exception("Something happened");
+//          }
+//        } catch (Exception e) {
+//          return CedarResponse.internalServerError().exception(e).build();
+//        }
+//    }
 
     return Response.ok().entity(response).build();
   }
