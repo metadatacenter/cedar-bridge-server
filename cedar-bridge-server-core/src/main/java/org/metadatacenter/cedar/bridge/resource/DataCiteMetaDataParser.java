@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DataCiteMetaDataParser {
-    public static void parseDataCiteScheme(DataCiteScheme dataCiteScheme, CEDARDataCiteInstance cedarInstance) {
-        Attributes dataCiteAttributes = dataCiteScheme.getData().getAttributes();
+    public static void parseDataCiteScheme(DataCiteSchema dataCiteSchema, CEDARDataCiteInstance cedarInstance) {
+        Attributes dataCiteAttributes = dataCiteSchema.getData().getAttributes();
         //pass creators values
         cedarInstance.setCreatorElement(parseCreatorValue(dataCiteAttributes.getCreators()));
 

@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CEDARInstanceParser {
-    public static void parseCEDARInstance(CEDARDataCiteInstance CEDARDataCiteInstance, DataCiteScheme dataCiteScheme) {
+    public static void parseCEDARInstance(CEDARDataCiteInstance CEDARDataCiteInstance, DataCiteSchema dataCiteSchema) {
         Data data = new Data();
         Attributes attributes = new Attributes();
 
@@ -82,7 +82,7 @@ public class CEDARInstanceParser {
         attributes.setRelatedItems(parseRelatedItemValue(CEDARDataCiteInstance.getRelatedItemElement().getRelatedItems()));
 
         data.setAttributes(attributes);
-        dataCiteScheme.setData(data);
+        dataCiteSchema.setData(data);
 
     }
 

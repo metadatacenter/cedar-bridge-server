@@ -3,10 +3,10 @@ package org.metadatacenter.cedar.bridge.resource.DataCiteProperties;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DataCiteScheme {
+public class DataCiteSchema {
     private Data data;
 
-    public DataCiteScheme() {
+    public DataCiteSchema() {
     }
 
     public Data getData() {
