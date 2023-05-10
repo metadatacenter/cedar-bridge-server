@@ -16,6 +16,7 @@ import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.service.TemplateInstanceService;
 import org.metadatacenter.server.service.TemplateService;
 import org.metadatacenter.util.http.CedarResponse;
+import org.metadatacenter.util.http.CedarUrlUtil;
 import org.metadatacenter.util.json.JsonMapper;
 
 import javax.ws.rs.*;
@@ -61,8 +62,9 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
     try {
       String encodedId = URLEncoder.encode(doiId, StandardCharsets.UTF_8.toString());
-      //    String endpointUrl = cedarConfig.getBridgeConfig().getDataCite().getEndpointUrl() + encodedId ;
-      String endpointUrl = "https://api.datacite.org/dois/" + encodedId;
+      String endpointUrl = cedarConfig.getBridgeConfig().getDataCite().getEndpointUrl() + "/" + encodedId;
+      System.out.println(endpointUrl);
+//      String endpointUrl = "https://api.datacite.org/dois/" + encodedId;
       URI uri = URI.create(endpointUrl);
 
       // Create HTTP client
@@ -115,28 +117,33 @@ public class DataCiteResource extends CedarMicroserviceResource {
         HttpResponse<String> httResponse = httpDataCitePostCall(endpointUrl, basicAuth, jsonData);
 
         int statusCode = httResponse.statusCode();
-        if (statusCode == 201) {
-          System.out.println("The post request to DataCite is successful, DOI is created successfully");
+        if (statusCode == HttpConstants.CREATED) {
 
-          // Save the JSON response
-//                File file = saveJSONFile(response, "DataCiteDOIResponse.json");
           String jsonResponse = httResponse.body();
 
           // Deserialize DaraCite response json file to DataCiteRequest Class
           ObjectMapper mapper = new ObjectMapper();
           DataCiteSchema dataCiteResponse = mapper.readValue(jsonResponse, DataCiteSchema.class);
-          response.put("DOI", dataCiteResponse.getData().getId());
+          String id = dataCiteResponse.getData().getId();
+          String doiName = "https://doi.org/" + id;
+          URI uri = URI.create(doiName);
+          response.put("doiId", id);
+          response.put("doiName", doiName);
+          response.put("dataCiteResponse", dataCiteResponse);
+          return CedarResponse.created(uri).entity(response).build();
         } else {
-          System.out.println("The post request was failed with status code: " + statusCode);
-          // Print out errors
-//          ErrorHandler(httResponse);
+          String jsonResponse = httResponse.body();
+          JsonNode jsonResource = JsonMapper.MAPPER.readTree(jsonResponse);
+          return Response.status(statusCode).entity(jsonResource).build();
         }
-      } catch (IOException | InterruptedException e) {
-        throw new RuntimeException(e);
+      } catch (Exception e) {
+        return CedarResponse.internalServerError().exception(e).build();
       }
+    } else {
+      response.put("request", metadata);
+      response.put("validationResult", null);
+      return CedarResponse.badRequest().errorMessage("Validation Error").entity(response).build();
     }
-
-    return Response.ok().entity(response).build();
   }
 
 //  /**
