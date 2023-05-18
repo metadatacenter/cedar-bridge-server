@@ -88,40 +88,42 @@ public class CEDARInstanceParser {
 
     private static List<DataCiteAffiliation> parseAffiliationValue(List<Affiliation> affiliationList){
         List<DataCiteAffiliation> dataCiteAffiliationList = new ArrayList<>();
-        for (Affiliation a : affiliationList) {
-            DataCiteAffiliation dataCiteAffiliation = new DataCiteAffiliation();
-            // Retrieve values from CEDAR class
-            String affiliationName = a.getAffiliation().toString();
-            String affiliationIdentifier = a.getAffiliationIdentifier().toString();
-            String affiliationIdentifierScheme = a.getAffiliationIdentifierScheme().toString();
-            String affiliationSchemeURI = a.getAffiliationIdentifierSchemeURI().toString();
-            // set values to DataCite class
-            dataCiteAffiliation.setAffiliation(affiliationName);
-            dataCiteAffiliation.setAffiliationIdentifier(affiliationIdentifier);
-            dataCiteAffiliation.setAffiliationIdentifierScheme(affiliationIdentifierScheme);
-            dataCiteAffiliation.setAffiliationSchemeURI(affiliationSchemeURI);
-            dataCiteAffiliationList.add(dataCiteAffiliation);
+        if (!affiliationList.isEmpty()){
+            for (Affiliation a : affiliationList) {
+                DataCiteAffiliation dataCiteAffiliation = new DataCiteAffiliation();
+                // Retrieve values from CEDAR class
+                String affiliationName = a.getAffiliation().toString();
+                String affiliationIdentifier = a.getAffiliationIdentifier().toString();
+                String affiliationIdentifierScheme = a.getAffiliationIdentifierScheme().toString();
+                String affiliationSchemeURI = a.getAffiliationIdentifierSchemeURI().toString();
+                // set values to DataCite class
+                dataCiteAffiliation.setAffiliation(affiliationName);
+                dataCiteAffiliation.setAffiliationIdentifier(affiliationIdentifier);
+                dataCiteAffiliation.setAffiliationIdentifierScheme(affiliationIdentifierScheme);
+                dataCiteAffiliation.setAffiliationSchemeURI(affiliationSchemeURI);
+                dataCiteAffiliationList.add(dataCiteAffiliation);
+            }
         }
-
         return dataCiteAffiliationList;
     }
 
 
     private static List<DataCiteNameIdentifier> parseNameIdentifierValue(List<NameIdentifier> nameIdentifierList) {
         List<DataCiteNameIdentifier> dataCiteNameIdentifierList = new ArrayList<>();
-        for (NameIdentifier n : nameIdentifierList) {
-            DataCiteNameIdentifier dataCiteNameIdentifier = new DataCiteNameIdentifier();
-            // Retrieve values from CEDAR class
-            String nameIdentifierName = n.getNameIdentifierName().toString();
-            String nameIdentifierScheme = n.getNameIdentifierScheme().toString();
-            String nameIdentifierSchemeURI = n.getNameIdentifierSchemeURI().toString();
-            // set values to DataCite class
-            dataCiteNameIdentifier.setNameIdentifier(nameIdentifierName);
-            dataCiteNameIdentifier.setNameIdentifierScheme(nameIdentifierScheme);
-            dataCiteNameIdentifier.setSchemeURI(nameIdentifierSchemeURI);
-            dataCiteNameIdentifierList.add(dataCiteNameIdentifier);
+        if (!nameIdentifierList.isEmpty()) {
+            for (NameIdentifier n : nameIdentifierList) {
+                DataCiteNameIdentifier dataCiteNameIdentifier = new DataCiteNameIdentifier();
+                // Retrieve values from CEDAR class
+                String nameIdentifierName = n.getNameIdentifierName().toString();
+                String nameIdentifierScheme = n.getNameIdentifierScheme().toString();
+                String nameIdentifierSchemeURI = n.getNameIdentifierSchemeURI().toString();
+                // set values to DataCite class
+                dataCiteNameIdentifier.setNameIdentifier(nameIdentifierName);
+                dataCiteNameIdentifier.setNameIdentifierScheme(nameIdentifierScheme);
+                dataCiteNameIdentifier.setSchemeURI(nameIdentifierSchemeURI);
+                dataCiteNameIdentifierList.add(dataCiteNameIdentifier);
+            }
         }
-
         return dataCiteNameIdentifierList;
     }
 
@@ -340,7 +342,7 @@ public class CEDARInstanceParser {
         List<String> dataCiteSizes = new ArrayList<>();
 
         for (ValueFormat s : sizeList) {
-            String dataCiteSize = s.getValue().toString();
+            String dataCiteSize = s.getValue();
             dataCiteSizes.add(dataCiteSize);
         }
         return dataCiteSizes;
@@ -350,7 +352,7 @@ public class CEDARInstanceParser {
         List<String> dataCiteFormats = new ArrayList<>();
 
         for (ValueFormat f : formatList) {
-            String dataCiteFormat = f.getValue().toString();
+            String dataCiteFormat = f.getValue();
             dataCiteFormats.add(dataCiteFormat);
         }
         return dataCiteFormats;

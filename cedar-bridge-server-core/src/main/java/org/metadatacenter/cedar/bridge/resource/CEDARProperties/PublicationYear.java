@@ -29,6 +29,6 @@ public class PublicationYear {
 
     @Override
     public String toString() {
-        return value.substring(0, 4);
+        return value == null ? null : value.substring(0, 4);
     }
 }

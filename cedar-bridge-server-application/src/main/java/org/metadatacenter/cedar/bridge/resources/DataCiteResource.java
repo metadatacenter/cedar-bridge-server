@@ -4,9 +4,14 @@ import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
+import org.apache.commons.codec.CharEncoding;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.http.HttpEntity;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 import org.metadatacenter.cedar.bridge.resource.CEDARInstanceParser;
 import org.metadatacenter.cedar.bridge.resource.CEDARProperties.CEDARDataCiteInstance;
@@ -15,12 +20,17 @@ import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.exception.CedarException;
+import org.metadatacenter.exception.CedarProcessingException;
+import org.metadatacenter.id.CedarArtifactId;
+import org.metadatacenter.id.CedarTemplateId;
+import org.metadatacenter.model.CedarResourceType;
 import org.metadatacenter.model.request.ResourceType;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.service.TemplateInstanceService;
 import org.metadatacenter.server.service.TemplateService;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.json.JsonMapper;
+import org.metadatacenter.util.http.ProxyUtil;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -30,6 +40,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+//import org.apache.http.HttpResponse;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -94,7 +105,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
   @Produces(MediaType.APPLICATION_JSON)
   @Timed
   @Path("/create-doi")
-  public Response createDOI(JSONObject dataCiteInstance) throws CedarException, IOException, InterruptedException {
+  public Response createDOI(JsonNode dataCiteInstance) throws CedarException, IOException, InterruptedException {
     CedarRequestContext c = buildRequestContext();
 
     c.must(c.user()).be(LoggedIn);
@@ -158,14 +169,12 @@ public class DataCiteResource extends CedarMicroserviceResource {
   /**
    * This function check if CEDAR DataCite Instance is valid
    */
-  private Pair<Boolean, JSONObject> validateCEDARInstance(CedarRequestContext c, String templateId, JSONObject dataCiteInstance) throws IOException, InterruptedException {
+  private Pair<Boolean, JSONObject> validateCEDARInstance(CedarRequestContext c, String templateId, JsonNode dataCiteInstance) throws IOException, InterruptedException {
     // Get Scheme JSONObject and CEDAR DataCite Instance JSONObject
-    HttpResponse<String> schemaResponse = getCEDARTemplate(templateId);
-    System.out.println("Schema response: " + schemaResponse.body());
-//    JSONObject schema = new JSONObject(schemaResponse.body());
+    JsonNode schemaResponse = getCEDARTemplate(c, templateId);
 
-    JSONObject validationBody = new JSONObject();
-    validationBody.put("schema", schemaResponse.body());
+    ObjectNode validationBody = JsonNodeFactory.instance.objectNode();
+    validationBody.put("schema", schemaResponse);
     validationBody.put("instance", dataCiteInstance);
 
     try {
@@ -173,9 +182,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
       String endpointUrl = microserviceUrlUtil.getArtifact().getValidateCommand(ResourceType.INSTANCE.getValue());
 
       // Set authorization header
-      //TODO: use CEDAR_ADMIN_USER_API_KEY???
-//      String adminUserApiKey = "apiKey " + cedarConfig.getAdminUserConfig().getApiKey();
-//      String apiKey = "apiKey e94e265d4c3cd623ca8bde96cfc743074196409e345b164f148333dd403c3401";
       String apiKey = c.getCedarUser().getFirstApiKeyAuthHeader();
 
       URI uri = URI.create(endpointUrl);
@@ -226,7 +232,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
    *
    * @return DataCite requested JSON scheme
    */
-  private static String getRequestJson(JSONObject metadata) {
+  private static String getRequestJson(JsonNode metadata) {
     ObjectMapper mapper = new ObjectMapper();
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
     DataCiteSchema dataCiteSchema = new DataCiteSchema();
@@ -240,6 +246,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
       //Serialize DataCiteRequest Class to json
       String requestJsonString = mapper.writeValueAsString(dataCiteSchema);
+      System.out.println("DataCite Request Json: " + requestJsonString);
       return requestJsonString;
 
     } catch (IOException e) {
@@ -284,41 +291,26 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
   /**
    * This function get JSON file of a CEDAR template
-   * @param templateId ID of CEDAR template
-   * @return CEDAR template's corresponding JSON file
    */
-  private static HttpResponse<String> getCEDARTemplate(String templateId) throws IOException, InterruptedException {
+  private JsonNode getCEDARTemplate(CedarRequestContext c, String templateId) throws IOException, InterruptedException {
     try {
-      // Set authentication header
-      //TODO: use admin apiKey??
-      String apiKey = "apiKey e94e265d4c3cd623ca8bde96cfc743074196409e345b164f148333dd403c3401";
+      CedarTemplateId cedarTemplateId = CedarTemplateId.build(templateId);
+      String artifactServerUrl = microserviceUrlUtil.getArtifact().getArtifactTypeWithId(CedarResourceType.TEMPLATE, (CedarArtifactId) cedarTemplateId);
 
-      //TODO: get template api ??
-      String endpointUrl = "https://resource.metadatacenter.org/templates/" + templateId;
-      URI uri = URI.create(endpointUrl);
+      HttpEntity currentTemplateEntity = ProxyUtil.proxyGet(artifactServerUrl, c).getEntity();
+      String currentTemplateEntityContent = EntityUtils.toString(currentTemplateEntity, CharEncoding.UTF_8);
+      JsonNode currentTemplateJsonNode = JsonMapper.MAPPER.readTree(currentTemplateEntityContent);
 
-      // Set up the HTTP client
-      HttpClient client = HttpClient.newHttpClient();
-
-      // Create HTTP request with JSON body and basic authentication
-      HttpRequest request = HttpRequest.newBuilder(uri)
-          .header("Accept", "application/json")
-          .header("Authorization", apiKey)
-          .GET()
-          .build();
-
-      // Call CEDAR validation endpoint and get the response
-      HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-      System.out.println(response.body());
-
-      int statusCode = response.statusCode();
+      int statusCode = ProxyUtil.proxyGet(artifactServerUrl, c).getStatusLine().getStatusCode();
       if (statusCode == HttpConstants.OK){
-        System.out.println("The get request was successful");
+        System.out.println("The GET CEDAR Template request was successful");
       } else {
-        System.out.println("The get request was failed with status code: " + statusCode);
+        System.out.println("The GET CEDAR Template request was failed with status code: " + statusCode);
       }
-      return response;
-    } catch (IOException | InterruptedException e) {
+      return currentTemplateJsonNode;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    } catch (CedarProcessingException e) {
       throw new RuntimeException(e);
     }
   }
