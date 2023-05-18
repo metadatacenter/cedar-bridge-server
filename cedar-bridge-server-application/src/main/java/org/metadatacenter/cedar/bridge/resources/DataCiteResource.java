@@ -1,6 +1,7 @@
 package org.metadatacenter.cedar.bridge.resources;
 
 import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -245,6 +246,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       CEDARInstanceParser.parseCEDARInstance(cedarInstance, dataCiteSchema);
 
       //Serialize DataCiteRequest Class to json
+      mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
       String requestJsonString = mapper.writeValueAsString(dataCiteSchema);
       System.out.println("DataCite Request Json: " + requestJsonString);
       return requestJsonString;

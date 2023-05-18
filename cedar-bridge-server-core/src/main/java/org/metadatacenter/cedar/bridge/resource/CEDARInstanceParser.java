@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CEDARInstanceParser {
-    public static void parseCEDARInstance(CEDARDataCiteInstance CEDARDataCiteInstance, DataCiteSchema dataCiteSchema) {
+    public static void parseCEDARInstance(CEDARDataCiteInstance cedarDataCiteInstance, DataCiteSchema dataCiteSchema) {
         Data data = new Data();
         Attributes attributes = new Attributes();
 
@@ -15,7 +15,7 @@ public class CEDARInstanceParser {
         data.setType("dois");
 
         //Pass prefix value from CEDAR class to DataCite class
-        attributes.setPrefix(CEDARDataCiteInstance.getPrefix().getValue());
+        attributes.setPrefix(cedarDataCiteInstance.getPrefix().getValue());
 
         // set event value
         attributes.setEvent("publish");
@@ -25,65 +25,112 @@ public class CEDARInstanceParser {
         attributes.setSchemaVersion("http://datacite.org/schema/kernel-4");
 
         // Pass creator values from CEDAR class to DataCite class
-        attributes.setCreators(parseCreatorValue(CEDARDataCiteInstance.getCreatorElement().getCreators()));
+        List<Creator> creatorList = cedarDataCiteInstance.getCreatorElement().getCreators();
+        if (!creatorList.isEmpty()) {
+            attributes.setCreators(parseCreatorValue(creatorList));
+        }
 
         //Pass titles values from CEDAR class to DataCite class
-        attributes.setTitles(parseTitleValue(CEDARDataCiteInstance.getTitleElement().getTitles()));
+        List<Title> titlesList = cedarDataCiteInstance.getTitleElement().getTitles();
+        if (!titlesList.isEmpty()) {
+            attributes.setTitles(parseTitleValue(titlesList));
+        }
 
         //Pass publisher values from CEDAR class to DataCite class
-        attributes.setPublisher(CEDARDataCiteInstance.getPublisherElement().getPublisher().toString());
+        String publisher = cedarDataCiteInstance.getPublisherElement().getPublisher().toString();
+        if (publisher != null) {
+            attributes.setPublisher(publisher);
+        }
 
         //Pass publisherYear values
-        attributes.setPublicationYear(parsePublisherYearValue(CEDARDataCiteInstance));
+        String publicationYear = cedarDataCiteInstance.getPublicationYearElement().getPublicationYear().toString();
+        if (publicationYear != null) {
+            attributes.setPublicationYear(parsePublicationYearValue(publicationYear));
+        }
 
         //Pass subjects values
-        attributes.setSubjects(parseSubjectValue(CEDARDataCiteInstance.getSubjectElement().getSubjects()));
+        List<Subject> subjectList = cedarDataCiteInstance.getSubjectElement().getSubjects();
+        if (!subjectList.isEmpty()){
+            attributes.setSubjects(parseSubjectValue(subjectList));
+        }
 
         // Pass resourceType values
-        attributes.setTypes(parseTypeValue(CEDARDataCiteInstance.getResourceTypeElement()));
+        attributes.setTypes(parseTypeValue(cedarDataCiteInstance.getResourceTypeElement()));
 
         //Pass contributors values
-        attributes.setContributors(parseContributorValue(CEDARDataCiteInstance.getContributorElement().getContributors()));
+        List<Contributor> contributorList = cedarDataCiteInstance.getContributorElement().getContributors();
+        if (!contributorList.isEmpty()){
+            attributes.setContributors(parseContributorValue(contributorList));
+        }
 
         //Pass dates values
-        attributes.setDates(parseDateValue(CEDARDataCiteInstance.getDateElement().getDates()));
+        List<Date> dateList = cedarDataCiteInstance.getDateElement().getDates();
+        if (!dateList.isEmpty()){
+            attributes.setDates(parseDateValue(dateList));
+        }
 
         //Pass Language value
-        attributes.setLanguage(CEDARDataCiteInstance.getLanguage().toString());
+        attributes.setLanguage(cedarDataCiteInstance.getLanguage().toString());
 
         //Pass alternateIdentifier values
-        attributes.setAlternateIdentifiers(parseAlternateIdentifier(CEDARDataCiteInstance.getAlternateIdentifierElement().getAlternateIdentifiers()));
+        List<AlternateIdentifier> alternateIdentifierList = cedarDataCiteInstance.getAlternateIdentifierElement().getAlternateIdentifiers();
+        if (! alternateIdentifierList.isEmpty()){
+            attributes.setAlternateIdentifiers(parseAlternateIdentifier(alternateIdentifierList));
+        }
 
         //Pass relatedIdentifier values
-        attributes.setRelatedIdentifiers(parseRelatedIdentifier(CEDARDataCiteInstance.getRelatedIdentifierElement().getRelatedIdentifiers()));
+        List<RelatedIdentifier> relatedIdentifierList = cedarDataCiteInstance.getRelatedIdentifierElement().getRelatedIdentifiers();
+        if (!relatedIdentifierList.isEmpty()){
+            attributes.setRelatedIdentifiers(parseRelatedIdentifier(relatedIdentifierList));
+        }
 
         //Pass size values
-        attributes.setSizes(parseSizeValue(CEDARDataCiteInstance.getSizeElement().getSizes()));
+        List<ValueFormat> sizeList = cedarDataCiteInstance.getSizeElement().getSizes();
+        if (sizeList.size()>0 && sizeList.get(0).getValue()!=null){
+            attributes.setSizes(parseSizeValue(sizeList));
+        }
 
         //Pass format values
-        attributes.setFormats(parseFormatValue(CEDARDataCiteInstance.getFormatElement().getFormats()));
+        List<ValueFormat> formatList = cedarDataCiteInstance.getFormatElement().getFormats();
+        if (formatList.size()>0 && formatList.get(0).getValue()!= null){
+            attributes.setFormats(parseFormatValue(formatList));
+        }
 
         //Pass version value
-        attributes.setVersion(CEDARDataCiteInstance.getVersion().toString());
+        attributes.setVersion(cedarDataCiteInstance.getVersion().toString());
 
         //Pass rights values
-        attributes.setRightsList(parseRightsValue(CEDARDataCiteInstance.getRightsElement().getRightsList()));
+        List<Rights> rightsList = cedarDataCiteInstance.getRightsElement().getRightsList();
+        if (!rightsList.isEmpty()){
+            attributes.setRightsList(parseRightsValue(rightsList));
+        }
 
         //Pass description values
-        attributes.setDescriptions(parseDescriptionValue(CEDARDataCiteInstance.getDescriptionElement().getDescriptions()));
+        List<Description> descriptionList = cedarDataCiteInstance.getDescriptionElement().getDescriptions();
+        if (!descriptionList.isEmpty()){
+            attributes.setDescriptions(parseDescriptionValue(descriptionList));
+        }
 
         //Pass geoLocation values
-        attributes.setGeoLocations(parseGeoLocationValue(CEDARDataCiteInstance.getGeoLocationElement().getGeoLocations()));
+        List<GeoLocation> geoLocationList = cedarDataCiteInstance.getGeoLocationElement().getGeoLocations();
+        if (!geoLocationList.isEmpty()){
+            attributes.setGeoLocations(parseGeoLocationValue(geoLocationList));
+        }
 
         //Pass fundingReference values
-        attributes.setFundingReferences(parseFundingReference(CEDARDataCiteInstance.getFundingReferenceElement().getFundingReferences()));
+        List<FundingReference> fundingReferenceList = cedarDataCiteInstance.getFundingReferenceElement().getFundingReferences();
+        if (!fundingReferenceList.isEmpty()){
+            attributes.setFundingReferences(parseFundingReference(fundingReferenceList));
+        }
 
         //Pass relatedItem values
-        attributes.setRelatedItems(parseRelatedItemValue(CEDARDataCiteInstance.getRelatedItemElement().getRelatedItems()));
+        List<RelatedItem> relatedItemList = cedarDataCiteInstance.getRelatedItemElement().getRelatedItems();
+        if (!relatedItemList.isEmpty()){
+            attributes.setRelatedItems(parseRelatedItemValue(relatedItemList));
+        }
 
         data.setAttributes(attributes);
         dataCiteSchema.setData(data);
-
     }
 
     private static List<DataCiteAffiliation> parseAffiliationValue(List<Affiliation> affiliationList){
@@ -129,11 +176,11 @@ public class CEDARInstanceParser {
 
 
     // Parse CreatorElement values
-    private static List<DataCiteCreator> parseCreatorValue(List<Creator> CreatorList) {
+    private static List<DataCiteCreator> parseCreatorValue(List<Creator> creatorList) {
         List<DataCiteCreator> dataCiteCreatorList = new ArrayList<>();
 
         //Loop each creator in creator list to get values
-        for (Creator c: CreatorList) {
+        for (Creator c: creatorList) {
             DataCiteCreator dataCiteCreator = new DataCiteCreator();
             // Retrieve values from CEDAR class
             String creatorName = c.getCreatorName().toString();
@@ -152,10 +199,9 @@ public class CEDARInstanceParser {
                 dataCiteCreator.setAffiliations(parseAffiliationValue(affiliationList));
             }
 
-
             // Set values to corresponding Affiliation list in dataCiteCreator
             List<NameIdentifier> nameIdentifierList = c.getNameIdentifiers();
-            if (nameIdentifierList != null) {
+            if (!nameIdentifierList.isEmpty()) {
                 dataCiteCreator.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList));
             }
 
@@ -194,10 +240,8 @@ public class CEDARInstanceParser {
         return dataCiteTitles;
     }
 
-    private static Integer parsePublisherYearValue (CEDARDataCiteInstance CEDARDataCiteInstance) {
-        PublicationYearElement publicationYearElement = CEDARDataCiteInstance.getPublicationYearElement();
-        String publisherYear = publicationYearElement.getPublicationYear().toString(); //"2014-01-01"
-        int year = Integer.parseInt(publisherYear);
+    private static Integer parsePublicationYearValue(String publicationYear) {
+        int year = Integer.parseInt(publicationYear);
         return year;
     }
 
@@ -229,10 +273,12 @@ public class CEDARInstanceParser {
         DataCiteType dataCiteType = new DataCiteType();
         String type = resourceTypeElement.getResourceType().toString();
         String resourceTypeGeneral = resourceTypeElement.getResourceTypeGeneral().toString();
-
-        dataCiteType.setResourceType(type);
-        dataCiteType.setResourceTypeGeneral(resourceTypeGeneral);
-
+        if (type != null){
+            dataCiteType.setResourceType(type);
+        }
+        if (resourceTypeGeneral != null) {
+            dataCiteType.setResourceTypeGeneral(resourceTypeGeneral);
+        }
         return dataCiteType;
     }
 
@@ -340,7 +386,6 @@ public class CEDARInstanceParser {
 
     private static List<String> parseSizeValue(List<ValueFormat> sizeList) {
         List<String> dataCiteSizes = new ArrayList<>();
-
         for (ValueFormat s : sizeList) {
             String dataCiteSize = s.getValue();
             dataCiteSizes.add(dataCiteSize);
@@ -350,7 +395,6 @@ public class CEDARInstanceParser {
 
     private static List<String> parseFormatValue(List<ValueFormat> formatList){
         List<String> dataCiteFormats = new ArrayList<>();
-
         for (ValueFormat f : formatList) {
             String dataCiteFormat = f.getValue();
             dataCiteFormats.add(dataCiteFormat);
@@ -481,6 +525,7 @@ public class CEDARInstanceParser {
     }
 
     private static List<DataCiteRelatedItem> parseRelatedItemValue(List<RelatedItem> relatedItemList){
+        System.out.println("related item list: " + relatedItemList);
         List<DataCiteRelatedItem> dataCiteRelatedItems = new ArrayList<>();
 
         for(RelatedItem r: relatedItemList){
