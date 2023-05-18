@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.metadatacenter</groupId>
+    <artifactId>cedar-bridge-server</artifactId>
+    <version>2.6.25</version>
+  </parent>
+
+  <groupId>org.metadatacenter</groupId>
+  <artifactId>cedar-bridge-server-application</artifactId>
+  <packaging>jar</packaging>
+
+  <name>CEDAR Bridge Server Dropwizard Application</name>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-server-rest-library</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-config-library</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-server-utils-core-library</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-template-operations-library</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-server-globals-library</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-server-utils-dropwizard-library</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mongodb</groupId>
+      <artifactId>mongo-java-driver</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-workspace-operations-library</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-bridge-server-core</artifactId>
+      <version>2.6.25</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.minidev</groupId>
+      <artifactId>json-smart</artifactId>
+      <version>2.3</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.14.2</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.14.2</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/org.json/json -->
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20230227</version>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+
+    <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <configuration>
+          <createDependencyReducedPom>true</createDependencyReducedPom>
+          <filters>
+            <filter>
+              <artifact>*:*</artifact>
+              <excludes>
+                <exclude>META-INF/*.SF</exclude>
+                <exclude>META-INF/*.DSA</exclude>
+                <exclude>META-INF/*.RSA</exclude>
+              </excludes>
+            </filter>
+          </filters>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>org.metadatacenter.cedar.bridge.BridgeServerApplication</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+
+  </build>
+
+</project>
