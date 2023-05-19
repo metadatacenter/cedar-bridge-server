@@ -15,7 +15,7 @@ public class NameIdentifier {
     @JsonProperty("@id")
     private String id;
 
-    @JsonProperty("nameIdentifierName")
+    @JsonProperty("nameIdentifier")
     private ValueFormat nameIdentifierName;
 
     @JsonProperty("nameIdentifierScheme")

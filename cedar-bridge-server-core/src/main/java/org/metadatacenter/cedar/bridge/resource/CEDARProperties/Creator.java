@@ -29,7 +29,7 @@ public class Creator {
     @JsonProperty("familyName")
     private ValueFormat familyName;
 
-    @JsonProperty("Affiliation")
+    @JsonProperty("affiliationElement")
     private List<Affiliation> affiliations;
 
     @JsonProperty("nameIdentifier")
