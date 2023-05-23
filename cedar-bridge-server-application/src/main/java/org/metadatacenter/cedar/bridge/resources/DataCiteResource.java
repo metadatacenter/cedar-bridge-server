@@ -74,6 +74,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     CedarRequestContext c = buildRequestContext();
 
     c.must(c.user()).be(LoggedIn);
+    //TODO: chang id to full url
 
     try {
       String encodedId = URLEncoder.encode(doiId, StandardCharsets.UTF_8);
@@ -117,6 +118,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     String password = cedarConfig.getBridgeConfig().getDataCite().getPassword();
     String endpointUrl = cedarConfig.getBridgeConfig().getDataCite().getEndpointUrl();
     String templateId = cedarConfig.getBridgeConfig().getDataCite().getTemplateId();
+//    String templateId = "https://repo.metadatacenter.orgx/templates/330dec5a-b409-47a8-bd90-8b997d04d85c";
 
     // Create basic authentication
     String basicAuth =
