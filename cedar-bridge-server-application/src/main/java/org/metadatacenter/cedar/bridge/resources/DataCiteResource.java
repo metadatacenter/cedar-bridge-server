@@ -30,18 +30,18 @@ import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.service.TemplateInstanceService;
 import org.metadatacenter.server.service.TemplateService;
 import org.metadatacenter.util.http.CedarResponse;
-import org.metadatacenter.util.json.JsonMapper;
 import org.metadatacenter.util.http.ProxyUtil;
+import org.metadatacenter.util.json.JsonMapper;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-//import org.apache.http.HttpResponse;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -69,7 +69,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
   @GET
   @Timed
   @Path("/get-doi-metadata/{id}")
-  public Response getDOIMetadata(@PathParam(PP_ID) String doiId) throws CedarException {
+  public Response getDOIMetadata(@PathParam(PP_ID) String doiIdUrl) throws CedarException {
 
     CedarRequestContext c = buildRequestContext();
 
@@ -77,10 +77,11 @@ public class DataCiteResource extends CedarMicroserviceResource {
     //TODO: chang id to full url
 
     try {
-      String encodedId = URLEncoder.encode(doiId, StandardCharsets.UTF_8);
-      String endpointUrl = cedarConfig.getBridgeConfig().getDataCite().getEndpointUrl() + "/" + encodedId;
-      System.out.println(endpointUrl);
-//      String endpointUrl = "https://api.datacite.org/dois/" + encodedId;
+      //Get the doi from doiName
+      URI doiUrl = new URI(doiIdUrl);
+      String doi = doiUrl.getPath();
+
+      String endpointUrl = cedarConfig.getBridgeConfig().getDataCite().getEndpointUrl() + doi;
       URI uri = URI.create(endpointUrl);
 
       // Create HTTP client
