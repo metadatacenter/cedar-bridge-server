@@ -1,13 +1,19 @@
 package org.metadatacenter.cedar.bridge.resource.DataCiteProperties;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteRights {
+    @JsonProperty("rights")
     private String rights;
+    @JsonProperty("rightsUri")
     private String rightsUri;
+    @JsonProperty("schemeUri")
     private String schemeUri;
+    @JsonProperty("rightsIdentifier")
     private String rightsIdentifier;
+    @JsonProperty("rightsIdentifierScheme")
     private String rightsIdentifierScheme;
 
     public String getRights() {

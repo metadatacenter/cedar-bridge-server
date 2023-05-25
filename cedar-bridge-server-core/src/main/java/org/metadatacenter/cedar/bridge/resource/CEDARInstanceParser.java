@@ -466,29 +466,29 @@ public class CEDARInstanceParser {
 
             //parse value in geoLocationPolygens
             List<GeoLocationPolygen> geoLocationPolygenList = g.getGeoLocationPolygenList();
-            List<DataCiteGeoLocationPolygen> dataCiteGeoLocationPolygens = new ArrayList<>();
+            List<DataCiteGeoLocationPolygon> dataCiteGeoLocationPolygons = new ArrayList<>();
             for (GeoLocationPolygen glp: geoLocationPolygenList){
-                DataCiteGeoLocationPolygen dataCiteGeoLocationPolygen = new DataCiteGeoLocationPolygen();
-                float polygonPointLongitude = glp.getPolygenPoint().getPointLongitude().getValue();
-                float polygonPointLatitude = glp.getPolygenPoint().getPointLatitude().getValue();
-                float inPolygonPointLongitude = glp.getInPolygenPoint().getPointLongitude().getValue();
-                float inPolygonPointLatitude = glp.getInPolygenPoint().getPointLatitude().getValue();
+                DataCiteGeoLocationPolygon dataCiteGeoLocationPolygon = new DataCiteGeoLocationPolygon();
+                float polygonPointLongitude = glp.getPolygonPoint().getPointLongitude().getValue();
+                float polygonPointLatitude = glp.getPolygonPoint().getPointLatitude().getValue();
+                float inPolygonPointLongitude = glp.getInPolygonPoint().getPointLongitude().getValue();
+                float inPolygonPointLatitude = glp.getInPolygonPoint().getPointLatitude().getValue();
 
                 // set polygenPoint attributes
                 DataCiteGeoLocationPoint polygenPoint = new DataCiteGeoLocationPoint();
                 polygenPoint.setPointLongitude(polygonPointLongitude);
                 polygenPoint.setPointLatitude(polygonPointLatitude);
-                dataCiteGeoLocationPolygen.setPolygonPoint(polygenPoint);
+                dataCiteGeoLocationPolygon.setPolygonPoint(polygenPoint);
 
                 // set inPolygenPoint attributes
                 DataCiteGeoLocationPoint inPolygenPoint = new DataCiteGeoLocationPoint();
                 inPolygenPoint.setPointLongitude(inPolygonPointLongitude);
                 inPolygenPoint.setPointLatitude(inPolygonPointLatitude);
-                dataCiteGeoLocationPolygen.setInPolygenPoint(inPolygenPoint);
+                dataCiteGeoLocationPolygon.setInPolygonPoint(inPolygenPoint);
 
-                dataCiteGeoLocationPolygens.add(dataCiteGeoLocationPolygen);
+                dataCiteGeoLocationPolygons.add(dataCiteGeoLocationPolygon);
             }
-            dataCiteGeoLocation.setGeoLocationPolygenList(dataCiteGeoLocationPolygens);
+            dataCiteGeoLocation.setGeoLocationPolygonList(dataCiteGeoLocationPolygons);
 
             //add dataCiteGeoLocation to the list
             dataCiteGeoLocations.add(dataCiteGeoLocation);
@@ -558,7 +558,7 @@ public class CEDARInstanceParser {
             String schemeUri = r.getRelatedItemIdentifiers().getSchemeURi().toString();
             String schemeType = r.getRelatedItemIdentifiers().getSchemeType().toString();
 
-            dataCiteRelatedItemIdentifier.setRelatedIdentifier(relatedIdentifier);
+            dataCiteRelatedItemIdentifier.setRelatedItemIdentifier(relatedIdentifier);
             dataCiteRelatedItemIdentifier.setRelatedItemIdentifierType(relatedItemIdentifierType);
             dataCiteRelatedItemIdentifier.setRelatedMetadataScheme(relatedMedaDataScheme);
             dataCiteRelatedItemIdentifier.setSchemeUri(schemeUri);

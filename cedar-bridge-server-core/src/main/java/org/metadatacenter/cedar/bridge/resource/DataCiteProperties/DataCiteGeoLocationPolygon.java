@@ -1,11 +1,14 @@
 package org.metadatacenter.cedar.bridge.resource.DataCiteProperties;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DataCiteGeoLocationPolygen {
+public class DataCiteGeoLocationPolygon {
+    @JsonProperty("polygonPoint")
     private DataCiteGeoLocationPoint polygonPoint;
-    private DataCiteGeoLocationPoint inPolygenPoint;
+    @JsonProperty("inPolygonPoint")
+    private DataCiteGeoLocationPoint inPolygonPoint;
 
     public DataCiteGeoLocationPoint getPolygonPoint() {
         return polygonPoint;
@@ -15,11 +18,11 @@ public class DataCiteGeoLocationPolygen {
         this.polygonPoint = polygonPoint;
     }
 
-    public DataCiteGeoLocationPoint getInPolygenPoint() {
-        return inPolygenPoint;
+    public DataCiteGeoLocationPoint getInPolygonPoint() {
+        return inPolygonPoint;
     }
 
-    public void setInPolygenPoint(DataCiteGeoLocationPoint inPolygenPoint) {
-        this.inPolygenPoint = inPolygenPoint;
+    public void setInPolygonPoint(DataCiteGeoLocationPoint inPolygonPoint) {
+        this.inPolygonPoint = inPolygonPoint;
     }
 }

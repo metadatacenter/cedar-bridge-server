@@ -6,24 +6,24 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GeoLocationPolygen {
     @JsonProperty("polygonPoint")
-    private Point polygenPoint;
+    private Point polygonPoint;
 
-    @JsonProperty("inPolygenPoint")
-    private Point inPolygenPoint;
+    @JsonProperty("inPolygonPoint")
+    private Point inPolygonPoint;
 
-    public Point getPolygenPoint() {
-        return polygenPoint;
+    public Point getPolygonPoint() {
+        return polygonPoint;
     }
 
-    public void setPolygenPoint(Point polygenPoint) {
-        this.polygenPoint = polygenPoint;
+    public void setPolygonPoint(Point polygonPoint) {
+        this.polygonPoint = polygonPoint;
     }
 
-    public Point getInPolygenPoint() {
-        return inPolygenPoint;
+    public Point getInPolygonPoint() {
+        return inPolygonPoint;
     }
 
-    public void setInPolygenPoint(Point inPolygenPoint) {
-        this.inPolygenPoint = inPolygenPoint;
+    public void setInPolygonPoint(Point inPolygonPoint) {
+        this.inPolygonPoint = inPolygonPoint;
     }
 }

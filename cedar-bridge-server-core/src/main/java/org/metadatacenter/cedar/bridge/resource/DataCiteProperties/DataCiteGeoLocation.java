@@ -1,18 +1,20 @@
 package org.metadatacenter.cedar.bridge.resource.DataCiteProperties;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteGeoLocation {
+    @JsonProperty("geoLocationPlace")
     private String geoLocationPlace;
-
+    @JsonProperty("geoLocationPoint")
     private DataCiteGeoLocationPoint geoLocationPoint;
-
+    @JsonProperty("geoLocationBox")
     private DataCiteGeoLocationBox geoLocationBox;
-
-    private List<DataCiteGeoLocationPolygen> geoLocationPolygenList;
+    @JsonProperty("geoLocationPolygon")
+    private List<DataCiteGeoLocationPolygon> geoLocationPolygonList;
 
     public String getGeoLocationPlace() {
         return geoLocationPlace;
@@ -38,11 +40,11 @@ public class DataCiteGeoLocation {
         this.geoLocationBox = geoLocationBox;
     }
 
-    public List<DataCiteGeoLocationPolygen> getGeoLocationPolygenList() {
-        return geoLocationPolygenList;
+    public List<DataCiteGeoLocationPolygon> getGeoLocationPolygonList() {
+        return geoLocationPolygonList;
     }
 
-    public void setGeoLocationPolygenList(List<DataCiteGeoLocationPolygen> geoLocationPolygenList) {
-        this.geoLocationPolygenList = geoLocationPolygenList;
+    public void setGeoLocationPolygonList(List<DataCiteGeoLocationPolygon> geoLocationPolygonList) {
+        this.geoLocationPolygonList = geoLocationPolygonList;
     }
 }

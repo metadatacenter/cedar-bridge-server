@@ -1,25 +1,27 @@
 package org.metadatacenter.cedar.bridge.resource.DataCiteProperties;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteRelatedItemIdentifier {
-    private String relatedIdentifier;
-
+    @JsonProperty("relatedItemIdentifier")
+    private String relatedItemIdentifier;
+    @JsonProperty("relatedItemIdentifierType")
     private String relatedItemIdentifierType ;
-
+    @JsonProperty("relatedMetadataScheme")
     private String relatedMetadataScheme;
-
+    @JsonProperty("schemeUri")
     private String schemeUri;
-
+    @JsonProperty("schemeType")
     private String schemeType;
 
-    public String getRelatedIdentifier() {
-        return relatedIdentifier;
+    public String getRelatedItemIdentifier() {
+        return relatedItemIdentifier;
     }
 
-    public void setRelatedIdentifier(String relatedIdentifier) {
-        this.relatedIdentifier = relatedIdentifier;
+    public void setRelatedItemIdentifier(String relatedItemIdentifier) {
+        this.relatedItemIdentifier = relatedItemIdentifier;
     }
 
     public String getRelatedItemIdentifierType() {
