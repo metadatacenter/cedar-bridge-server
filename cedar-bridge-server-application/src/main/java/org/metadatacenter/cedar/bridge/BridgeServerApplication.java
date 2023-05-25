@@ -48,4 +48,9 @@ public class BridgeServerApplication extends CedarMicroserviceApplicationWithMon
     final BridgeServerHealthCheck healthCheck = new BridgeServerHealthCheck();
     environment.healthChecks().register("message", healthCheck);
   }
+
+  public boolean isTestMode() {
+    return false;
+  }
+
 }
