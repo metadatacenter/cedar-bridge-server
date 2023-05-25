@@ -7,13 +7,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import net.minidev.json.JSONObject;
-import net.minidev.json.JSONValue;
+//import net.minidev.json.JSONObject;
+//import net.minidev.json.JSONValue;
 import org.apache.commons.codec.CharEncoding;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
-import org.json.JSONException;
+//import org.json.JSONException;
 import org.metadatacenter.cedar.bridge.resource.CEDARInstanceParser;
 import org.metadatacenter.cedar.bridge.resource.CEDARProperties.CEDARDataCiteInstance;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.DataCiteSchema;
@@ -38,8 +38,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -74,7 +72,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
     CedarRequestContext c = buildRequestContext();
 
     c.must(c.user()).be(LoggedIn);
-    //TODO: chang id to full url
 
     try {
       //Get the doi from doiName
@@ -125,9 +122,9 @@ public class DataCiteResource extends CedarMicroserviceResource {
     String basicAuth =
         Base64.getEncoder().encodeToString((repositoryID + ":" + password).getBytes(StandardCharsets.UTF_8));
 
-    Pair<Boolean, JSONObject> validationResultPair = validateCEDARInstance(c, templateId, dataCiteInstance);
+    Pair<Boolean, JsonNode> validationResultPair = validateCEDARInstance(c, templateId, dataCiteInstance);
     boolean validates = validationResultPair.getLeft();
-    JSONObject validationResult = validationResultPair.getRight();
+    JsonNode validationResult = validationResultPair.getRight();
 
     //Call CEDAR validation endpoint and continue if return true
     if (validates){
@@ -173,7 +170,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
   /**
    * This function check if CEDAR DataCite Instance is valid
    */
-  private Pair<Boolean, JSONObject> validateCEDARInstance(CedarRequestContext c, String templateId, JsonNode dataCiteInstance) throws IOException, InterruptedException {
+  private Pair<Boolean, JsonNode> validateCEDARInstance(CedarRequestContext c, String templateId, JsonNode dataCiteInstance) throws IOException, InterruptedException {
     // Get Scheme JSONObject and CEDAR DataCite Instance JSONObject
     JsonNode schemaResponse = getCEDARTemplate(c, templateId);
 
@@ -202,31 +199,32 @@ public class DataCiteResource extends CedarMicroserviceResource {
               .POST(HttpRequest.BodyPublishers.ofString(String.valueOf(validationBody)))
               .build();
 
-      // Call CEDAR validation endpoint and get the response
-      HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+      // Call CEDAR validation endpoint and get the httpResponse
+      HttpResponse<String> httpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-      // Parse the response body as a JSONObject
-      JSONObject responseJson = (JSONObject) JSONValue.parse(response.body());
-//      JSONObject responseJson = new JSONObject(response.body());
+      // Parse the httpResponse body as a JSONObject
+      String jsonResponse = httpResponse.body();
+      JsonNode jsonResource = JsonMapper.MAPPER.readTree(jsonResponse);
+//      JSONObject responseJson = new JSONObject(httpResponse.body());
 
-      // Check response status code
-      int statusCode = response.statusCode();
+      // Check httpResponse status code
+      int statusCode = httpResponse.statusCode();
 
       if (statusCode == HttpConstants.OK) {
-        String validates = responseJson.getAsString("validates");
+        String validates = jsonResource.get("validates").asText();
         if (validates.equals("true")) {
           // The resource is valid, handle it here
           System.out.println("Resource is valid.");
-          return Pair.of(true, responseJson);
+          return Pair.of(true, jsonResource);
         } else {
           // The resource is invalid, handle the errors and warnings here
-          return Pair.of(false, responseJson);
+          return Pair.of(false, jsonResource);
         }
       } else {
         // The request failed
-        return Pair.of(false, responseJson);
+        return Pair.of(false, jsonResource);
       }
-    } catch (IOException | JSONException e) {
+    } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -241,7 +239,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
     DataCiteSchema dataCiteSchema = new DataCiteSchema();
     try {
-      // Deserialize JSON-LD to CRDARDataCiteInstance Class
+      // Deserialize JSON-LD to CedarDataCiteInstance Class
       String metadataString = metadata.toString();
       CEDARDataCiteInstance cedarInstance = mapper.readValue(metadataString, CEDARDataCiteInstance.class);
 
