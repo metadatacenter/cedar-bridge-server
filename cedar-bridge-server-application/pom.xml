@@ -14,12 +14,12 @@
   <packaging>jar</packaging>
 
   <name>CEDAR Bridge Server Dropwizard Application</name>
-  <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-  </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-bridge-server-core</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.metadatacenter</groupId>
@@ -52,90 +52,31 @@
     </dependency>
 
     <dependency>
-      <groupId>org.mongodb</groupId>
-      <artifactId>mongo-java-driver</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.metadatacenter</groupId>
-      <artifactId>cedar-workspace-operations-library</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.metadatacenter</groupId>
-      <artifactId>cedar-bridge-server-core</artifactId>
-      <version>2.6.32-SNAPSHOT</version>
-      <scope>compile</scope>
-    </dependency>
-
-    <!--
-    <dependency>
-      <groupId>net.minidev</groupId>
-      <artifactId>json-smart</artifactId>
-      <version>2.3</version>
-      <scope>compile</scope>
-    </dependency>
-    -->
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <!-- <version>2.14.2</version> -->
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <!-- <version>2.14.2</version> -->
     </dependency>
 
-    <!--
-    <dependency>
-      <groupId>org.json</groupId>
-      <artifactId>json</artifactId>
-      <version>20230227</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpcore-osgi</artifactId>
-      <version>4.4.6</version>
-      <scope>compile</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient-osgi</artifactId>
-      <version>4.5.3</version>
-      <scope>compile</scope>
-    </dependency>
- -->
-
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <version>RELEASE</version>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>io.dropwizard</groupId>
       <artifactId>dropwizard-testing</artifactId>
     </dependency>
 
-      <dependency>
-          <groupId>io.dropwizard</groupId>
-          <artifactId>dropwizard-testing</artifactId>
-      </dependency>
-      <dependency>
-          <groupId>io.dropwizard</groupId>
-          <artifactId>dropwizard-client</artifactId>
-          <scope>test</scope>
-      </dependency>
+    <dependency>
+      <groupId>io.dropwizard</groupId>
+      <artifactId>dropwizard-client</artifactId>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
 

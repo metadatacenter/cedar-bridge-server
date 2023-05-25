@@ -49,9 +49,9 @@ public abstract class AbstractBridgeServerResourceTest
     client.property(ClientProperties.CONNECT_TIMEOUT, 3000);
     client.property(ClientProperties.READ_TIMEOUT, 30000);
 
-    authHeader1 = TestUserUtil.getTestUser1AuthHeader(cedarConfig);
-    authHeader2 = TestUserUtil.getTestUser2AuthHeader(cedarConfig);
-    authHeaderAdmin = TestUserUtil.getAdminUserAuthHeader(cedarConfig);
+//    authHeader1 = TestUserUtil.getTestUser1AuthHeader(cedarConfig);
+//    authHeader2 = TestUserUtil.getTestUser2AuthHeader(cedarConfig);
+//    authHeaderAdmin = TestUserUtil.getAdminUserAuthHeader(cedarConfig);
 
     baseUrlGetDoiMetadata = BASE_URL + ":" + RULE.getLocalPort() + "/datacite/get-doi-metadata";
     baseUrlCreateDoi = BASE_URL + ":" + RULE.getLocalPort() + "/datacite/create-doi";

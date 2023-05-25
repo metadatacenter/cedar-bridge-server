@@ -1,25 +1,15 @@
 package org.metadatacenter.cedar.bridge.config;
 
-import io.dropwizard.testing.junit.DropwizardAppRule;
 import io.dropwizard.testing.junit5.DropwizardAppExtension;
-import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
-import com.fasterxml.jackson.databind.JsonNode;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.metadatacenter.cedar.bridge.BridgeServerApplication;
 import org.metadatacenter.cedar.bridge.BridgeServerConfiguration;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.Response;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-
-import static org.junit.Assert.assertEquals;
 
 public class IntegrationTest {
-  @ExtendWith(DropwizardExtensionsSupport.class)
+//  @ExtendWith(DropwizardExtensionsSupport.class)
   public static final DropwizardAppExtension<BridgeServerConfiguration> dropwizardAppRule = new DropwizardAppExtension<>(BridgeServerApplication.class, "config.yml");
 
   private String creatDoiUrl = "https://bridge.metadatacenter.orgx/datacite/create-doi";
