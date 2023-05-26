@@ -10,15 +10,14 @@ public class GeoLocation {
     @JsonProperty("geoLocationPlace")
     private ValueFormat geoLocationPlace;
 
-
     @JsonProperty("Geo Location Point")
     private Point geoLocationPoint;
 
     @JsonProperty("Geo Location Box")
     private GeoLocationBox geoLocationBox;
 
-    @JsonProperty("geoLocationPolygen")
-    private List<GeoLocationPolygen> geoLocationPolygenList;
+    @JsonProperty("geoLocationPolygon")
+    private List<GeoLocationPolygon> geoLocationPolygonList;
 
     public ValueFormat getGeoLocationPlace() {
         return geoLocationPlace;
@@ -44,11 +43,11 @@ public class GeoLocation {
         this.geoLocationBox = geoLocationBox;
     }
 
-    public List<GeoLocationPolygen> getGeoLocationPolygenList() {
-        return geoLocationPolygenList;
+    public List<GeoLocationPolygon> getGeoLocationPolygonList() {
+        return geoLocationPolygonList;
     }
 
-    public void setGeoLocationPolygenList(List<GeoLocationPolygen> geoLocationPolygenList) {
-        this.geoLocationPolygenList = geoLocationPolygenList;
+    public void setGeoLocationPolygonList(List<GeoLocationPolygon> geoLocationPolygonList) {
+        this.geoLocationPolygonList = geoLocationPolygonList;
     }
 }

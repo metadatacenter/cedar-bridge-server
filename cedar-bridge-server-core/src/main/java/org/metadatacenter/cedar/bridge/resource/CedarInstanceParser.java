@@ -6,7 +6,7 @@ import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CEDARInstanceParser {
+public class CedarInstanceParser {
     public static void parseCEDARInstance(CEDARDataCiteInstance cedarDataCiteInstance, DataCiteSchema dataCiteSchema) {
         Data data = new Data();
         Attributes attributes = new Attributes();
@@ -201,14 +201,14 @@ public class CEDARInstanceParser {
 
             // Set values to corresponding Affiliation list in dataCiteCreator
             List<NameIdentifier> nameIdentifierList = c.getNameIdentifiers();
-            if (!nameIdentifierList.isEmpty()) {
+//            if (!nameIdentifierList.isEmpty()) {
+            if (nameIdentifierList != null) {
                 dataCiteCreator.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList));
             }
 
             // Add dataCiteCreator to dataCiteCreator list
             dataCiteCreatorList.add(dataCiteCreator);
         }
-
         return dataCiteCreatorList;
     }
 
@@ -309,7 +309,7 @@ public class CEDARInstanceParser {
                 dataCiteContributor.setAffiliations(parseAffiliationValue(affiliationList));
             }
 
-            // Set values to corresponding Affiliation list in dataCiteCreator
+            // Set values to corresponding nameIdentifierList list in dataCiteCreator
             List<NameIdentifier> nameIdentifierList = c.getNameIdentifiers();
             if (nameIdentifierList != null) {
                 dataCiteContributor.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList));
@@ -449,42 +449,76 @@ public class CEDARInstanceParser {
 
         for(GeoLocation g : geoLocationList){
             DataCiteGeoLocation dataCiteGeoLocation = new DataCiteGeoLocation();
+            // parse geoLocationPlace
             String geoLocationPlace = g.getGeoLocationPlace().toString();
             dataCiteGeoLocation.setGeoLocationPlace(geoLocationPlace);
+            // parse geoLocationPoint
+            DataCiteGeoLocationPoint point = new DataCiteGeoLocationPoint();
+            Float pointLongitude = g.getGeoLocationPoint().getPointLongitude().getValue();
+            Float pointLatitude = g.getGeoLocationPoint().getPointLatitude().getValue();
+            point.setPointLongitude(pointLongitude);
+            point.setPointLatitude(pointLatitude);
+            dataCiteGeoLocation.setGeoLocationPoint(point);
+
 
             // parse value in geoLocationBox
             DataCiteGeoLocationBox dataCiteGeoLocationBox = new DataCiteGeoLocationBox();
-            float eastBoundLongitude = g.getGeoLocationBox().getEastBoundLongitude().getValue();
-            float westBoundLongitude = g.getGeoLocationBox().getWestBoundLongitude().getValue();
-            float southBoundLatitude = g.getGeoLocationBox().getSouthBoundLatitude().getValue();
-            float northBoundLatitude = g.getGeoLocationBox().getNorthBoundLatitude().getValue();
-            dataCiteGeoLocationBox.setEastBoundLongitude(eastBoundLongitude);
-            dataCiteGeoLocationBox.setWestBoundLongitude(westBoundLongitude);
-            dataCiteGeoLocationBox.setSouthBoundLatitude(southBoundLatitude);
-            dataCiteGeoLocationBox.setNorthBoundLatitude(northBoundLatitude);
+            Float eastBoundLongitude = g.getGeoLocationBox().getEastBoundLongitude().getValue();
+            Float westBoundLongitude = g.getGeoLocationBox().getWestBoundLongitude().getValue();
+            Float southBoundLatitude = g.getGeoLocationBox().getSouthBoundLatitude().getValue();
+            Float northBoundLatitude = g.getGeoLocationBox().getNorthBoundLatitude().getValue();
+            if (eastBoundLongitude != null) {
+                dataCiteGeoLocationBox.setEastBoundLongitude(eastBoundLongitude);
+            }
+            if (westBoundLongitude != null) {
+                dataCiteGeoLocationBox.setWestBoundLongitude(westBoundLongitude);
+            }
+            if (southBoundLatitude != null) {
+                dataCiteGeoLocationBox.setSouthBoundLatitude(southBoundLatitude);
+            }
+            if (northBoundLatitude != null) {
+                dataCiteGeoLocationBox.setNorthBoundLatitude(northBoundLatitude);
+            }
             dataCiteGeoLocation.setGeoLocationBox(dataCiteGeoLocationBox);
 
-            //parse value in geoLocationPolygens
-            List<GeoLocationPolygen> geoLocationPolygenList = g.getGeoLocationPolygenList();
+            //parse value in geoLocationPolygons
+            List<GeoLocationPolygon> geoLocationPolygonList = g.getGeoLocationPolygonList();
             List<DataCiteGeoLocationPolygon> dataCiteGeoLocationPolygons = new ArrayList<>();
-            for (GeoLocationPolygen glp: geoLocationPolygenList){
+            for (GeoLocationPolygon glp: geoLocationPolygonList){
                 DataCiteGeoLocationPolygon dataCiteGeoLocationPolygon = new DataCiteGeoLocationPolygon();
-                float polygonPointLongitude = glp.getPolygonPoint().getPointLongitude().getValue();
-                float polygonPointLatitude = glp.getPolygonPoint().getPointLatitude().getValue();
-                float inPolygonPointLongitude = glp.getInPolygonPoint().getPointLongitude().getValue();
-                float inPolygonPointLatitude = glp.getInPolygonPoint().getPointLatitude().getValue();
+                List<DataCiteGeoLocationPoint> dataCiteGeoLocationPointList = new ArrayList<>();
 
-                // set polygenPoint attributes
-                DataCiteGeoLocationPoint polygenPoint = new DataCiteGeoLocationPoint();
-                polygenPoint.setPointLongitude(polygonPointLongitude);
-                polygenPoint.setPointLatitude(polygonPointLatitude);
-                dataCiteGeoLocationPolygon.setPolygonPoint(polygenPoint);
+                // parse value in polygonPointsList
+                List<Point> polygonPointlist = glp.getPolygonPointsList();
+                for (Point p : polygonPointlist){
+                    DataCiteGeoLocationPoint dataCiteGeoLocationPoint = new DataCiteGeoLocationPoint();
+                    Float polygonPointLongitude = p.getPointLongitude().getValue();
+                    Float polygonPointLatitude = p.getPointLatitude().getValue();
+                    if (polygonPointLongitude != null) {
+                        dataCiteGeoLocationPoint.setPointLongitude(polygonPointLongitude);
+                    }
+                    if (polygonPointLatitude != null) {
+                        dataCiteGeoLocationPoint.setPointLatitude(polygonPointLatitude);
+                    }
+                    dataCiteGeoLocationPointList.add(dataCiteGeoLocationPoint);
+                }
 
-                // set inPolygenPoint attributes
-                DataCiteGeoLocationPoint inPolygenPoint = new DataCiteGeoLocationPoint();
-                inPolygenPoint.setPointLongitude(inPolygonPointLongitude);
-                inPolygenPoint.setPointLatitude(inPolygonPointLatitude);
-                dataCiteGeoLocationPolygon.setInPolygonPoint(inPolygenPoint);
+                // set polygonPoint attributes
+                dataCiteGeoLocationPolygon.setPolygonPointsList(dataCiteGeoLocationPointList);
+
+                //parse value of inPolygonPoint
+                Float inPolygonPointLongitude = glp.getInPolygonPoint().getPointLongitude().getValue();
+                Float inPolygonPointLatitude = glp.getInPolygonPoint().getPointLatitude().getValue();
+
+                // set inPolygonPoint attributes
+                DataCiteGeoLocationPoint inPolygonPoint = new DataCiteGeoLocationPoint();
+                if (inPolygonPointLongitude != null) {
+                    inPolygonPoint.setPointLongitude(inPolygonPointLongitude);
+                }
+                if (inPolygonPointLatitude != null) {
+                    inPolygonPoint.setPointLatitude(inPolygonPointLatitude);
+                }
+                dataCiteGeoLocationPolygon.setInPolygonPoint(inPolygonPoint);
 
                 dataCiteGeoLocationPolygons.add(dataCiteGeoLocationPolygon);
             }
@@ -525,7 +559,6 @@ public class CEDARInstanceParser {
     }
 
     private static List<DataCiteRelatedItem> parseRelatedItemValue(List<RelatedItem> relatedItemList){
-        System.out.println("related item list: " + relatedItemList);
         List<DataCiteRelatedItem> dataCiteRelatedItems = new ArrayList<>();
 
         for(RelatedItem r: relatedItemList){
@@ -546,17 +579,17 @@ public class CEDARInstanceParser {
             dataCiteRelatedItem.setIssue(issue);
             dataCiteRelatedItem.setFirstPage(firstPage);
             dataCiteRelatedItem.setLastPage(lastPage);
-            dataCiteRelatedItem.setPublicationYear(publicationYear);
+            dataCiteRelatedItem.setPublicationYear(parsePublicationYearValue(publicationYear));
             dataCiteRelatedItem.setPublisher(publisher);
             dataCiteRelatedItem.setEdition(edition);
 
             // parse relatedItemIdentifier values
             DataCiteRelatedItemIdentifier dataCiteRelatedItemIdentifier = new DataCiteRelatedItemIdentifier();
-            String relatedIdentifier = r.getRelatedItemIdentifiers().getRelatedIdentifier().toString();
-            String relatedItemIdentifierType = r.getRelatedItemIdentifiers().getRelatedIdentifierType().toString();
-            String relatedMedaDataScheme = r.getRelatedItemIdentifiers().getRelatedMetadataScheme().toString();
-            String schemeUri = r.getRelatedItemIdentifiers().getSchemeURi().toString();
-            String schemeType = r.getRelatedItemIdentifiers().getSchemeType().toString();
+            String relatedIdentifier = r.getRelatedItemIdentifier().getRelatedIdentifier().getValue().toString();
+            String relatedItemIdentifierType = r.getRelatedItemIdentifier().getRelatedIdentifierType().toString();
+            String relatedMedaDataScheme = r.getRelatedItemIdentifier().getRelatedMetadataScheme().toString();
+            String schemeUri = r.getRelatedItemIdentifier().getSchemeURi().toString();
+            String schemeType = r.getRelatedItemIdentifier().getSchemeType().toString();
 
             dataCiteRelatedItemIdentifier.setRelatedItemIdentifier(relatedIdentifier);
             dataCiteRelatedItemIdentifier.setRelatedItemIdentifierType(relatedItemIdentifierType);

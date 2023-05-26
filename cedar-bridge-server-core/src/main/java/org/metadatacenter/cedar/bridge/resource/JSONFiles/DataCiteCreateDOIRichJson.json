@@ -322,7 +322,7 @@
           "Geo Location Point": "https://schema.metadatacenter.org/properties/c20558c7-8867-42cb-befc-e28e8e3cd782",
           "geoLocationPlace": "https://schema.metadatacenter.org/properties/447f98bb-1944-403e-aa28-fcc83da40cba",
           "geoLocationPlace1": "https://schema.metadatacenter.org/properties/87f31c78-952a-4e48-8c55-a5e0cc043d53",
-          "geoLocationPolygen": "https://schema.metadatacenter.org/properties/82b6346e-e24b-4139-8276-d6c9f95ea0be"
+          "geoLocationpolygon": "https://schema.metadatacenter.org/properties/82b6346e-e24b-4139-8276-d6c9f95ea0be"
         },
         "Geo Location Box": {
           "@context": {
@@ -370,7 +370,7 @@
         "geoLocationPlace1": {
           "@value": null
         },
-        "geoLocationPolygen": [],
+        "geoLocationpolygon": [],
         "@id": "https://repo.metadatacenter.orgx/template-element-instances/368ce372-bc38-459a-83c3-c0300438d4b7"
       }
     ],

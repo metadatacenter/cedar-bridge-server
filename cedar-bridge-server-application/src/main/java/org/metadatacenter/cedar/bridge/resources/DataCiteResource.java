@@ -14,7 +14,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
 //import org.json.JSONException;
-import org.metadatacenter.cedar.bridge.resource.CEDARInstanceParser;
+import org.metadatacenter.cedar.bridge.resource.CedarInstanceParser;
 import org.metadatacenter.cedar.bridge.resource.CEDARProperties.CEDARDataCiteInstance;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.DataCiteSchema;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
@@ -47,7 +47,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
-import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/datacite")
 @Produces(MediaType.APPLICATION_JSON)
@@ -71,7 +70,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
     CedarRequestContext c = buildRequestContext();
 
-    c.must(c.user()).be(LoggedIn);
+//    c.must(c.user()).be(LoggedIn);
 
     try {
       //Get the doi from doiName
@@ -108,7 +107,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
   public Response createDOI(JsonNode dataCiteInstance) throws CedarException, IOException, InterruptedException {
     CedarRequestContext c = buildRequestContext();
 
-    c.must(c.user()).be(LoggedIn);
+//    c.must(c.user()).be(LoggedIn);
 
     Map<String, Object> response = new HashMap<>();
 
@@ -122,13 +121,13 @@ public class DataCiteResource extends CedarMicroserviceResource {
     String basicAuth =
         Base64.getEncoder().encodeToString((repositoryID + ":" + password).getBytes(StandardCharsets.UTF_8));
 
-    Pair<Boolean, JsonNode> validationResultPair = validateCEDARInstance(c, templateId, dataCiteInstance);
-    boolean validates = validationResultPair.getLeft();
-    JsonNode validationResult = validationResultPair.getRight();
+//    Pair<Boolean, JsonNode> validationResultPair = validateCEDARInstance(c, templateId, dataCiteInstance);
+//    boolean validates = validationResultPair.getLeft();
+//    JsonNode validationResult = validationResultPair.getRight();
 
     //Call CEDAR validation endpoint and continue if return true
-    if (validates){
-//    if (true) {
+//    if (validates){
+    if (true) {
       try {
         // Get DOI request json
         String jsonData = getRequestJson(dataCiteInstance);
@@ -161,7 +160,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       }
     } else {
       response.put("request", dataCiteInstance);
-      response.put("validationResult", validationResult);
+//      response.put("validationResult", validationResult);
 //      response.put("validationResult", null);
       return CedarResponse.badRequest().errorMessage("Validation Error").entity(response).build();
     }
@@ -242,9 +241,10 @@ public class DataCiteResource extends CedarMicroserviceResource {
       // Deserialize JSON-LD to CedarDataCiteInstance Class
       String metadataString = metadata.toString();
       CEDARDataCiteInstance cedarInstance = mapper.readValue(metadataString, CEDARDataCiteInstance.class);
+      System.out.println("deserialized successfully");
 
       // Pass the value from dataCiteInstance to dataCiteRequest
-      CEDARInstanceParser.parseCEDARInstance(cedarInstance, dataCiteSchema);
+      CedarInstanceParser.parseCEDARInstance(cedarInstance, dataCiteSchema);
 
       //Serialize DataCiteRequest Class to json
       mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);

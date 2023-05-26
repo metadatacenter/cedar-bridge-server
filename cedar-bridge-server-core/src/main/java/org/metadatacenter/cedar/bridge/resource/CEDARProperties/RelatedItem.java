@@ -11,7 +11,7 @@ public class RelatedItem {
     private IdFormat relatedItemType;
 
     @JsonProperty("relationType")
-    private ValueFormat relationType;
+    private IdFormat relationType;
 
     @JsonProperty("volume")
     private ValueFormat volume;
@@ -34,8 +34,8 @@ public class RelatedItem {
     @JsonProperty("edition")
     private ValueFormat edition;
 
-    @JsonProperty("Related Item Identifier")
-    private RelatedIdentifier relatedItemIdentifiers;
+    @JsonProperty("Related Item Identifier Element")
+    private RelatedIdentifier relatedItemIdentifier;
 
     @JsonProperty("Creator")
     private List<Creator> creators;
@@ -57,11 +57,11 @@ public class RelatedItem {
         this.relatedItemType = relatedItemType;
     }
 
-    public ValueFormat getRelationType() {
+    public IdFormat getRelationType() {
         return relationType;
     }
 
-    public void setRelationType(ValueFormat relationType) {
+    public void setRelationType(IdFormat relationType) {
         this.relationType = relationType;
     }
 
@@ -121,12 +121,12 @@ public class RelatedItem {
         this.edition = edition;
     }
 
-    public RelatedIdentifier getRelatedItemIdentifiers() {
-        return relatedItemIdentifiers;
+    public RelatedIdentifier getRelatedItemIdentifier() {
+        return relatedItemIdentifier;
     }
 
-    public void setRelatedItemIdentifiers(RelatedIdentifier relatedItemIdentifiers) {
-        this.relatedItemIdentifiers = relatedItemIdentifiers;
+    public void setRelatedItemIdentifier(RelatedIdentifier relatedItemIdentifier) {
+        this.relatedItemIdentifier = relatedItemIdentifier;
     }
 
     public List<Creator> getCreators() {

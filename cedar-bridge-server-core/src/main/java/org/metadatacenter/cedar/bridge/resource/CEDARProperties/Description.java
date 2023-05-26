@@ -8,7 +8,7 @@ public class Description {
     @JsonProperty("Description")
     private ValueFormat description;
     @JsonProperty("descriptionType")
-    private ValueFormat descriptionType;
+    private IdFormat descriptionType;
 
     @JsonProperty("Language")
     private ValueFormat language;
@@ -21,11 +21,11 @@ public class Description {
         this.description = description;
     }
 
-    public ValueFormat getDescriptionType() {
+    public IdFormat getDescriptionType() {
         return descriptionType;
     }
 
-    public void setDescriptionType(ValueFormat descriptionType) {
+    public void setDescriptionType(IdFormat descriptionType) {
         this.descriptionType = descriptionType;
     }
 

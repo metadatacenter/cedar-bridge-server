@@ -9,7 +9,7 @@ public class Number {
     private ValueFormat number;
 
     @JsonProperty("numberType")
-    private ValueFormat numberType;
+    private IdFormat numberType;
 
     public ValueFormat getNumber() {
         return number;
@@ -19,11 +19,11 @@ public class Number {
         this.number = number;
     }
 
-    public ValueFormat getNumberType() {
+    public IdFormat getNumberType() {
         return numberType;
     }
 
-    public void setNumberType(ValueFormat numberType) {
+    public void setNumberType(IdFormat numberType) {
         this.numberType = numberType;
     }
 }

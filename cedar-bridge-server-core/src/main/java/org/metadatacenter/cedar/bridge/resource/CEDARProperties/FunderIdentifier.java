@@ -9,7 +9,7 @@ public class FunderIdentifier {
     private ValueFormat funderIdentifier;
 
     @JsonProperty("funderIdentifierType")
-    private ValueFormat funderIdentifierType;
+    private IdFormat funderIdentifierType;
 
     @JsonProperty("SchemeURI")
     private SchemeURI schemeURI;
@@ -22,11 +22,11 @@ public class FunderIdentifier {
         this.funderIdentifier = funderIdentifier;
     }
 
-    public ValueFormat getFunderIdentifierType() {
+    public IdFormat getFunderIdentifierType() {
         return funderIdentifierType;
     }
 
-    public void setFunderIdentifierType(ValueFormat funderIdentifierType) {
+    public void setFunderIdentifierType(IdFormat funderIdentifierType) {
         this.funderIdentifierType = funderIdentifierType;
     }
 

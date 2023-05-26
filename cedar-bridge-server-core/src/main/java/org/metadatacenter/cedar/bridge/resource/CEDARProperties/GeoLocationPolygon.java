@@ -3,20 +3,22 @@ package org.metadatacenter.cedar.bridge.resource.CEDARProperties;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class GeoLocationPolygen {
+public class GeoLocationPolygon {
     @JsonProperty("polygonPoint")
-    private Point polygonPoint;
+    private List<Point> polygonPointsList;
 
     @JsonProperty("inPolygonPoint")
     private Point inPolygonPoint;
 
-    public Point getPolygonPoint() {
-        return polygonPoint;
+    public List<Point> getPolygonPointsList() {
+        return polygonPointsList;
     }
 
-    public void setPolygonPoint(Point polygonPoint) {
-        this.polygonPoint = polygonPoint;
+    public void setPolygonPointsList(List<Point> polygonPointsList) {
+        this.polygonPointsList = polygonPointsList;
     }
 
     public Point getInPolygonPoint() {

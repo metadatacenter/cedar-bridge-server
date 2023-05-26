@@ -9,7 +9,7 @@ public class AwardNumber {
     private ValueFormat awardNumber;
 
     @JsonProperty("awardURI")
-    private IdFormat awardURI;
+    private SchemeURI awardURI;
 
     public ValueFormat getAwardNumber() {
         return awardNumber;
@@ -19,11 +19,11 @@ public class AwardNumber {
         this.awardNumber = awardNumber;
     }
 
-    public IdFormat getAwardURI() {
+    public SchemeURI getAwardURI() {
         return awardURI;
     }
 
-    public void setAwardURI(IdFormat awardURI) {
+    public void setAwardURI(SchemeURI awardURI) {
         this.awardURI = awardURI;
     }
 }

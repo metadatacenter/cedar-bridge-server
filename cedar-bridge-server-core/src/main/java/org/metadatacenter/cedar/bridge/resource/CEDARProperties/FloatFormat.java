@@ -6,9 +6,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FloatFormat {
     @JsonProperty("@value")
-    private float value;
+    private Float value;
 
-    public float getValue() {
+    public Float getValue() {
+        if (value == 0.0) {
+            return null;
+        }
         return value;
     }
 
