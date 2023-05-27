@@ -201,7 +201,6 @@ public class CedarInstanceParser {
 
             // Set values to corresponding Affiliation list in dataCiteCreator
             List<NameIdentifier> nameIdentifierList = c.getNameIdentifiers();
-//            if (!nameIdentifierList.isEmpty()) {
             if (nameIdentifierList != null) {
                 dataCiteCreator.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList));
             }
@@ -211,7 +210,6 @@ public class CedarInstanceParser {
         }
         return dataCiteCreatorList;
     }
-
 
     // Parse TitleElement values
     private static List<DataCiteTitle> parseTitleValue(List<Title> titlesList) {
@@ -232,7 +230,6 @@ public class CedarInstanceParser {
                 String language = t.getLanguage().toString();
                 dataCiteTitle.setLang(language);
             }
-
             //Add dataCiteTitle to the list
             dataCiteTitles.add(dataCiteTitle);
         }

@@ -70,4 +70,6 @@ public class DataCiteCreator {
     public void setNameIdentifiers(List<DataCiteNameIdentifier> dataCiteNameIdentifiers) {
         this.dataCiteNameIdentifiers = dataCiteNameIdentifiers;
     }
+
+
 }

@@ -321,7 +321,7 @@
                   "pointLongitude": "https://schema.metadatacenter.org/properties/0c2553ff-85bf-4bb2-9871-ccd5c99480c6"
                 },
                 "pointLatitude": {
-                  "@value": 2.0,
+                  "@value": null,
                   "@type": "xsd:decimal"
                 },
                 "pointLongitude": {
