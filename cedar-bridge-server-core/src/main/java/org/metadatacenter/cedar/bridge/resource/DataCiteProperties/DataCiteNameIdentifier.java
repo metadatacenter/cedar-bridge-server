@@ -28,11 +28,11 @@ public class DataCiteNameIdentifier {
         this.nameIdentifierScheme = nameIdentifierScheme;
     }
 
-    public String getSchemeURI() {
+    public String getSchemeUri() {
         return schemeUri;
     }
 
-    public void setSchemeURI(String schemeUri) {
+    public void setSchemeUri(String schemeUri) {
         this.schemeUri = schemeUri;
     }
 }

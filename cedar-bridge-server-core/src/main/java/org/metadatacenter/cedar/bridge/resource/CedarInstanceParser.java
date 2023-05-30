@@ -163,11 +163,11 @@ public class CedarInstanceParser {
                 // Retrieve values from CEDAR class
                 String nameIdentifierName = n.getNameIdentifierName().toString();
                 String nameIdentifierScheme = n.getNameIdentifierScheme().toString();
-                String nameIdentifierSchemeURI = n.getNameIdentifierSchemeURI().toString();
+                String nameIdentifierSchemeUri = n.getNameIdentifierSchemeURI().toString();
                 // set values to DataCite class
                 dataCiteNameIdentifier.setNameIdentifier(nameIdentifierName);
                 dataCiteNameIdentifier.setNameIdentifierScheme(nameIdentifierScheme);
-                dataCiteNameIdentifier.setSchemeURI(nameIdentifierSchemeURI);
+                dataCiteNameIdentifier.setSchemeUri(nameIdentifierSchemeUri);
                 dataCiteNameIdentifierList.add(dataCiteNameIdentifier);
             }
         }
@@ -298,7 +298,6 @@ public class CedarInstanceParser {
             if (contributorType != "null"){
                 dataCiteContributor.setContributorType(contributorType);
             }
-
 
             // Set values to corresponding Affiliation list in dataCiteCreator
             List<Affiliation> affiliationList = c.getAffiliations();

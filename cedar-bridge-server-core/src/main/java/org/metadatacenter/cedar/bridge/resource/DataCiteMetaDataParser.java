@@ -55,7 +55,7 @@ public class DataCiteMetaDataParser {
 
             name.setValue(ni.getNameIdentifier());
             nameIdentifierScheme.setValue(ni.getNameIdentifierScheme());
-            nameIdentifierSchemeURI.setId(ni.getSchemeURI());
+            nameIdentifierSchemeURI.setId(ni.getSchemeUri());
 
             nameIdentifier.setNameIdentifierName(name);
             nameIdentifier.setNameIdentifierScheme(nameIdentifierScheme);
