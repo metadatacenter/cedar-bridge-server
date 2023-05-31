@@ -756,7 +756,7 @@
           "nameIdentifier": "https://schema.metadatacenter.org/properties/c57237a3-f60d-4818-9a24-7b4ff70a6fa7",
           "contributorType": "https://schema.metadatacenter.org/properties/ad2f2387-2231-4023-982d-ed3db7c31ac0",
           "Affiliation": "https://schema.metadatacenter.org/properties/a19107bf-6f26-4467-b428-995069fa7226",
-          "nameType1": "https://schema.metadatacenter.org/properties/e6606700-dc40-4855-9178-833cb9bf69d2"
+          "nameType": "https://schema.metadatacenter.org/properties/e6606700-dc40-4855-9178-833cb9bf69d2"
         },
         "contributorName": {
           "@value": "contributor name 1"
@@ -1082,7 +1082,7 @@
         "geoLocationPolygon": [
           {
             "@context": {
-              "inpolygonPoint": "https://schema.metadatacenter.org/properties/1646b54a-7690-4d12-aa32-58468a97a9e0",
+              "inPolygonPoint": "https://schema.metadatacenter.org/properties/1646b54a-7690-4d12-aa32-58468a97a9e0",
               "polygonPoint": "https://schema.metadatacenter.org/properties/0c07a52a-839e-4a02-9e50-0f3a0ccfed20"
             },
             "inPolygonPoint": {

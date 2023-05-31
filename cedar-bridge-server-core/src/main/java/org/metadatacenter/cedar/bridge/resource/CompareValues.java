@@ -42,13 +42,13 @@ public class CompareValues {
       CedarInstanceParser.parseCEDARInstance(cedarInstance, cedarConvertedDataCiteSchema);
       mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
       String cedarConvertedDataCiteSchemaString = mapper.writeValueAsString(cedarConvertedDataCiteSchema);
-      System.out.println("Cedar Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);
+//      System.out.println("Cedar Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);
 
       //Deserialize responseMetadata to DtaCiteSchema Class
       String responseMetadaString = responseMetadata.toString();
       DataCiteSchema responseDataCiteSchema = mapper.readValue(responseMetadaString, DataCiteSchema.class);
       String responseConvertedDataCiteSchemaString = mapper.writeValueAsString(responseDataCiteSchema);
-      System.out.println("DataCite response converted Schema: " + responseConvertedDataCiteSchemaString);
+//      System.out.println("DataCite response converted Schema: " + responseConvertedDataCiteSchemaString);
 
 
       //Compare cedarConvertedDataCiteSchema vs responseDataCiteSchema
@@ -170,6 +170,7 @@ public class CompareValues {
 
 
   private static boolean compareCreators(List<DataCiteCreator> givenCreators, List<DataCiteCreator> responseCreators){
+    System.out.println("----------------Comparing creators");
     boolean equals = true;
 
     if (givenCreators == null || givenCreators.isEmpty()){
@@ -269,19 +270,19 @@ public class CompareValues {
   }
 
   private static boolean comparePublisher(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema){
-    System.out.println("--------Comparing publisher");
+    System.out.println("----------------Comparing publisher");
     return Objects.equals(cedarConvertedDataCiteSchema.getData().getAttributes().getPublisher(),
         responseDataCiteSchema.getData().getAttributes().getPublisher());
   }
 
   private static boolean comparePublicationYear(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema) {
-    System.out.println("-----------Comparing publication year");
+    System.out.println("----------------Comparing publication year");
     return Objects.equals(cedarConvertedDataCiteSchema.getData().getAttributes().getPublicationYear(),
         responseDataCiteSchema.getData().getAttributes().getPublicationYear());
   }
 
   private static boolean compareResourceType(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema){
-    System.out.println("---------Comparing resource type");
+    System.out.println("----------------Comparing resource type");
     DataCiteType givenType = cedarConvertedDataCiteSchema.getData().getAttributes().getTypes();
     DataCiteType responseType = responseDataCiteSchema.getData().getAttributes().getTypes();
 
@@ -300,7 +301,7 @@ public class CompareValues {
   }
 
   private static boolean compareSubjects(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema){
-    System.out.println("---------Comparing subjects");
+    System.out.println("----------------Comparing subjects");
     List<DataCiteSubject> givenSubjects = cedarConvertedDataCiteSchema.getData().getAttributes().getSubjects();
     List<DataCiteSubject> responseSubjects = responseDataCiteSchema.getData().getAttributes().getSubjects();
     boolean equals = true;
@@ -353,7 +354,7 @@ public class CompareValues {
   }
 
   private static boolean compareContributors(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema){
-    System.out.println("------------Comparing contributors");
+    System.out.println("----------------Comparing contributors");
     List<DataCiteContributor> givenContributors = cedarConvertedDataCiteSchema.getData().getAttributes().getContributors();
     List<DataCiteContributor> responseContributors = responseDataCiteSchema.getData().getAttributes().getContributors();
     boolean equals = true;
@@ -416,7 +417,7 @@ public class CompareValues {
   }
 
   private static boolean compareDates(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema){
-    System.out.println("------------Comparing dates");
+    System.out.println("----------------Comparing dates");
     List<DataCiteDate> givenDates = cedarConvertedDataCiteSchema.getData().getAttributes().getDates();
     List<DataCiteDate> responseDates = responseDataCiteSchema.getData().getAttributes().getDates();
     boolean equals = true;
@@ -461,14 +462,14 @@ public class CompareValues {
   }
 
   private static boolean compareLang(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema){
-    System.out.println("------------Comparing lang");
+    System.out.println("----------------Comparing lang");
     System.out.println("given lang: " + cedarConvertedDataCiteSchema.getData().getAttributes().getLanguage());
     System.out.println("response lang: " + responseDataCiteSchema.getData().getAttributes().getLanguage());
     return Objects.equals(cedarConvertedDataCiteSchema.getData().getAttributes().getLanguage(), responseDataCiteSchema.getData().getAttributes().getLanguage());
   }
 
   private static boolean compareAlternateIdentifier(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema){
-    System.out.println("-------------Comparing alternate identifier");
+    System.out.println("----------------Comparing alternate identifier");
     List<DataCiteAlternateIdentifier> givenAlternateIdentifiers = cedarConvertedDataCiteSchema.getData().getAttributes().getAlternateIdentifiers();
     List<DataCiteAlternateIdentifier> responseAlternateIdentifiers = responseDataCiteSchema.getData().getAttributes().getAlternateIdentifiers();
     boolean equals = true;
@@ -509,7 +510,7 @@ public class CompareValues {
   }
 
   private static boolean compareRelatedIdentifier(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema){
-    System.out.println("-------------Comparing related Identifier");
+    System.out.println("----------------Comparing related Identifier");
     List<DataCiteRelatedIdentifier> givenRelatedIdentifiers = cedarConvertedDataCiteSchema.getData().getAttributes().getRelatedIdentifiers();
     List<DataCiteRelatedIdentifier> responseRelatedIdentifiers = responseDataCiteSchema.getData().getAttributes().getRelatedIdentifiers();
     boolean equals = true;
@@ -570,7 +571,7 @@ public class CompareValues {
   }
 
   private static boolean compareSizes(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema){
-    System.out.println("--------------Comparing sizes");
+    System.out.println("----------------Comparing sizes");
     List<String> givenSizes = cedarConvertedDataCiteSchema.getData().getAttributes().getSizes();
     List<String> responseSizes = responseDataCiteSchema.getData().getAttributes().getSizes();
 
@@ -603,7 +604,7 @@ public class CompareValues {
   }
 
   private static boolean compareFormat(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema){
-    System.out.println("-------------------Comparing format");
+    System.out.println("----------------Comparing format");
     List<String> givenFormat = cedarConvertedDataCiteSchema.getData().getAttributes().getFormats();
     List<String> responseFormat = responseDataCiteSchema.getData().getAttributes().getFormats();
 
@@ -634,7 +635,7 @@ public class CompareValues {
   }
 
   private static boolean compareVersion(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema){
-    System.out.println("-------------Comparing version");
+    System.out.println("----------------Comparing version");
     return Objects.equals(cedarConvertedDataCiteSchema.getData().getAttributes().getVersion(),
         responseDataCiteSchema.getData().getAttributes().getVersion());
   }

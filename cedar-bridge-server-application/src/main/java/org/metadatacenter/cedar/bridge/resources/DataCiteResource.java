@@ -241,13 +241,13 @@ public class DataCiteResource extends CedarMicroserviceResource {
       // Deserialize JSON-LD to CedarDataCiteInstance Class
       String metadataString = metadata.toString();
       CEDARDataCiteInstance cedarInstance = mapper.readValue(metadataString, CEDARDataCiteInstance.class);
-      System.out.println("deserialized successfully");
 
       // Pass the value from dataCiteInstance to dataCiteRequest
       CedarInstanceParser.parseCEDARInstance(cedarInstance, dataCiteSchema);
 
       //Serialize DataCiteRequest Class to json
       mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+      mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
       String requestJsonString = mapper.writeValueAsString(dataCiteSchema);
       System.out.println("DataCite Request Json: " + requestJsonString);
       return requestJsonString;

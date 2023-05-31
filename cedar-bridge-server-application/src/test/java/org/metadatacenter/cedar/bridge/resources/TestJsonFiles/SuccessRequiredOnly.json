@@ -54,8 +54,8 @@
     "CreatorElement": "https://schema.metadatacenter.org/properties/505b1fde-a285-4dd1-b8d7-95eb1c320bc2",
     "AlternateIdentifierElement": "https://schema.metadatacenter.org/properties/98b76457-433d-4967-9e07-2a8ff6802724",
     "ContributorElement": "https://schema.metadatacenter.org/properties/4b6fc43a-59d0-4ede-97ce-d3f607ef681a",
-    "RelatedItemElement": "https://schema.metadatacenter.org/properties/b4d56f7f-43b3-4c8b-a1f2-d575a546a46c",
-    "GeoLocationElement": "https://schema.metadatacenter.org/properties/9e2a1142-c119-4da5-85cf-7fe96957f72e"
+    "RelatedItemElement": "https://schema.metadatacenter.org/properties/fe259d68-1ae6-447a-8790-d9375c3beaf6",
+    "GeoLocationElement": "https://schema.metadatacenter.org/properties/6312f436-1538-4495-b81c-f1faee8cb4c3"
   },
   "prefix": {
     "@value": "10.82658"
@@ -73,15 +73,15 @@
         },
         "titleType": {},
         "titleName": {
-          "@value": "Software Developer"
+          "@value": "Software developer"
         },
         "language": {
           "@value": null
         },
-        "@id": "https://repo.metadatacenter.org/template-element-instances/e0d77a6d-33c6-4634-acad-37876311a70c"
+        "@id": "https://repo.metadatacenter.org/template-element-instances/36113b7a-b5de-4b38-b30f-38eed6a84ebd"
       }
     ],
-    "@id": "https://repo.metadatacenter.org/template-element-instances/0df841c0-a8a9-4e6b-a8db-4e804b0b66a3"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/cad6343a-c8c5-4482-9035-95a51a89dce6"
   },
   "PublisherElement": {
     "@context": {
@@ -90,7 +90,7 @@
     "Publisher": {
       "@value": "Stanford"
     },
-    "@id": "https://repo.metadatacenter.org/template-element-instances/dff66720-709e-494e-aa40-2bb172d83437"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/61ba8d97-0e79-4a17-baf0-a0b47d029947"
   },
   "PublicationYearElement": {
     "@context": {
@@ -100,21 +100,21 @@
       "@value": "2023-01-01",
       "@type": "xsd:date"
     },
-    "@id": "https://repo.metadatacenter.org/template-element-instances/15c6b25b-2b3b-4e68-bbf6-3c9b07e7c879"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/7299ed33-d7ed-43ed-aa35-858575d2cc31"
   },
   "SubjectElement": {
     "@context": {
       "Subject": "https://schema.metadatacenter.org/properties/58ed2553-c4cc-41fb-9206-19b0185c6416"
     },
     "Subject": [],
-    "@id": "https://repo.metadatacenter.org/template-element-instances/7a8206f7-5de9-469c-a97f-695c7a6acb6e"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/ca8c7d1c-9dca-4729-8677-ad4f806ebb7f"
   },
   "DateElement": {
     "@context": {
       "Date": "https://schema.metadatacenter.org/properties/a3560388-5365-4ece-ba25-9c91febdf657"
     },
     "Date": [],
-    "@id": "https://repo.metadatacenter.org/template-element-instances/a81829e2-db6c-4d4b-91e4-28ec15a85291"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/158ab03a-b467-4e9d-b854-b8cb829cba1f"
   },
   "Language": {
     "@value": null
@@ -124,7 +124,7 @@
       "Related Identifier": "https://schema.metadatacenter.org/properties/c689fe26-eb9c-4240-9b35-32f16fff78ad"
     },
     "Related Identifier": [],
-    "@id": "https://repo.metadatacenter.org/template-element-instances/39cec936-aea8-4f50-8339-5862672abd70"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/66bb268a-8fd6-4985-bd12-330dcb2c7393"
   },
   "SizeElement": {
     "@context": {
@@ -135,7 +135,7 @@
         "@value": null
       }
     ],
-    "@id": "https://repo.metadatacenter.org/template-element-instances/34a82d39-67a3-4ef0-8f39-f988293c35b6"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/a3413326-c039-4cf8-b3c1-78a20870513c"
   },
   "FormatElement": {
     "@context": {
@@ -146,7 +146,7 @@
         "@value": null
       }
     ],
-    "@id": "https://repo.metadatacenter.org/template-element-instances/8eb08cc0-4096-4641-b533-f30ecb021fe8"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/5b2c9345-fdc2-4f13-bfc1-c63808adfa72"
   },
   "Version": {
     "@value": null
@@ -156,21 +156,21 @@
       "Rights": "https://schema.metadatacenter.org/properties/a9b61f81-6a7a-4de5-a7fb-301a31eeb79b"
     },
     "Rights": [],
-    "@id": "https://repo.metadatacenter.org/template-element-instances/3010544b-f9d5-46d8-ac24-c5e6971ade32"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/880bbd52-694d-415f-8ac3-10961820320f"
   },
   "DescriptionElement": {
     "@context": {
       "Description": "https://schema.metadatacenter.org/properties/8412f2b5-e687-4b70-a332-54713a1ec096"
     },
     "Description": [],
-    "@id": "https://repo.metadatacenter.org/template-element-instances/9b8a1464-9fb4-407e-aaf0-8f52e31ec1c4"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/b554d4bb-5941-4c71-b8e1-e4e84ab0cf8e"
   },
   "FundingReferenceElement": {
     "@context": {
       "Funding Reference": "https://schema.metadatacenter.org/properties/033803b0-11f9-41dd-8845-ea8fc40db4df"
     },
     "Funding Reference": [],
-    "@id": "https://repo.metadatacenter.org/template-element-instances/f972e9eb-2898-4089-9bf4-0ec104950023"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/2be4a611-d04c-4d16-ae2e-ec400252a8d1"
   },
   "ResourceTypeElement": {
     "@context": {
@@ -178,13 +178,13 @@
       "resourceTypeGeneral": "https://schema.metadatacenter.org/properties/5b34d6ae-0f7f-4535-b7a1-b41dea86d37b"
     },
     "ResourceType": {
-      "@value": "Resource Type"
+      "@value": "Metadata"
     },
     "resourceTypeGeneral": {
-      "@id": "http://purl.org/datacite/v4.4/Collection",
-      "rdfs:label": "Collection"
+      "@id": "http://purl.org/datacite/v4.4/BookChapter",
+      "rdfs:label": "BookChapter"
     },
-    "@id": "https://repo.metadatacenter.org/template-element-instances/afdf6c5a-3992-4f3f-a511-2bd7ee995c3b"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/18974203-f7a8-4976-b53d-a9772474ecdf"
   },
   "CreatorElement": {
     "@context": {
@@ -211,185 +211,49 @@
         },
         "nameIdentifier": [],
         "Affiliation": [],
-        "nameType": {},
-        "@id": "https://repo.metadatacenter.org/template-element-instances/705258d4-1e12-41c9-9cae-810d167dda4b"
+        "nameType": {
+          "@id": "http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal",
+          "rdfs:label": "Personal"
+        },
+        "@id": "https://repo.metadatacenter.org/template-element-instances/fc306563-3b1b-46d3-8cf2-7b19d416c35d"
       }
     ],
-    "@id": "https://repo.metadatacenter.org/template-element-instances/946f6770-5785-43b1-b572-10f1aff8aecb"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/933263d0-0cee-420a-810b-263a77b49644"
   },
   "AlternateIdentifierElement": {
     "@context": {
       "Alternate Identifier": "https://schema.metadatacenter.org/properties/a034fbed-8aea-41c3-80b6-250921ea2bca"
     },
     "Alternate Identifier": [],
-    "@id": "https://repo.metadatacenter.org/template-element-instances/8e0a5bee-61f9-4532-a8f2-0173d1c7ad1a"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/70de576c-fd68-474c-8798-fd649f77167f"
   },
   "ContributorElement": {
     "@context": {
       "Contributor": "https://schema.metadatacenter.org/properties/3d12a532-508d-4075-aace-751247212ed3"
     },
     "Contributor": [],
-    "@id": "https://repo.metadatacenter.org/template-element-instances/9e13ec5b-73eb-4f66-b67b-028b9ea3b898"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/580e014a-2fdc-4730-966e-4b360fb5cde9"
   },
   "RelatedItemElement": {
     "@context": {
-      "Related Item": "https://schema.metadatacenter.org/properties/9395d7fd-09e1-4196-9310-32b5593608fd"
+      "Related Item": "https://schema.metadatacenter.org/properties/72d5f883-2753-4980-9e5a-0918c612b30b"
     },
     "Related Item": [],
-    "@id": "https://repo.metadatacenter.org/template-element-instances/d0b4349c-a6dc-476a-8e97-7686a43578e9"
+    "@id": "https://repo.metadatacenter.org/template-element-instances/f65bd66a-86ce-4d2d-a376-a6bec7745ca3"
   },
   "GeoLocationElement": {
     "@context": {
-      "GeoLocation": "https://schema.metadatacenter.org/properties/40a50ed7-9970-4c43-aa6f-221b8e8cdaed"
+      "GeoLocation": "https://schema.metadatacenter.org/properties/136f46fd-c86d-42af-b181-18d4e9aadd53"
     },
-    "GeoLocation": [
-      {
-        "@context": {
-          "geoLocationPlace": "https://schema.metadatacenter.org/properties/37cbffe7-b904-472d-bd36-887b003177ab",
-          "Geo Location Point": "https://schema.metadatacenter.org/properties/41febfbd-fa3c-40ce-b94e-30ba4009a950",
-          "Geo Location Box": "https://schema.metadatacenter.org/properties/4d921843-f5c3-41d0-a0b6-92ffb755efc6",
-          "geoLocationPolygon": "https://schema.metadatacenter.org/properties/ccb552b6-1100-4479-99e9-4477f9cb6a1b"
-        },
-        "geoLocationPlace": {
-          "@value": null
-        },
-        "Geo Location Point": {
-          "@context": {
-            "pointLongitude": "https://schema.metadatacenter.org/properties/89e06703-c7b7-420e-b24a-48969fb58ccb",
-            "pointLatitude": "https://schema.metadatacenter.org/properties/9f74832e-0eb9-4b3b-bb73-8c9e4f4fa52a"
-          },
-          "pointLongitude": {
-            "@value": null,
-            "@type": "xsd:decimal"
-          },
-          "pointLatitude": {
-            "@value": null,
-            "@type": "xsd:decimal"
-          },
-          "@id": "https://repo.metadatacenter.org/template-element-instances/ed4fb5c9-5077-4b5a-9b34-e2e42c7db0de"
-        },
-        "Geo Location Box": {
-          "@context": {
-            "westBoundLongitude": "https://schema.metadatacenter.org/properties/dd27b92a-04d1-435c-bab1-b6acdc1df9eb",
-            "eastBoundLongitude": "https://schema.metadatacenter.org/properties/9cee2101-38ad-4ae9-922c-55a89e049741",
-            "southBoundLatitude": "https://schema.metadatacenter.org/properties/a4171ee9-162e-4e32-89dd-cad62d60f4d9",
-            "northBoundLatitude": "https://schema.metadatacenter.org/properties/b89449e7-2c74-469b-a32c-9684aaf208ad"
-          },
-          "westBoundLongitude": {
-            "@value": null,
-            "@type": "xsd:decimal"
-          },
-          "eastBoundLongitude": {
-            "@value": null,
-            "@type": "xsd:decimal"
-          },
-          "southBoundLatitude": {
-            "@value": null,
-            "@type": "xsd:decimal"
-          },
-          "northBoundLatitude": {
-            "@value": null,
-            "@type": "xsd:decimal"
-          },
-          "@id": "https://repo.metadatacenter.org/template-element-instances/7ee921b2-b84b-4fb3-9dd5-c1fbe4e0ec1a"
-        },
-        "geoLocationPolygon": [
-          {
-            "@context": {
-              "inPolygonPoint": "https://schema.metadatacenter.org/properties/1646b54a-7690-4d12-aa32-58468a97a9e0",
-              "polygonPoint": "https://schema.metadatacenter.org/properties/0c07a52a-839e-4a02-9e50-0f3a0ccfed20"
-            },
-            "inPolygonPoint": {
-              "@context": {
-                "pointLongitude": "https://schema.metadatacenter.org/properties/544dd773-0c0f-4420-a97a-1d8ae663b049",
-                "pointLatitude": "https://schema.metadatacenter.org/properties/4a218fe5-c247-46fb-8f36-af16fdb9b263"
-              },
-              "pointLongitude": {
-                "@value": null,
-                "@type": "xsd:decimal"
-              },
-              "pointLatitude": {
-                "@value": null,
-                "@type": "xsd:decimal"
-              },
-              "@id": "https://repo.metadatacenter.org/template-element-instances/4f668549-9ebe-444b-922f-97b6e21702ea"
-            },
-            "polygonPoint": [
-              {
-                "@context": {
-                  "pointLatitude": "https://schema.metadatacenter.org/properties/daa9ce32-67a4-42b4-ae0f-2de0bbd78ce1",
-                  "pointLongitude": "https://schema.metadatacenter.org/properties/0c2553ff-85bf-4bb2-9871-ccd5c99480c6"
-                },
-                "pointLatitude": {
-                  "@value": null,
-                  "@type": "xsd:decimal"
-                },
-                "pointLongitude": {
-                  "@value": null,
-                  "@type": "xsd:decimal"
-                },
-                "@id": "https://repo.metadatacenter.org/template-element-instances/c60d471d-82e1-4f50-aeaa-5cbd76385a2f"
-              },
-              {
-                "@context": {
-                  "pointLatitude": "https://schema.metadatacenter.org/properties/daa9ce32-67a4-42b4-ae0f-2de0bbd78ce1",
-                  "pointLongitude": "https://schema.metadatacenter.org/properties/0c2553ff-85bf-4bb2-9871-ccd5c99480c6"
-                },
-                "pointLatitude": {
-                  "@value": null,
-                  "@type": "xsd:decimal"
-                },
-                "pointLongitude": {
-                  "@value": null,
-                  "@type": "xsd:decimal"
-                },
-                "@id": "https://repo.metadatacenter.org/template-element-instances/1cf8c4cf-dede-4fc8-86dc-33cfa16a464b"
-              },
-              {
-                "@context": {
-                  "pointLatitude": "https://schema.metadatacenter.org/properties/daa9ce32-67a4-42b4-ae0f-2de0bbd78ce1",
-                  "pointLongitude": "https://schema.metadatacenter.org/properties/0c2553ff-85bf-4bb2-9871-ccd5c99480c6"
-                },
-                "pointLatitude": {
-                  "@value": null,
-                  "@type": "xsd:decimal"
-                },
-                "pointLongitude": {
-                  "@value": null,
-                  "@type": "xsd:decimal"
-                },
-                "@id": "https://repo.metadatacenter.org/template-element-instances/6e3a58d7-6b25-4bbe-9132-6f1620f3a417"
-              },
-              {
-                "@context": {
-                  "pointLatitude": "https://schema.metadatacenter.org/properties/daa9ce32-67a4-42b4-ae0f-2de0bbd78ce1",
-                  "pointLongitude": "https://schema.metadatacenter.org/properties/0c2553ff-85bf-4bb2-9871-ccd5c99480c6"
-                },
-                "pointLatitude": {
-                  "@value": null,
-                  "@type": "xsd:decimal"
-                },
-                "pointLongitude": {
-                  "@value": null,
-                  "@type": "xsd:decimal"
-                },
-                "@id": "https://repo.metadatacenter.org/template-element-instances/5bb26e8a-8c57-4685-80a9-bc462a36d09f"
-              }
-            ],
-            "@id": "https://repo.metadatacenter.org/template-element-instances/12cf0489-3a7b-4eec-b356-b70ef338d23d"
-          }
-        ],
-        "@id": "https://repo.metadatacenter.org/template-element-instances/78a9fa18-04e0-4064-9d21-294d313d43b3"
-      }
-    ],
-    "@id": "https://repo.metadatacenter.org/template-element-instances/4ba65617-5044-448d-9be0-c60261f7bea9"
+    "GeoLocation": [],
+    "@id": "https://repo.metadatacenter.org/template-element-instances/95a9cd17-6426-49e7-b0a5-d454697f9bc2"
   },
   "schema:isBasedOn": "https://repo.metadatacenter.org/templates/83837693-657c-439a-b3fa-f27b4c1b84a8",
-  "schema:name": "SuccessRequiredOnlyData",
+  "schema:name": "DataCite DOI Request Templete metadata",
   "schema:description": "",
-  "pav:createdOn": "2023-05-25T14:27:24-07:00",
+  "pav:createdOn": "2023-05-31T12:11:39-07:00",
   "pav:createdBy": "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44",
-  "pav:lastUpdatedOn": "2023-05-25T14:28:28-07:00",
+  "pav:lastUpdatedOn": "2023-05-31T12:11:39-07:00",
   "oslc:modifiedBy": "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44",
-  "@id": "https://repo.metadatacenter.org/template-instances/277ad5a6-062f-4661-a4de-3d02b6580f47"
+  "@id": "https://repo.metadatacenter.org/template-instances/00221430-c803-4b0d-b0f0-dfaa8a1ca430"
 }

@@ -195,13 +195,13 @@ public class CedarInstanceParser {
 
             // Set values to corresponding Affiliation list in dataCiteCreator
             List<Affiliation> affiliationList = c.getAffiliations();
-            if (affiliationList != null) {
+            if (affiliationList != null && !affiliationList.isEmpty()) {
                 dataCiteCreator.setAffiliations(parseAffiliationValue(affiliationList));
             }
 
             // Set values to corresponding Affiliation list in dataCiteCreator
             List<NameIdentifier> nameIdentifierList = c.getNameIdentifiers();
-            if (nameIdentifierList != null) {
+            if (nameIdentifierList != null && !affiliationList.isEmpty()) {
                 dataCiteCreator.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList));
             }
 
@@ -249,10 +249,10 @@ public class CedarInstanceParser {
             DataCiteSubject dataCiteSubject = new DataCiteSubject();
             // Retrieve values from CEDAR class
             String subject = s.getSubjectName().toString();
-            String schemeUri = s.getSubjectSchemeURI().getId().toString();
+            String schemeUri = s.getSubjectSchemeURI().toString();
             String subjectScheme = s.getSubjectScheme().toString();
             String classificationCode = s.getClassificationCode().toString();
-            String valueUri = s.getValueURI().getId().toString();
+            String valueUri = s.getValueURI().toString();
             // Set values to DataCite class
             dataCiteSubject.setSubject(subject);
             dataCiteSubject.setSubjectScheme(subjectScheme);
@@ -301,13 +301,13 @@ public class CedarInstanceParser {
 
             // Set values to corresponding Affiliation list in dataCiteCreator
             List<Affiliation> affiliationList = c.getAffiliations();
-            if (affiliationList != null) {
+            if (affiliationList != null && !affiliationList.isEmpty()) {
                 dataCiteContributor.setAffiliations(parseAffiliationValue(affiliationList));
             }
 
             // Set values to corresponding nameIdentifierList list in dataCiteCreator
             List<NameIdentifier> nameIdentifierList = c.getNameIdentifiers();
-            if (nameIdentifierList != null) {
+            if (nameIdentifierList != null && !nameIdentifierList.isEmpty()) {
                 dataCiteContributor.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList));
             }
             // Add dataCiteContributor to the list
@@ -575,13 +575,17 @@ public class CedarInstanceParser {
             dataCiteRelatedItem.setIssue(issue);
             dataCiteRelatedItem.setFirstPage(firstPage);
             dataCiteRelatedItem.setLastPage(lastPage);
-            dataCiteRelatedItem.setPublicationYear(parsePublicationYearValue(publicationYear));
+            if (publicationYear != null) {
+                dataCiteRelatedItem.setPublicationYear(parsePublicationYearValue(publicationYear));
+            } else{
+                dataCiteRelatedItem.setPublicationYear(null);
+            }
             dataCiteRelatedItem.setPublisher(publisher);
             dataCiteRelatedItem.setEdition(edition);
 
             // parse relatedItemIdentifier values
             DataCiteRelatedItemIdentifier dataCiteRelatedItemIdentifier = new DataCiteRelatedItemIdentifier();
-            String relatedIdentifier = r.getRelatedItemIdentifier().getRelatedIdentifier().getValue().toString();
+            String relatedIdentifier = r.getRelatedItemIdentifier().getRelatedIdentifier().toString();
             String relatedItemIdentifierType = r.getRelatedItemIdentifier().getRelatedIdentifierType().toString();
             String relatedMedaDataScheme = r.getRelatedItemIdentifier().getRelatedMetadataScheme().toString();
             String schemeUri = r.getRelatedItemIdentifier().getSchemeURi().toString();
@@ -596,10 +600,14 @@ public class CedarInstanceParser {
             dataCiteRelatedItem.setRelatedItemIdentifier(dataCiteRelatedItemIdentifier);
 
             //parse creators values
-            dataCiteRelatedItem.setCreators(parseCreatorValue(r.getCreators()));
+            if (r.getCreators() != null && !r.getCreators().isEmpty()){
+                dataCiteRelatedItem.setCreators(parseCreatorValue(r.getCreators()));
+            }
 
             // parse titles values
-            dataCiteRelatedItem.setTitles(parseTitleValue(r.getTitles()));
+            if (r.getTitles() != null && !r.getTitles().isEmpty()){
+                dataCiteRelatedItem.setTitles(parseTitleValue(r.getTitles()));
+            }
 
             // parse number values
             DataCiteNumber dataCiteNumber = new DataCiteNumber();
@@ -611,25 +619,27 @@ public class CedarInstanceParser {
 
             //parse contributors values
             List<Contributor> contributorList = r.getContributors();
-            List<DataCiteRelatedItemContributor> dataCiteRelatedItemContributors = new ArrayList<>();
-            for (Contributor c : contributorList) {
-                DataCiteRelatedItemContributor dataCiteRelatedItemContributor = new DataCiteRelatedItemContributor();
-                // Retrieve values from CEDAR class
-                String name = c.getContributorName().toString();
-                String nameType = c.getNameType().toString();
-                String givenName = c.getGivenName().toString();
-                String familyName = c.getFamilyName().toString();
-                String contributorType = c.getContributorType().toString();
+            if (contributorList != null && !contributorList.isEmpty()){
+                List<DataCiteRelatedItemContributor> dataCiteRelatedItemContributors = new ArrayList<>();
+                for (Contributor c : contributorList) {
+                    DataCiteRelatedItemContributor dataCiteRelatedItemContributor = new DataCiteRelatedItemContributor();
+                    // Retrieve values from CEDAR class
+                    String name = c.getContributorName().toString();
+                    String nameType = c.getNameType().toString();
+                    String givenName = c.getGivenName().toString();
+                    String familyName = c.getFamilyName().toString();
+                    String contributorType = c.getContributorType().toString();
 
-                dataCiteRelatedItemContributor.setName(name);
-                dataCiteRelatedItemContributor.setNameType(nameType);
-                dataCiteRelatedItemContributor.setGivenName(givenName);
-                dataCiteRelatedItemContributor.setFamilyName(familyName);
-                dataCiteRelatedItemContributor.setContributorType(contributorType);
+                    dataCiteRelatedItemContributor.setName(name);
+                    dataCiteRelatedItemContributor.setNameType(nameType);
+                    dataCiteRelatedItemContributor.setGivenName(givenName);
+                    dataCiteRelatedItemContributor.setFamilyName(familyName);
+                    dataCiteRelatedItemContributor.setContributorType(contributorType);
 
-                dataCiteRelatedItemContributors.add(dataCiteRelatedItemContributor);
+                    dataCiteRelatedItemContributors.add(dataCiteRelatedItemContributor);
+                }
+                dataCiteRelatedItem.setContributors(dataCiteRelatedItemContributors);
             }
-            dataCiteRelatedItem.setContributors(dataCiteRelatedItemContributors);
 
             dataCiteRelatedItems.add(dataCiteRelatedItem);
         }

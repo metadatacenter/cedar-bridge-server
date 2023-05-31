@@ -20,7 +20,7 @@ public class DataCiteRelatedItem {
     @JsonProperty("lastPage")
     private String lastPage;
     @JsonProperty("publicationYear")
-    private int publicationYear;
+    private Integer publicationYear;
     @JsonProperty("publisher")
     private String publisher;
     @JsonProperty("edition")
@@ -84,11 +84,11 @@ public class DataCiteRelatedItem {
         this.lastPage = lastPage;
     }
 
-    public int getPublicationYear() {
+    public Integer getPublicationYear() {
         return publicationYear;
     }
 
-    public void setPublicationYear(int publicationYear) {
+    public void setPublicationYear(Integer publicationYear) {
         this.publicationYear = publicationYear;
     }
 
