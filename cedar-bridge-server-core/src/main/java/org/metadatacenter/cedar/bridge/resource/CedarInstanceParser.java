@@ -452,10 +452,11 @@ public class CedarInstanceParser {
             DataCiteGeoLocationPoint point = new DataCiteGeoLocationPoint();
             Float pointLongitude = g.getGeoLocationPoint().getPointLongitude().getValue();
             Float pointLatitude = g.getGeoLocationPoint().getPointLatitude().getValue();
-            point.setPointLongitude(pointLongitude);
-            point.setPointLatitude(pointLatitude);
-            dataCiteGeoLocation.setGeoLocationPoint(point);
-
+            if (pointLongitude != null || pointLatitude != null){
+                point.setPointLongitude(pointLongitude);
+                point.setPointLatitude(pointLatitude);
+                dataCiteGeoLocation.setGeoLocationPoint(point);
+            }
 
             // parse value in geoLocationBox
             DataCiteGeoLocationBox dataCiteGeoLocationBox = new DataCiteGeoLocationBox();
@@ -463,62 +464,73 @@ public class CedarInstanceParser {
             Float westBoundLongitude = g.getGeoLocationBox().getWestBoundLongitude().getValue();
             Float southBoundLatitude = g.getGeoLocationBox().getSouthBoundLatitude().getValue();
             Float northBoundLatitude = g.getGeoLocationBox().getNorthBoundLatitude().getValue();
-            if (eastBoundLongitude != null) {
+//            if (eastBoundLongitude != null) {
+//                dataCiteGeoLocationBox.setEastBoundLongitude(eastBoundLongitude);
+//            }
+//            if (westBoundLongitude != null) {
+//                dataCiteGeoLocationBox.setWestBoundLongitude(westBoundLongitude);
+//            }
+//            if (southBoundLatitude != null) {
+//                dataCiteGeoLocationBox.setSouthBoundLatitude(southBoundLatitude);
+//            }
+//            if (northBoundLatitude != null) {
+//                dataCiteGeoLocationBox.setNorthBoundLatitude(northBoundLatitude);
+//            }
+            if (eastBoundLongitude != null || westBoundLongitude != null || southBoundLatitude != null || northBoundLatitude != null){
                 dataCiteGeoLocationBox.setEastBoundLongitude(eastBoundLongitude);
-            }
-            if (westBoundLongitude != null) {
                 dataCiteGeoLocationBox.setWestBoundLongitude(westBoundLongitude);
-            }
-            if (southBoundLatitude != null) {
                 dataCiteGeoLocationBox.setSouthBoundLatitude(southBoundLatitude);
-            }
-            if (northBoundLatitude != null) {
                 dataCiteGeoLocationBox.setNorthBoundLatitude(northBoundLatitude);
+                dataCiteGeoLocation.setGeoLocationBox(dataCiteGeoLocationBox);
             }
-            dataCiteGeoLocation.setGeoLocationBox(dataCiteGeoLocationBox);
 
             //parse value in geoLocationPolygons
             List<GeoLocationPolygon> geoLocationPolygonList = g.getGeoLocationPolygonList();
             List<DataCiteGeoLocationPolygon> dataCiteGeoLocationPolygons = new ArrayList<>();
-            for (GeoLocationPolygon glp: geoLocationPolygonList){
-                DataCiteGeoLocationPolygon dataCiteGeoLocationPolygon = new DataCiteGeoLocationPolygon();
-                List<DataCiteGeoLocationPoint> dataCiteGeoLocationPointList = new ArrayList<>();
+            if (geoLocationPolygonList != null || !geoLocationPolygonList.isEmpty()){
+                for (GeoLocationPolygon glp: geoLocationPolygonList){
+                    DataCiteGeoLocationPolygon dataCiteGeoLocationPolygon = new DataCiteGeoLocationPolygon();
+                    List<DataCiteGeoLocationPoint> dataCiteGeoLocationPointList = new ArrayList<>();
 
-                // parse value in polygonPointsList
-                List<Point> polygonPointlist = glp.getPolygonPointsList();
-                for (Point p : polygonPointlist){
-                    DataCiteGeoLocationPoint dataCiteGeoLocationPoint = new DataCiteGeoLocationPoint();
-                    Float polygonPointLongitude = p.getPointLongitude().getValue();
-                    Float polygonPointLatitude = p.getPointLatitude().getValue();
-                    if (polygonPointLongitude != null) {
-                        dataCiteGeoLocationPoint.setPointLongitude(polygonPointLongitude);
+                    // parse value in polygonPointsList
+                    List<Point> polygonPointlist = glp.getPolygonPointsList();
+                    if (polygonPointlist != null || !polygonPointlist.isEmpty()){
+                        for (Point p : polygonPointlist){
+                            DataCiteGeoLocationPoint dataCiteGeoLocationPoint = new DataCiteGeoLocationPoint();
+                            Float polygonPointLongitude = p.getPointLongitude().getValue();
+                            Float polygonPointLatitude = p.getPointLatitude().getValue();
+                            if (polygonPointLongitude != null) {
+                                dataCiteGeoLocationPoint.setPointLongitude(polygonPointLongitude);
+                            }
+                            if (polygonPointLatitude != null) {
+                                dataCiteGeoLocationPoint.setPointLatitude(polygonPointLatitude);
+                            }
+                            dataCiteGeoLocationPointList.add(dataCiteGeoLocationPoint);
+                        }
+                        // set polygonPoint attributes
+                        dataCiteGeoLocationPolygon.setPolygonPointsList(dataCiteGeoLocationPointList);
                     }
-                    if (polygonPointLatitude != null) {
-                        dataCiteGeoLocationPoint.setPointLatitude(polygonPointLatitude);
+
+                    //parse value of inPolygonPoint
+                    if (glp.getInPolygonPoint() != null){
+                        Float inPolygonPointLongitude = glp.getInPolygonPoint().getPointLongitude().getValue();
+                        Float inPolygonPointLatitude = glp.getInPolygonPoint().getPointLatitude().getValue();
+
+                        // set inPolygonPoint attributes
+                        DataCiteGeoLocationPoint inPolygonPoint = new DataCiteGeoLocationPoint();
+                        if (inPolygonPointLongitude != null) {
+                            inPolygonPoint.setPointLongitude(inPolygonPointLongitude);
+                        }
+                        if (inPolygonPointLatitude != null) {
+                            inPolygonPoint.setPointLatitude(inPolygonPointLatitude);
+                        }
+                        dataCiteGeoLocationPolygon.setInPolygonPoint(inPolygonPoint);
                     }
-                    dataCiteGeoLocationPointList.add(dataCiteGeoLocationPoint);
-                }
 
-                // set polygonPoint attributes
-                dataCiteGeoLocationPolygon.setPolygonPointsList(dataCiteGeoLocationPointList);
-
-                //parse value of inPolygonPoint
-                Float inPolygonPointLongitude = glp.getInPolygonPoint().getPointLongitude().getValue();
-                Float inPolygonPointLatitude = glp.getInPolygonPoint().getPointLatitude().getValue();
-
-                // set inPolygonPoint attributes
-                DataCiteGeoLocationPoint inPolygonPoint = new DataCiteGeoLocationPoint();
-                if (inPolygonPointLongitude != null) {
-                    inPolygonPoint.setPointLongitude(inPolygonPointLongitude);
-                }
-                if (inPolygonPointLatitude != null) {
-                    inPolygonPoint.setPointLatitude(inPolygonPointLatitude);
-                }
-                dataCiteGeoLocationPolygon.setInPolygonPoint(inPolygonPoint);
-
-                dataCiteGeoLocationPolygons.add(dataCiteGeoLocationPolygon);
+                    dataCiteGeoLocationPolygons.add(dataCiteGeoLocationPolygon);
             }
-            dataCiteGeoLocation.setGeoLocationPolygonList(dataCiteGeoLocationPolygons);
+                dataCiteGeoLocation.setGeoLocationPolygonList(dataCiteGeoLocationPolygons);
+            }
 
             //add dataCiteGeoLocation to the list
             dataCiteGeoLocations.add(dataCiteGeoLocation);
