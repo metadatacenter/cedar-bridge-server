@@ -43,8 +43,11 @@ public class RelatedItem {
     @JsonProperty("Title")
     private List<Title> titles;
 
-    @JsonProperty("Number")
-    private Number number;
+    @JsonProperty("number")
+    private ValueFormat number;
+
+    @JsonProperty("numberType")
+    private ValueFormat numberTYpe;
 
     @JsonProperty("Contributor")
     private List<Contributor> contributors;
@@ -145,12 +148,20 @@ public class RelatedItem {
         this.titles = titles;
     }
 
-    public Number getNumber() {
+    public ValueFormat getNumber() {
         return number;
     }
 
-    public void setNumber(Number number) {
+    public void setNumber(ValueFormat number) {
         this.number = number;
+    }
+
+    public ValueFormat getNumberTYpe() {
+        return numberTYpe;
+    }
+
+    public void setNumberTYpe(ValueFormat numberTYpe) {
+        this.numberTYpe = numberTYpe;
     }
 
     public List<Contributor> getContributors() {

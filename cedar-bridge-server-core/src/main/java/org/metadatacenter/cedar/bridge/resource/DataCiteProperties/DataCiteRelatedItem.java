@@ -32,7 +32,9 @@ public class DataCiteRelatedItem {
     @JsonProperty("titles")
     private List<DataCiteTitle> titles;
     @JsonProperty("number")
-    private DataCiteNumber number;
+    private String number;
+    @JsonProperty("numberType")
+    private String numberType;
     @JsonProperty("contributors")
     private List<DataCiteRelatedItemContributor> contributors;
 
@@ -132,12 +134,20 @@ public class DataCiteRelatedItem {
         this.titles = titles;
     }
 
-    public DataCiteNumber getNumber() {
+    public String getNumber() {
         return number;
     }
 
-    public void setNumber(DataCiteNumber number) {
+    public void setNumber(String number) {
         this.number = number;
+    }
+
+    public String getNumberType() {
+        return numberType;
+    }
+
+    public void setNumberType(String numberType) {
+        this.numberType = numberType;
     }
 
     public List<DataCiteRelatedItemContributor> getContributors() {

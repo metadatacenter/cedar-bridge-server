@@ -549,7 +549,7 @@ public class CedarInstanceParser {
             String funderIdentifierType = f.getFunderIdentifier().getFunderIdentifierType().toString();
             String funderIdentifierSchemeURI = f.getFunderIdentifier().getSchemeURI().toString();
             String awardNumber = f.getAwardNumber().getAwardNumber().toString();
-            String awardURI = f.getAwardNumber().getAwardURI().toString();
+            String awardUri = f.getAwardNumber().getAwardURI().toString();
             String awardTitle = f.getAwardTitle().toString();
 
             dataCiteFundingReference.setFunderName(funderName);
@@ -557,7 +557,7 @@ public class CedarInstanceParser {
             dataCiteFundingReference.setFunderIdentifierType(funderIdentifierType);
             dataCiteFundingReference.setSchemeUri(funderIdentifierSchemeURI);
             dataCiteFundingReference.setAwardNumber(awardNumber);
-            dataCiteFundingReference.setAwardUri(awardURI);
+            dataCiteFundingReference.setAwardUri(awardUri);
             dataCiteFundingReference.setAwardTitle(awardTitle);
 
             dataCiteFundingReferences.add(dataCiteFundingReference);
@@ -580,6 +580,8 @@ public class CedarInstanceParser {
             String publicationYear = r.getPublicationYear().toString();
             String publisher = r.getPublisher().toString();
             String edition = r.getEdition().toString();
+            String number = r.getNumber().toString();
+            String numberType = r.getNumberTYpe().toString();
 
             dataCiteRelatedItem.setRelatedItemType(relatedItemType);
             dataCiteRelatedItem.setRelationType(relationType);
@@ -594,6 +596,8 @@ public class CedarInstanceParser {
             }
             dataCiteRelatedItem.setPublisher(publisher);
             dataCiteRelatedItem.setEdition(edition);
+            dataCiteRelatedItem.setNumber(number);
+            dataCiteRelatedItem.setNumberType(numberType);
 
             // parse relatedItemIdentifier values
             DataCiteRelatedItemIdentifier dataCiteRelatedItemIdentifier = new DataCiteRelatedItemIdentifier();
@@ -620,14 +624,6 @@ public class CedarInstanceParser {
             if (r.getTitles() != null && !r.getTitles().isEmpty()){
                 dataCiteRelatedItem.setTitles(parseTitleValue(r.getTitles()));
             }
-
-            // parse number values
-            DataCiteNumber dataCiteNumber = new DataCiteNumber();
-            String number = r.getNumber().getNumber().toString();
-            String numberType = r.getNumber().getNumberType().toString();
-            dataCiteNumber.setNumber(number);
-            dataCiteNumber.setNumberType(numberType);
-            dataCiteRelatedItem.setNumber(dataCiteNumber);
 
             //parse contributors values
             List<Contributor> contributorList = r.getContributors();

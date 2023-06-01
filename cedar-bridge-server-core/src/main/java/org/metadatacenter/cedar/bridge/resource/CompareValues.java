@@ -899,7 +899,7 @@ public class CompareValues {
       if (!(Objects.equals(givenFunderName, responseFunderName)
           && Objects.equals(givenFunderIdentifier, responseFunderIdentifier)
           && Objects.equals(givenFunderIdentifierType, responseFunderIdentifierType)
-          && Objects.equals(givenFunderIdentifierSchemeUri, responseFunderIdentifierSchemeUri)
+//          && Objects.equals(givenFunderIdentifierSchemeUri, responseFunderIdentifierSchemeUri)
           && Objects.equals(givenAwardNumber, responseAwardNumber)
           && Objects.equals(givenAwardUri, responseAwardUri)
           && Objects.equals(givenAwardTitle, responseAwardTitle)

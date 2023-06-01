@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteFundingReference {
-    @JsonProperty("awardURI")
+    @JsonProperty("awardUri")
     private String awardUri;
     @JsonProperty("awardTitle")
     private String awardTitle;
