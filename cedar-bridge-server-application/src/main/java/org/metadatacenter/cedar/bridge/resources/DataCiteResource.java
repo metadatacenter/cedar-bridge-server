@@ -2,18 +2,17 @@ package org.metadatacenter.cedar.bridge.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-//import net.minidev.json.JSONObject;
-//import net.minidev.json.JSONValue;
 import org.apache.commons.codec.CharEncoding;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
-//import org.json.JSONException;
+
 import org.metadatacenter.cedar.bridge.resource.CedarInstanceParser;
 import org.metadatacenter.cedar.bridge.resource.CEDARProperties.CEDARDataCiteInstance;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.DataCiteSchema;
@@ -44,6 +43,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
@@ -77,7 +77,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       URI doiUrl = new URI(doiIdUrl);
       String doi = doiUrl.getPath();
 
-      String endpointUrl = cedarConfig.getBridgeConfig().getDataCite().getEndpointUrl() + doi;
+      String endpointUrl = cedarConfig.getBridgeConfig().getDataCite().getEndpointUrl() + doi + "?affiliation=true";
       URI uri = URI.create(endpointUrl);
 
       // Create HTTP client
@@ -115,7 +115,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
     String password = cedarConfig.getBridgeConfig().getDataCite().getPassword();
     String endpointUrl = cedarConfig.getBridgeConfig().getDataCite().getEndpointUrl();
     String templateId = cedarConfig.getBridgeConfig().getDataCite().getTemplateId();
-//    String templateId = "https://repo.metadatacenter.orgx/templates/330dec5a-b409-47a8-bd90-8b997d04d85c";
 
     // Create basic authentication
     String basicAuth =
@@ -191,12 +190,12 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
       // Create HTTP request with JSON body and basic authentication
       HttpRequest request = HttpRequest.newBuilder(uri)
-              .header("Content-Type", "application/json")
+          .header("Content-Type", "application/json")
 //              .header("Authorization", adminUserApiKey)
-              .header("Authorization", apiKey)
-              .header("Accept", "application/json")
-              .POST(HttpRequest.BodyPublishers.ofString(String.valueOf(validationBody)))
-              .build();
+          .header("Authorization", apiKey)
+          .header("Accept", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString(String.valueOf(validationBody)))
+          .build();
 
       // Call CEDAR validation endpoint and get the httpResponse
       HttpResponse<String> httpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -248,6 +247,10 @@ public class DataCiteResource extends CedarMicroserviceResource {
       //Serialize DataCiteRequest Class to json
       mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
       mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+//      SimpleModule module = new SimpleModule();
+//      module.addSerializer(List.class, new EmptyListMapSerializer());
+//      mapper.registerModule(module);
+
       String requestJsonString = mapper.writeValueAsString(dataCiteSchema);
       System.out.println("DataCite Request Json: " + requestJsonString);
       return requestJsonString;
@@ -305,7 +308,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       JsonNode currentTemplateJsonNode = JsonMapper.MAPPER.readTree(currentTemplateEntityContent);
 
       int statusCode = ProxyUtil.proxyGet(artifactServerUrl, c).getStatusLine().getStatusCode();
-      if (statusCode == HttpConstants.OK){
+      if (statusCode == HttpConstants.OK) {
         System.out.println("The GET CEDAR Template request was successful");
       } else {
         System.out.println("The GET CEDAR Template request was failed with status code: " + statusCode);
@@ -315,6 +318,15 @@ public class DataCiteResource extends CedarMicroserviceResource {
       throw new RuntimeException(e);
     } catch (CedarProcessingException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  static class EmptyListMapSerializer extends JsonSerializer<List<Map<String, Object>>> {
+    @Override
+    public void serialize(List<Map<String, Object>> value, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+      if (value != null && !value.isEmpty()) {
+        jsonGenerator.writeObject(value);
+      }
     }
   }
 }

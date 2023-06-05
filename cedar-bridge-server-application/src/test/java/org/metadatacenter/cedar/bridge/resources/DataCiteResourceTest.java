@@ -95,7 +95,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     JsonNode responseBody = objectMapper.readTree(createDoiResponse.readEntity(String.class));
     String doiName = responseBody.get("doiName").asText();
     String encodedDoiName = URLEncoder.encode(doiName, StandardCharsets.UTF_8);
-    String getDoiMetadataUrl = baseUrlGetDoiMetadata + encodedDoiName;
+    String getDoiMetadataUrl = baseUrlGetDoiMetadata + encodedDoiName + "?affiliation=true";
     Response getDoiMetadataResponse = client.target(getDoiMetadataUrl)
         .request()
         .header("Authorization", authHeaderAdmin)
