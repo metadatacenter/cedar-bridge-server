@@ -1,13 +1,10 @@
 package org.metadatacenter.cedar.bridge.resources;
 
+import org.junit.*;
 import org.metadatacenter.cedar.bridge.resource.CompareValues;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.metadatacenter.util.json.JsonMapper;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
@@ -20,6 +17,9 @@ import java.nio.charset.StandardCharsets;
 
 public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 {
+  @Rule
+  public ObjectMapperRule objectMapperRule = new ObjectMapperRule();
+  private ObjectMapper objectMapper;
 
   @BeforeClass public static void oneTimeSetUp()
   {
@@ -27,6 +27,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Before public void setUp()
   {
+    objectMapper = objectMapperRule.getObjectMapper();
   }
 
   @After public void tearDown()
@@ -34,69 +35,51 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void getDoiMetadataSuccessRichDataTest() {
-    String givenMetadataFilePath = "/Users/ycao77/CEDAR/cedar-bridge-server/cedar-bridge-server-application/src/test/java/org/metadatacenter/cedar/bridge/resources/TestJsonFiles/SuccessRichData.json";
-    ObjectMapper objectMapper = new ObjectMapper();
-    try{
-      JsonNode givenMetadata = objectMapper.readTree(new File(givenMetadataFilePath));
-      Response createDoiResponse = createDoi(givenMetadata);
-      Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-      Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+  public void getDoiMetadataSuccessRichDataTest() throws IOException{
+    JsonNode givenMetadata = getFileContentAsJson("SuccessRichData");
+    Response createDoiResponse = createDoi(givenMetadata);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
 //      Map<String, Object> summary = createDoiResponse.readEntity(new GenericType<>(){});
 //      System.out.println(JsonMapper.MAPPER.valueToTree(summary));
 
-      Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-      Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-      Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
-      JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-      Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata));
   }
 
   @Test
-  public void getDoiMetadataSuccessSimplyDataTest() {
-    String givenMetadataFilePath = "/Users/ycao77/CEDAR/cedar-bridge-server/cedar-bridge-server-application/src/test/java/org/metadatacenter/cedar/bridge/resources/TestJsonFiles/SuccessRequiredOnly.json";
-    ObjectMapper objectMapper = new ObjectMapper();
-    try{
-      JsonNode givenMetadata = objectMapper.readTree(new File(givenMetadataFilePath));
-      Response createDoiResponse = createDoi(givenMetadata);
-      Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-      Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+  public void getDoiMetadataSuccessSimplyDataTest() throws IOException {
+    JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredOnly");
+    Response createDoiResponse = createDoi(givenMetadata);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
-      Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-      Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-      Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
-      JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-      Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata));
   }
 
   @Test
-  public void getDoiMetadataSuccessAllRequiredDataTest() {
-    String givenMetadataFilePath = "/Users/ycao77/CEDAR/cedar-bridge-server/cedar-bridge-server-application/src/test/java/org/metadatacenter/cedar/bridge/resources/TestJsonFiles/SuccessAllPropertiesUnderRequiredElement.json";
-    ObjectMapper objectMapper = new ObjectMapper();
-    try{
-      JsonNode givenMetadata = objectMapper.readTree(new File(givenMetadataFilePath));
-      Response createDoiResponse = createDoi(givenMetadata);
-      Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-      Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+  public void getDoiMetadataSuccessAllRequiredDataTest() throws IOException{
+    JsonNode givenMetadata = getFileContentAsJson("SuccessAllPropertiesUnderRequiredElement");
+    Response createDoiResponse = createDoi(givenMetadata);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
-      Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-      Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-      Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
-      JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-      Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata));
   }
 
   private Response createDoi(JsonNode givenMetadata) throws IOException {
@@ -109,7 +92,6 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   private Response getDoiMetadata(Response createDoiResponse) throws IOException {
-    ObjectMapper objectMapper = new ObjectMapper();
     JsonNode responseBody = objectMapper.readTree(createDoiResponse.readEntity(String.class));
     String doiName = responseBody.get("doiName").asText();
     String encodedDoiName = URLEncoder.encode(doiName, StandardCharsets.UTF_8);
@@ -121,4 +103,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     return getDoiMetadataResponse;
   }
 
+  protected JsonNode getFileContentAsJson(String jsonFileName) throws IOException {
+    if (jsonFileName != null) {
+      String filePath = FILE_BASE_PATH + jsonFileName + ".json";
+      try {
+        return objectMapper.readTree(new File(filePath));
+      } catch (IOException e) {
+        throw e;
+      }
+    }
+    return null;
+  }
 }
