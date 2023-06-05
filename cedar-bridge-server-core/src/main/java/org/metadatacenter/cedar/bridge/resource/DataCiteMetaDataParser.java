@@ -28,7 +28,6 @@ public class DataCiteMetaDataParser {
             SchemeURI affiliationIdentifierSchemeURI = new SchemeURI();
 
             //retrieve values from DataCiteScheme and set it to CEDAR class
-            affiliationName.setValue(a.getAffiliation());
             affiliationIdentifier.setValue(a.getAffiliationIdentifier());
             affiliationIdentifierScheme.setValue(a.getAffiliationIdentifierScheme());
             affiliationIdentifierSchemeURI.setId(a.getAffiliationSchemeURI());

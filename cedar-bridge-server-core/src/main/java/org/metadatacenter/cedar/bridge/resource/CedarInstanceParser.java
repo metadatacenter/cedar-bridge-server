@@ -5,6 +5,7 @@ import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class CedarInstanceParser {
     public static void parseCEDARInstance(CEDARDataCiteInstance cedarDataCiteInstance, DataCiteSchema dataCiteSchema) {
@@ -139,12 +140,10 @@ public class CedarInstanceParser {
             for (Affiliation a : affiliationList) {
                 DataCiteAffiliation dataCiteAffiliation = new DataCiteAffiliation();
                 // Retrieve values from CEDAR class
-                String affiliationName = a.getAffiliation().toString();
                 String affiliationIdentifier = a.getAffiliationIdentifier().toString();
                 String affiliationIdentifierScheme = a.getAffiliationIdentifierScheme().toString();
                 String affiliationSchemeURI = a.getAffiliationIdentifierSchemeURI().toString();
                 // set values to DataCite class
-                dataCiteAffiliation.setAffiliation(affiliationName);
                 dataCiteAffiliation.setAffiliationIdentifier(affiliationIdentifier);
                 dataCiteAffiliation.setAffiliationIdentifierScheme(affiliationIdentifierScheme);
                 dataCiteAffiliation.setAffiliationSchemeURI(affiliationSchemeURI);
