@@ -899,18 +899,12 @@
         "edition": {
           "@value": "1.2.0"
         },
-        "Number": {
-          "@context": {
-            "number": "https://schema.metadatacenter.org/properties/c289cc7c-42ed-4c9a-8e1d-6aab10ecee8e",
-            "numberType": "https://schema.metadatacenter.org/properties/6e22cfc8-e1e1-4112-8337-518eddbd4c3a"
-          },
-          "number": {
-            "@value": "number 1"
-          },
-          "numberType": {
-            "@id": "http://purl.org/ontology/bibo/Chapter",
-            "rdfs:label": "Chapter"
-          }
+        "number": {
+          "@value": "number 1"
+        },
+        "numberType": {
+          "@id": "http://purl.org/ontology/bibo/Chapter",
+          "rdfs:label": "Chapter"
         },
         "Title": [
           {

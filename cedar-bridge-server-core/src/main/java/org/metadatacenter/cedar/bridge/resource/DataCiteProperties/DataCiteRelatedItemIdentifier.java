@@ -11,7 +11,7 @@ public class DataCiteRelatedItemIdentifier {
     private String relatedItemIdentifierType ;
     @JsonProperty("relatedMetadataScheme")
     private String relatedMetadataScheme;
-    @JsonProperty("schemeUri")
+    @JsonProperty("schemeURI")
     private String schemeUri;
     @JsonProperty("schemeType")
     private String schemeType;
