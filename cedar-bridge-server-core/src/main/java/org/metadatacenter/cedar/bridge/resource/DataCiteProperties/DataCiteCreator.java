@@ -15,7 +15,7 @@ public class DataCiteCreator {
     private String givenName;
     @JsonProperty("familyName")
     private String familyName;
-    @JsonProperty("affiliations")
+    @JsonProperty("affiliation")
     private List<DataCiteAffiliation> dataCiteAffiliations;
     @JsonProperty("nameIdentifiers")
     private List<DataCiteNameIdentifier> dataCiteNameIdentifiers;
