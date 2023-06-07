@@ -69,7 +69,7 @@ public class CEDARDataCiteInstance {
     private DateElement dateElement;
 
     @JsonProperty("Language")
-    private ValueFormat language;
+    private IdFormat language;
 
     @JsonProperty("AlternateIdentifierElement")
     private AlternateIdentifierElement alternateIdentifierElement;
@@ -177,11 +177,11 @@ public class CEDARDataCiteInstance {
         this.dateElement = dateElement;
     }
 
-    public ValueFormat getLanguage() {
+    public IdFormat getLanguage() {
         return language;
     }
 
-    public void setLanguage(ValueFormat language) {
+    public void setLanguage(IdFormat language) {
         this.language = language;
     }
 
