@@ -138,7 +138,8 @@
     "@id": "https://repo.metadatacenter.org/template-element-instances/8f77cdaa-4071-4931-bf5e-0101149e9673"
   },
   "Language": {
-    "@value": null
+    "@id": "https://www.omg.org/spec/LCC/Languages/LaISO639-1-LanguageCodes/be",
+    "rdfs:label": "be"
   },
   "RelatedIdentifierElement": {
     "@context": {

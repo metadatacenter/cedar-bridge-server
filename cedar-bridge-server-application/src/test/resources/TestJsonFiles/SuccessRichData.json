@@ -223,7 +223,8 @@
     "@id": "https://repo.metadatacenter.org/template-element-instances/d2131ebb-3bf7-4af9-ba8d-4a5151cbf61f"
   },
   "Language": {
-    "@value": "en-US"
+    "@id": "https://www.omg.org/spec/LCC/Languages/LaISO639-1-LanguageCodes/av",
+    "rdfs:label": "av"
   },
   "RelatedIdentifierElement": {
     "@context": {
