@@ -14,23 +14,11 @@ import java.io.IOException;
 import java.util.*;
 
 public class CompareValues {
-  public static void main(String[] args) {
-    ObjectMapper objectMapper = new ObjectMapper();
-    String givenMetadataFilePath = "/Users/ycao77/CEDAR/cedar-bridge-server/cedar-bridge-server-core/src/main/java/org/metadatacenter/cedar/bridge/resource/JSONFiles/GivenRichMetaData.json";
-    String responseMetadataFilePath = "/Users/ycao77/CEDAR/cedar-bridge-server/cedar-bridge-server-core/src/main/java/org/metadatacenter/cedar/bridge/resource/JSONFiles/ResponseRichMetaData.json";
-
-    try{
-      JsonNode givenMetadata = objectMapper.readTree(new File(givenMetadataFilePath));
-      JsonNode responseMetadata = objectMapper.readTree(new File(responseMetadataFilePath));
-      boolean result = compareResponseWithGivenMetadata(givenMetadata, responseMetadata);
-      System.out.println(result);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
   public static boolean compareResponseWithGivenMetadata(JsonNode givenMetadata, JsonNode responseMetadata) throws JsonProcessingException {
     ObjectMapper mapper = new ObjectMapper();
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
+    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
 
     try {
       //Deserialize givenMetadata to CedarDataCiteInstance Class
@@ -40,28 +28,27 @@ public class CompareValues {
 
       // Pass the value from cedarDataCiteInstance to dataCiteRequest
       CedarInstanceParser.parseCEDARInstance(cedarInstance, cedarConvertedDataCiteSchema);
-      mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
       String cedarConvertedDataCiteSchemaString = mapper.writeValueAsString(cedarConvertedDataCiteSchema);
-//      System.out.println("Cedar Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);
+      System.out.println("Cedar Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);
 
       //Deserialize responseMetadata to DtaCiteSchema Class
       String responseMetadaString = responseMetadata.toString();
       DataCiteSchema responseDataCiteSchema = mapper.readValue(responseMetadaString, DataCiteSchema.class);
       String responseConvertedDataCiteSchemaString = mapper.writeValueAsString(responseDataCiteSchema);
-//      System.out.println("DataCite response converted Schema: " + responseConvertedDataCiteSchemaString);
+      System.out.println("DataCite response converted Schema: " + responseConvertedDataCiteSchemaString);
 
 
       //Compare cedarConvertedDataCiteSchema vs responseDataCiteSchema
-//      if (!(compareCreators(cedarConvertedDataCiteSchema.getData().getAttributes().getCreators(), responseDataCiteSchema.getData().getAttributes().getCreators())
-      if (!(true
+      if (!(compareCreators(cedarConvertedDataCiteSchema.getData().getAttributes().getCreators(), responseDataCiteSchema.getData().getAttributes().getCreators())
           && compareTitles(cedarConvertedDataCiteSchema.getData().getAttributes().getTitles(), responseDataCiteSchema.getData().getAttributes().getTitles())
           && comparePublisher(cedarConvertedDataCiteSchema, responseDataCiteSchema)
           && comparePublicationYear(cedarConvertedDataCiteSchema, responseDataCiteSchema)
           && compareResourceType(cedarConvertedDataCiteSchema, responseDataCiteSchema)
           && compareSubjects(cedarConvertedDataCiteSchema, responseDataCiteSchema)
-//          && compareContributors(cedarConvertedDataCiteSchema, responseDataCiteSchema)
+          && compareContributors(cedarConvertedDataCiteSchema, responseDataCiteSchema)
           && compareDates(cedarConvertedDataCiteSchema, responseDataCiteSchema)
-//          && compareLang(cedarConvertedDataCiteSchema, responseDataCiteSchema)
+          && compareLang(cedarConvertedDataCiteSchema, responseDataCiteSchema)
           && compareAlternateIdentifier(cedarConvertedDataCiteSchema, responseDataCiteSchema)
           && compareRelatedIdentifier(cedarConvertedDataCiteSchema, responseDataCiteSchema)
           && compareSizes(cedarConvertedDataCiteSchema, responseDataCiteSchema)
@@ -70,7 +57,7 @@ public class CompareValues {
           && compareRights(cedarConvertedDataCiteSchema, responseDataCiteSchema)
           && compareDescriptions(cedarConvertedDataCiteSchema, responseDataCiteSchema)
           && compareGeoLocations(cedarConvertedDataCiteSchema, responseDataCiteSchema)
-//          && compareFundingReferences(cedarConvertedDataCiteSchema, responseDataCiteSchema)
+          && compareFundingReferences(cedarConvertedDataCiteSchema, responseDataCiteSchema)
           && compareRelatedItems(cedarConvertedDataCiteSchema, responseDataCiteSchema)
       )){
         System.out.println("The response metadata is different with the given metadata");
@@ -85,6 +72,7 @@ public class CompareValues {
   }
 
   private static boolean compareAffiliations(List<DataCiteAffiliation> givenAffiliations, List<DataCiteAffiliation> responseAffiliations){
+    System.out.println("----------------Comparing affiliations");
     boolean equals = true;
 
     if (givenAffiliations == null || givenAffiliations.isEmpty()) {
@@ -97,7 +85,7 @@ public class CompareValues {
       return false;
     }
 
-    Comparator<DataCiteAffiliation> comparator = Comparator.comparing(DataCiteAffiliation::getAffiliationIdentifier);
+    Comparator<DataCiteAffiliation> comparator = Comparator.comparing(DataCiteAffiliation::getAffiliationIdentifier, Comparator.nullsFirst(Comparator.naturalOrder()));
     givenAffiliations.sort(comparator);
     responseAffiliations.sort(comparator);
 
@@ -105,22 +93,22 @@ public class CompareValues {
       DataCiteAffiliation givenAffiliation = givenAffiliations.get(i);
       DataCiteAffiliation responseAffiliation = responseAffiliations.get(i);
 
-      String givenAffiliationName = givenAffiliation.getAffiliation();
-      String responseAffiliationName = responseAffiliation.getAffiliation();
-
       String givenAffiliationIdentifier = givenAffiliation.getAffiliationIdentifier();
       String responseAffiliationIdentifier = responseAffiliation.getAffiliationIdentifier();
 
       String givenAffiliationIdentifierScheme = givenAffiliation.getAffiliationIdentifierScheme();
       String responseAffiliationIdentifierScheme = responseAffiliation.getAffiliationIdentifierScheme();
 
+      String givenSchemeUri = givenAffiliation.getAffiliationSchemeURI();
+      String responseSchemeUri = responseAffiliation.getAffiliationSchemeURI();
 
-      if (!(Objects.equals(givenAffiliationName, responseAffiliationName)
-          && Objects.equals(givenAffiliationIdentifier, responseAffiliationIdentifier)
-          && Objects.equals(givenAffiliationIdentifierScheme, responseAffiliationIdentifierScheme))){
+
+      if (!(equals(givenSchemeUri, responseSchemeUri)
+          && equals(givenAffiliationIdentifier, responseAffiliationIdentifier)
+          && equals(givenAffiliationIdentifierScheme, responseAffiliationIdentifierScheme))){
         equals = false;
-        System.out.println("given: " + givenAffiliationName + " " + givenAffiliationIdentifier + " " + givenAffiliationIdentifierScheme);
-        System.out.println("response: " + responseAffiliationName + " " + responseAffiliationIdentifier + " " + responseAffiliationIdentifierScheme);
+        System.out.println("given: " + givenSchemeUri + " " + givenAffiliationIdentifier + " " + givenAffiliationIdentifierScheme);
+        System.out.println("response: " + responseSchemeUri + " " + responseAffiliationIdentifier + " " + responseAffiliationIdentifierScheme);
         break;
       }
     }
@@ -128,6 +116,7 @@ public class CompareValues {
   }
 
   private static boolean compareNameIdentifiers(List<DataCiteNameIdentifier> givenNameIdentifiers, List<DataCiteNameIdentifier> responseNameIdentifiers){
+    System.out.println("----------------Comparing name identifiers");
     boolean equals = true;
 
     if (givenNameIdentifiers == null || givenNameIdentifiers.isEmpty()){
@@ -139,7 +128,7 @@ public class CompareValues {
       return false;
     }
 
-    Comparator<DataCiteNameIdentifier> comparator = Comparator.comparing(DataCiteNameIdentifier::getNameIdentifier);
+    Comparator<DataCiteNameIdentifier> comparator = Comparator.comparing(DataCiteNameIdentifier::getNameIdentifier, Comparator.nullsFirst(Comparator.naturalOrder()));
     givenNameIdentifiers.sort(comparator);
     responseNameIdentifiers.sort(comparator);
 
@@ -156,9 +145,9 @@ public class CompareValues {
       String givenSchemeUri = givenDataCiteNameIdentifier.getSchemeUri();
       String responseSchemeUri = responseDataCiteNameIdentifier.getSchemeUri();
 
-      if (!(Objects.equals(givenNameIdentifier, responseNameIdentifier)
-          && Objects.equals(givenNameIdentifierScheme, responseNameIdentifierScheme)
-          && Objects.equals(givenSchemeUri, responseSchemeUri))) {
+      if (!(equals(givenNameIdentifier, responseNameIdentifier)
+          && equals(givenNameIdentifierScheme, responseNameIdentifierScheme)
+          && equals(givenSchemeUri, responseSchemeUri))) {
         equals = false;
         System.out.println("given name identifier: " + givenNameIdentifier + " " + givenNameIdentifierScheme + " " + givenSchemeUri);
         System.out.println("response name identifier: " + responseNameIdentifier + " " + responseNameIdentifierScheme + " " + responseSchemeUri);
@@ -184,7 +173,7 @@ public class CompareValues {
     }
 
     // Sort based on the name property
-    Comparator<DataCiteCreator> comparator = Comparator.comparing(DataCiteCreator::getName);
+    Comparator<DataCiteCreator> comparator = Comparator.comparing(DataCiteCreator::getName, Comparator.nullsFirst(Comparator.naturalOrder()));
     givenCreators.sort(comparator);
     responseCreators.sort(comparator);
 
@@ -210,10 +199,10 @@ public class CompareValues {
       List<DataCiteNameIdentifier> givenNameIdentifiers = givenCreator.getNameIdentifiers();
       List<DataCiteNameIdentifier> responseNameIdentifiers = responseCreator.getNameIdentifiers();
 
-      if (!(Objects.equals(givenCreator.getName(), responseCreator.getName())
-          && Objects.equals(givenNameType, responseNameType)
-          && Objects.equals(givenGivenName, responseGivenName)
-          && Objects.equals(givenFamilyName, responseFamilyName)
+      if (!(equals(givenCreator.getName(), responseCreator.getName())
+          && equals(givenNameType, responseNameType)
+          && equals(givenGivenName, responseGivenName)
+          && equals(givenFamilyName, responseFamilyName)
           && compareAffiliations(givenAffiliations, responseAffiliations)
           && compareNameIdentifiers(givenNameIdentifiers, responseNameIdentifiers))) {
         equals = false;
@@ -240,7 +229,7 @@ public class CompareValues {
         return false;
       }
 
-      Comparator<DataCiteTitle> comparator = Comparator.comparing(DataCiteTitle::getTitle);
+      Comparator<DataCiteTitle> comparator = Comparator.comparing(DataCiteTitle::getTitle, Comparator.nullsFirst(Comparator.naturalOrder()));
       givenTitles.sort(comparator);
       responseTitles.sort(comparator);
 
@@ -257,9 +246,9 @@ public class CompareValues {
         String givenLang = givenTitle.getLang();
         String responseLang = responseTitle.getLang();
 
-        if (! (Objects.equals(givenTitleName, responseTitleName))
-            && (Objects.equals(givenTitleType, responseTitleType))
-            && (Objects.equals(givenLang, responseLang))){
+        if (! (equals(givenTitleName, responseTitleName))
+            && (equals(givenTitleType, responseTitleType))
+            && (equals(givenLang, responseLang))){
           equals = false;
           System.out.println("given titles: " + givenTitleName + " " + givenTitleType + " " + givenLang);
           System.out.println("response titles: " + responseTitleName + " " + responseTitleType + " " + responseLang);
@@ -271,13 +260,13 @@ public class CompareValues {
 
   private static boolean comparePublisher(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema){
     System.out.println("----------------Comparing publisher");
-    return Objects.equals(cedarConvertedDataCiteSchema.getData().getAttributes().getPublisher(),
+    return equals(cedarConvertedDataCiteSchema.getData().getAttributes().getPublisher(),
         responseDataCiteSchema.getData().getAttributes().getPublisher());
   }
 
   private static boolean comparePublicationYear(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema) {
     System.out.println("----------------Comparing publication year");
-    return Objects.equals(cedarConvertedDataCiteSchema.getData().getAttributes().getPublicationYear(),
+    return equals(cedarConvertedDataCiteSchema.getData().getAttributes().getPublicationYear(),
         responseDataCiteSchema.getData().getAttributes().getPublicationYear());
   }
 
@@ -292,7 +281,7 @@ public class CompareValues {
     String givenTypeGeneral = givenType.getResourceTypeGeneral();
     String responseTypeGeneral = responseType.getResourceTypeGeneral();
 
-    if (!(Objects.equals(givenTitle, responseTitle) && Objects.equals(givenTypeGeneral, responseTypeGeneral))){
+    if (!(equals(givenTitle, responseTitle) && equals(givenTypeGeneral, responseTypeGeneral))){
       System.out.println("given type: " + givenTitle + " " + givenTypeGeneral);
       System.out.println("response type: " + responseType + " " + givenTypeGeneral);
       return false;
@@ -316,7 +305,7 @@ public class CompareValues {
       return false;
     }
 
-    Comparator<DataCiteSubject> comparator = Comparator.comparing(DataCiteSubject::getSubject);
+    Comparator<DataCiteSubject> comparator = Comparator.comparing(DataCiteSubject::getSubject, Comparator.nullsFirst(Comparator.naturalOrder()));
     givenSubjects.sort(comparator);
     responseSubjects.sort(comparator);
 
@@ -339,11 +328,11 @@ public class CompareValues {
       String givenValueUri = givenSubject.getValueUri();
       String responseValueUri = responseSubject.getValueUri();
 
-      if (!(Objects.equals(givenName, responseName)
-          && Objects.equals(givenScheme, responseScheme)
-          && Objects.equals(givenSchemeUri, responseSchemeUri)
-          && Objects.equals(givenCode, responseCode)
-          && Objects.equals(givenValueUri, responseValueUri))){
+      if (!(equals(givenName, responseName)
+          && equals(givenScheme, responseScheme)
+          && equals(givenSchemeUri, responseSchemeUri)
+          && equals(givenCode, responseCode)
+          && equals(givenValueUri, responseValueUri))){
         System.out.println("given subject: " + givenName + " " + givenScheme + " " + givenSchemeUri + " " + givenCode + " " + givenValueUri);
         System.out.println("response subject: " + responseName + " " + responseScheme + " " + responseSchemeUri + " " + responseCode + " " + responseValueUri);
         equals = false;
@@ -369,7 +358,7 @@ public class CompareValues {
       return false;
     }
 
-    Comparator<DataCiteContributor> comparator = Comparator.comparing(DataCiteContributor::getName);
+    Comparator<DataCiteContributor> comparator = Comparator.comparing(DataCiteContributor::getName, Comparator.nullsFirst(Comparator.naturalOrder()));
     givenContributors.sort(comparator);
     responseContributors.sort(comparator);
 
@@ -399,11 +388,11 @@ public class CompareValues {
       List<DataCiteNameIdentifier> responseNameIdentifiers = responseContributor.getNameIdentifiers();
 
 
-      if (!(Objects.equals(givenName, responseName)
-          && Objects.equals(givenNameType, responseNameType)
-          && Objects.equals(givenGivenName, responseGivenName)
-          && Objects.equals(givenFamilyName, responseFamilyName)
-          && Objects.equals(givenContributorType, responseContributorType)
+      if (!(equals(givenName, responseName)
+          && equals(givenNameType, responseNameType)
+          && equals(givenGivenName, responseGivenName)
+          && equals(givenFamilyName, responseFamilyName)
+          && equals(givenContributorType, responseContributorType)
           && compareAffiliations(givenAffiliations, responseAffiliations)
           && compareNameIdentifiers(givenNameIdentifiers, responseNameIdentifiers))) {
         equals = false;
@@ -432,7 +421,7 @@ public class CompareValues {
       return false;
     }
 
-    Comparator<DataCiteDate> comparator = Comparator.comparing(DataCiteDate::getDate);
+    Comparator<DataCiteDate> comparator = Comparator.comparing(DataCiteDate::getDate, Comparator.nullsFirst(Comparator.naturalOrder()));
     givenDates.sort(comparator);
     responseDates.sort(comparator);
 
@@ -449,9 +438,9 @@ public class CompareValues {
       String givenDateInformation = givenDate.getDateInformation();
       String responseDateInformation = responseDate.getDateInformation();
 
-      if (!(Objects.equals(givenDay, responseDay)
-          && Objects.equals(givenDateType,responseDateType)
-          && Objects.equals(givenDateInformation, responseDateInformation))) {
+      if (!(equals(givenDay, responseDay)
+          && equals(givenDateType,responseDateType)
+          && equals(givenDateInformation, responseDateInformation))) {
         System.out.println("given Dates is: " + givenDay + " " + givenDateType + " " + givenDateInformation);
         System.out.println("response Dates is: " + responseDay + " " + responseDateType + " " + responseDateInformation);
         equals = false;
@@ -463,9 +452,9 @@ public class CompareValues {
 
   private static boolean compareLang(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema){
     System.out.println("----------------Comparing lang");
-    System.out.println("given lang: " + cedarConvertedDataCiteSchema.getData().getAttributes().getLanguage());
-    System.out.println("response lang: " + responseDataCiteSchema.getData().getAttributes().getLanguage());
-    return Objects.equals(cedarConvertedDataCiteSchema.getData().getAttributes().getLanguage(), responseDataCiteSchema.getData().getAttributes().getLanguage());
+//    System.out.println("given lang: " + cedarConvertedDataCiteSchema.getData().getAttributes().getLanguage());
+//    System.out.println("response lang: " + responseDataCiteSchema.getData().getAttributes().getLanguage());
+    return equals(cedarConvertedDataCiteSchema.getData().getAttributes().getLanguage(), responseDataCiteSchema.getData().getAttributes().getLanguage());
   }
 
   private static boolean compareAlternateIdentifier(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema){
@@ -484,7 +473,7 @@ public class CompareValues {
       return false;
     }
 
-    Comparator<DataCiteAlternateIdentifier> comparator = Comparator.comparing(DataCiteAlternateIdentifier::getAlternateIdentifier);
+    Comparator<DataCiteAlternateIdentifier> comparator = Comparator.comparing(DataCiteAlternateIdentifier::getAlternateIdentifier, Comparator.nullsFirst(Comparator.naturalOrder()));
     givenAlternateIdentifiers.sort(comparator);
     responseAlternateIdentifiers.sort(comparator);
 
@@ -498,8 +487,8 @@ public class CompareValues {
       String givenType = givenAlternateIdentifier.getAlternateIdentifierType();
       String responseType = responseAlternateIdentifier.getAlternateIdentifierType();
 
-      if (!(Objects.equals(givenAlternateIdentifierName, responseAlternateIdentifierName)
-          && Objects.equals(givenType, responseType))){
+      if (!(equals(givenAlternateIdentifierName, responseAlternateIdentifierName)
+          && equals(givenType, responseType))){
         System.out.println("given AlternateIdentifier: " + givenAlternateIdentifierName + " " + givenType);
         System.out.println("response AlternateIdentifier: " + responseAlternateIdentifierName + " " + responseType);
         equals = false;
@@ -525,7 +514,7 @@ public class CompareValues {
       return false;
     }
 
-    Comparator<DataCiteRelatedIdentifier> comparator = Comparator.comparing(DataCiteRelatedIdentifier::getRelatedIdentifier);
+    Comparator<DataCiteRelatedIdentifier> comparator = Comparator.comparing(DataCiteRelatedIdentifier::getRelatedIdentifier, Comparator.nullsFirst(Comparator.naturalOrder()));
     givenRelatedIdentifiers.sort(comparator);
     responseRelatedIdentifiers.sort(comparator);
 
@@ -554,13 +543,13 @@ public class CompareValues {
       String givenResourceTypeGeneral = givenAlternateIdentifer.getResourceTypeGeneral();
       String responseResourceTypeGeneral = responseAlternateIdentifier.getResourceTypeGeneral();
 
-      if (!(Objects.equals(givenName, responseName)
-          && Objects.equals(givenRelatedIdentifierType, responseRelatedIdentifierType)
-          && Objects.equals(givenRelationType, responseRelationType)
-          && Objects.equals(givenRelatedMetaDataScheme, responseRelatedMetaDataScheme)
-          && Objects.equals(givenSchemeUri, responseSchemeUri)
-          && Objects.equals(givenSchemeType, responseSchemeType)
-          && Objects.equals(givenResourceTypeGeneral, responseResourceTypeGeneral))){
+      if (!(equals(givenName, responseName)
+          && equals(givenRelatedIdentifierType, responseRelatedIdentifierType)
+          && equals(givenRelationType, responseRelationType)
+          && equals(givenRelatedMetaDataScheme, responseRelatedMetaDataScheme)
+          && equals(givenSchemeUri, responseSchemeUri)
+          && equals(givenSchemeType, responseSchemeType)
+          && equals(givenResourceTypeGeneral, responseResourceTypeGeneral))){
         System.out.println("given RelatedIdentifiers: " + givenName + " " + givenRelatedIdentifierType + " " + givenRelationType + " " + givenRelatedMetaDataScheme + " " + givenSchemeUri + " " + givenSchemeType + " " + givenResourceTypeGeneral);
         System.out.println("response RelatedIdentifiers: " + responseName + " " + responseRelatedIdentifierType + " " + responseRelationType + " " + responseRelatedMetaDataScheme + " " + responseSchemeUri + " " + responseSchemeType + " " + responseResourceTypeGeneral);
         equals = false;
@@ -636,7 +625,7 @@ public class CompareValues {
 
   private static boolean compareVersion(DataCiteSchema cedarConvertedDataCiteSchema, DataCiteSchema responseDataCiteSchema){
     System.out.println("----------------Comparing version");
-    return Objects.equals(cedarConvertedDataCiteSchema.getData().getAttributes().getVersion(),
+    return equals(cedarConvertedDataCiteSchema.getData().getAttributes().getVersion(),
         responseDataCiteSchema.getData().getAttributes().getVersion());
   }
 
@@ -656,7 +645,7 @@ public class CompareValues {
       return false;
     }
 
-    Comparator<DataCiteRights> comparator = Comparator.comparing(DataCiteRights::getRights);
+    Comparator<DataCiteRights> comparator = Comparator.comparing(DataCiteRights::getRights, Comparator.nullsFirst(Comparator.naturalOrder()));
     givenRights.sort(comparator);
     responseRights.sort(comparator);
 
@@ -679,11 +668,11 @@ public class CompareValues {
       String givenRIghtsIdentifierScheme = given.getRightsIdentifierScheme();
       String responseRIghtsIdentifierScheme = response.getRightsIdentifierScheme();
 
-      if (!(Objects.equals(givenRightsName, responseRightsName)
-          && Objects.equals(givenRightsUri, responseRightsUri)
-          && Objects.equals(givenSchemeUri, responseSchemeUri)
-          && Objects.equals(givenRightsIdentifier, responseRightsIdentifier)
-          && Objects.equals(givenRIghtsIdentifierScheme, responseRIghtsIdentifierScheme))){
+      if (!(equals(givenRightsName, responseRightsName)
+          && equals(givenRightsUri, responseRightsUri)
+          && equals(givenSchemeUri, responseSchemeUri)
+          && equals(givenRightsIdentifier, responseRightsIdentifier)
+          && equals(givenRIghtsIdentifierScheme, responseRIghtsIdentifierScheme))){
         System.out.println("given rights: " + givenRightsName + " " + givenRightsUri + " " + givenSchemeUri + " " + givenRightsIdentifier + " " + givenRIghtsIdentifierScheme);
         System.out.println("response rights: " + responseRightsName + " " + responseRightsUri + " " + responseSchemeUri + " " + responseRightsIdentifier + " " + responseRIghtsIdentifierScheme);
         equals = false;
@@ -709,7 +698,7 @@ public class CompareValues {
       return false;
     }
 
-    Comparator<DataCiteDescription> comparator = Comparator.comparing(DataCiteDescription::getDescription);
+    Comparator<DataCiteDescription> comparator = Comparator.comparing(DataCiteDescription::getDescription, Comparator.nullsFirst(Comparator.naturalOrder()));
     givenDescriptions.sort(comparator);
     responseDescriptions.sort(comparator);
 
@@ -726,9 +715,9 @@ public class CompareValues {
       String givenLang = given.getLang();
       String responseLang = response.getLang();
 
-      if (!(Objects.equals(givenDescriptionName, responseDescriptionName)
-          && Objects.equals(givenDescriptionType, responseDescriptionType)
-          && Objects.equals(givenLang, responseLang))){
+      if (!(equals(givenDescriptionName, responseDescriptionName)
+          && equals(givenDescriptionType, responseDescriptionType)
+          && equals(givenLang, responseLang))){
         System.out.println("given description: " + givenDescriptionName + " " + givenDescriptionType + " " + givenLang);
         System.out.println("response description: " + responseDescriptionName + " " + responseDescriptionType + " " + responseLang);
         equals = false;
@@ -769,12 +758,12 @@ public class CompareValues {
       List<DataCiteGeoLocationPoint> givenPolygonPoints = givenGeoLocationPolygon.getPolygonPointsList();
       List<DataCiteGeoLocationPoint> responsePolygonPoints = responseGeoLocationPolygon.getPolygonPointsList();
 
-      Comparator<DataCiteGeoLocationPoint> comparator = Comparator.comparing(DataCiteGeoLocationPoint::getPointLongitude);
+      Comparator<DataCiteGeoLocationPoint> comparator = Comparator.comparing(DataCiteGeoLocationPoint::getPointLongitude, Comparator.nullsFirst(Comparator.naturalOrder()));
       givenPolygonPoints.sort(comparator);
       responsePolygonPoints.sort(comparator);
 
-      if (!(Objects.equals(givenInPolygonPointLongitude, responseInPolygonPointLongitude)
-          && Objects.equals(givenInPolygonPointLatitude, responseInPolygonPointLatitude)
+      if (!(equals(givenInPolygonPointLongitude, responseInPolygonPointLongitude)
+          && equals(givenInPolygonPointLatitude, responseInPolygonPointLatitude)
           && compareGeoLocationPoints(givenPolygonPoints, responsePolygonPoints))){
         System.out.println("given geo location polygon: " + givenInPolygonPointLongitude + " " + givenInPolygonPointLatitude);
         System.out.println("response geo location polygon: " + responseInPolygonPointLongitude + " " + responseInPolygonPointLatitude);
@@ -801,7 +790,7 @@ public class CompareValues {
       return false;
     }
 
-    Comparator<DataCiteGeoLocation> comparator = Comparator.comparing(DataCiteGeoLocation::getGeoLocationPlace);
+    Comparator<DataCiteGeoLocation> comparator = Comparator.comparing(DataCiteGeoLocation::getGeoLocationPlace, Comparator.nullsFirst(Comparator.naturalOrder()));
     givenGeoLocations.sort(comparator);
     responseGeoLocations.sort(comparator);
 
@@ -812,34 +801,50 @@ public class CompareValues {
       String givenPlace = givenGeoLocation.getGeoLocationPlace();
       String responsePlace = responseGeoLocation.getGeoLocationPlace();
 
-      Float givenPointLongitude = givenGeoLocation.getGeoLocationPoint().getPointLongitude();
-      Float responsePointLongitude = responseGeoLocation.getGeoLocationPoint().getPointLongitude();
+      Float givenPointLongitude = null;
+      Float givenPointLatitude = null;
+      Float responsePointLongitude = null;
+      Float responsePointLatitude = null;
+      if (givenGeoLocation.getGeoLocationPoint() != null){
+         givenPointLongitude = givenGeoLocation.getGeoLocationPoint().getPointLongitude();
+         givenPointLatitude = givenGeoLocation.getGeoLocationPoint().getPointLatitude();
+      }
 
-      Float givenPointLatitude = givenGeoLocation.getGeoLocationPoint().getPointLatitude();
-      Float responsePointLatitude = responseGeoLocation.getGeoLocationPoint().getPointLatitude();
+      if (responseGeoLocation.getGeoLocationPoint() != null){
+         responsePointLongitude = responseGeoLocation.getGeoLocationPoint().getPointLongitude();
+         responsePointLatitude = responseGeoLocation.getGeoLocationPoint().getPointLatitude();
+      }
 
-      Float givenBoxEastLongitude = givenGeoLocation.getGeoLocationBox().getEastBoundLongitude();
-      Float responseBoxEastLongitude = givenGeoLocation.getGeoLocationBox().getEastBoundLongitude();
+      Float givenBoxEastLongitude = null;
+      Float givenNorthLatitude = null;
+      Float givenWestLongitude = null;
+      Float givenSouthLongitude = null;
+      Float responseBoxEastLongitude = null;
+      Float responseNorthLatitude = null;
+      Float responseWestLongitude = null;
+      Float responseSouthLongitude = null;
 
-      Float givenNorthLatitude = givenGeoLocation.getGeoLocationBox().getNorthBoundLatitude();
-      Float responseNorthLatitude = responseGeoLocation.getGeoLocationBox().getNorthBoundLatitude();
+      if (givenGeoLocation.getGeoLocationBox() != null) {
+         givenBoxEastLongitude = givenGeoLocation.getGeoLocationBox().getEastBoundLongitude();
+         givenNorthLatitude = givenGeoLocation.getGeoLocationBox().getNorthBoundLatitude();
+         givenWestLongitude = givenGeoLocation.getGeoLocationBox().getWestBoundLongitude();
+         givenSouthLongitude = givenGeoLocation.getGeoLocationBox().getSouthBoundLatitude();
+      }
 
-      Float givenWestLongitude = givenGeoLocation.getGeoLocationBox().getWestBoundLongitude();
-      Float responseWestLongitude = responseGeoLocation.getGeoLocationBox().getWestBoundLongitude();
+      if (givenGeoLocation.getGeoLocationBox() != null){
+         responseBoxEastLongitude = givenGeoLocation.getGeoLocationBox().getEastBoundLongitude();
+         responseNorthLatitude = responseGeoLocation.getGeoLocationBox().getNorthBoundLatitude();
+         responseWestLongitude = responseGeoLocation.getGeoLocationBox().getWestBoundLongitude();
+         responseSouthLongitude = responseGeoLocation.getGeoLocationBox().getSouthBoundLatitude();
+      }
 
-      Float givenSouthLongitude = givenGeoLocation.getGeoLocationBox().getSouthBoundLatitude();
-      Float responseSouthLongitude = responseGeoLocation.getGeoLocationBox().getSouthBoundLatitude();
-
-      List<DataCiteGeoLocationPolygon> givenPolygons = givenGeoLocation.getGeoLocationPolygonList();
-      List<DataCiteGeoLocationPolygon> responsePolygons = responseGeoLocation.getGeoLocationPolygonList();
-
-      if (!(Objects.equals(givenPlace, responsePlace)
-          && Objects.equals(givenPointLongitude, responsePointLongitude)
-          && Objects.equals(givenPointLatitude, responsePointLatitude)
-          && Objects.equals(givenBoxEastLongitude, responseBoxEastLongitude)
-          && Objects.equals(givenNorthLatitude, responseNorthLatitude)
-          && Objects.equals(givenWestLongitude, responseWestLongitude)
-          && Objects.equals(givenSouthLongitude, responseSouthLongitude)
+      if (!(equals(givenPlace, responsePlace)
+          && equals(givenPointLongitude, responsePointLongitude)
+          && equals(givenPointLatitude, responsePointLatitude)
+          && equals(givenBoxEastLongitude, responseBoxEastLongitude)
+          && equals(givenNorthLatitude, responseNorthLatitude)
+          && equals(givenWestLongitude, responseWestLongitude)
+          && equals(givenSouthLongitude, responseSouthLongitude)
       )){
 //          && compareLocationPolygons(givenPolygons, responsePolygons))){
         System.out.println("given geo location: " + givenPlace + " " + givenPointLongitude + " " + givenPointLatitude + " " + givenBoxEastLongitude + " " + givenNorthLatitude + " " + givenWestLongitude+ " " + givenSouthLongitude);
@@ -867,7 +872,7 @@ public class CompareValues {
       return false;
     }
 
-    Comparator<DataCiteFundingReference> comparator = Comparator.comparing(DataCiteFundingReference::getFunderName);
+    Comparator<DataCiteFundingReference> comparator = Comparator.comparing(DataCiteFundingReference::getFunderName, Comparator.nullsFirst(Comparator.naturalOrder()));
     givenFundingReferences.sort(comparator);
     responseFundingReferences.sort(comparator);
 
@@ -896,17 +901,15 @@ public class CompareValues {
       String givenAwardTitle = givenFundingReference.getAwardTitle();
       String responseAwardTitle = responseFundingReference.getAwardTitle();
 
-      if (!(Objects.equals(givenFunderName, responseFunderName)
-          && Objects.equals(givenFunderIdentifier, responseFunderIdentifier)
-          && Objects.equals(givenFunderIdentifierType, responseFunderIdentifierType)
-//          && Objects.equals(givenFunderIdentifierSchemeUri, responseFunderIdentifierSchemeUri)
-          && Objects.equals(givenAwardNumber, responseAwardNumber)
-          && Objects.equals(givenAwardUri, responseAwardUri)
-          && Objects.equals(givenAwardTitle, responseAwardTitle)
+      if (!(equals(givenFunderName, responseFunderName)
+          && equals(givenFunderIdentifier, responseFunderIdentifier)
+          && equals(givenFunderIdentifierType, responseFunderIdentifierType)
+          && equals(givenAwardNumber, responseAwardNumber)
+          && equals(givenAwardUri, responseAwardUri)
+          && equals(givenAwardTitle, responseAwardTitle)
       )) {
-//          && compareLocationPolygons(givenPolygons, responsePolygons))){
-        System.out.println("given funding reference: " + givenFunderName + " " + givenFunderIdentifier + " " + givenFunderIdentifierType + " " + givenFunderIdentifierSchemeUri + " " + givenAwardNumber + " " + givenAwardUri + " " + givenAwardTitle);
-        System.out.println("response funding reference: " + responseFunderName + " " + responseFunderIdentifier + " " + responseFunderIdentifierType + " " + responseFunderIdentifierSchemeUri + " " + responseAwardNumber + " " + responseAwardUri + " " + responseAwardTitle);
+        System.out.println("given funding reference: " + givenFunderName + " " + givenFunderIdentifier + " " + givenFunderIdentifierType + " " + givenAwardNumber + " " + givenAwardUri + " " + givenAwardTitle);
+        System.out.println("response funding reference: " + responseFunderName + " " + responseFunderIdentifier + " " + responseFunderIdentifierType + " " + responseAwardNumber + " " + responseAwardUri + " " + responseAwardTitle);
         equals = false;
         break;
       }
@@ -930,7 +933,7 @@ public class CompareValues {
       return false;
     }
 
-//    Comparator<DataCiteRelatedItem> comparator = Comparator.comparing(DataCiteRelatedItem::getRelatedItemType);
+//    Comparator<DataCiteRelatedItem> comparator = Comparator.comparing(DataCiteRelatedItem::getRelatedItemType, Comparator.nullsFirst(Comparator.naturalOrder()));
 //    givenRelatedItems.sort(comparator);
 //    responseRelatedItems.sort(comparator);
 
@@ -959,11 +962,11 @@ public class CompareValues {
       String givenSchemeType = givenRelatedItem.getRelatedItemIdentifier().getSchemeType();
       String responseSchemeType = responseRelatedItem.getRelatedItemIdentifier().getSchemeType();
 
-//      String givenNumber = givenRelatedItem.getNumber().getNumber();
-//      String responseNumber = responseRelatedItem.getNumber().getNumber();
-//
-//      String givenNumberType = givenRelatedItem.getNumber().getNumberType();
-//      String responseNumberType = responseRelatedItem.getNumber().getNumberType();
+      String givenNumber = givenRelatedItem.getNumber();
+      String responseNumber = responseRelatedItem.getNumber();
+
+      String givenNumberType = givenRelatedItem.getNumber();
+      String responseNumberType = responseRelatedItem.getNumber();
 
       String givenVolume = givenRelatedItem.getVolume();
       String responseVolume = responseRelatedItem.getVolume();
@@ -977,8 +980,8 @@ public class CompareValues {
       String givenLastPage = givenRelatedItem.getLastPage();
       String responseLastPage = responseRelatedItem.getLastPage();
 
-      int givenPublicationYear = givenRelatedItem.getPublicationYear();
-      int responsePublicationYear = responseRelatedItem.getPublicationYear();
+      Integer givenPublicationYear = givenRelatedItem.getPublicationYear();
+      Integer responsePublicationYear = responseRelatedItem.getPublicationYear();
 
       String givenPublisher = givenRelatedItem.getPublisher();
       String responsePublisher = responseRelatedItem.getPublisher();
@@ -995,22 +998,22 @@ public class CompareValues {
       List<DataCiteRelatedItemContributor> givenContributors = givenRelatedItem.getContributors();
       List<DataCiteRelatedItemContributor> responseContributors = responseRelatedItem.getContributors();
 
-      if (!(Objects.equals(givenRelatedItemType, responseRelatedItemType)
-          && Objects.equals(givenRelationType, responseRelationType)
-          && Objects.equals(givenRelatedIdentifier, responseRelatedIdentifier)
-          && Objects.equals(givenRelatedIdentifierType, responseRelatedIdentifierType)
-          && Objects.equals(givenMetadataScheme, responseMetadataScheme)
-//          && Objects.equals(givenSchemeUri, responseSchemeUri)
-          && Objects.equals(givenSchemeType, responseSchemeType)
-//          && Objects.equals(givenNumber, responseNumber)
-//          && Objects.equals(givenNumberType, responseNumberType)
-          && Objects.equals(givenVolume, responseVolume)
-          && Objects.equals(givenIssue, responseIssue)
-          && Objects.equals(givenFirstPage, responseFirstPage)
-          && Objects.equals(givenLastPage, responseLastPage)
-          && Objects.equals(givenPublicationYear, responsePublicationYear)
-          && Objects.equals(givenPublisher, responsePublisher)
-          && Objects.equals(givenEdition, responseEdition)
+      if (!(equals(givenRelatedItemType, responseRelatedItemType)
+          && equals(givenRelationType, responseRelationType)
+          && equals(givenRelatedIdentifier, responseRelatedIdentifier)
+          && equals(givenRelatedIdentifierType, responseRelatedIdentifierType)
+          && equals(givenMetadataScheme, responseMetadataScheme)
+          && equals(givenSchemeUri, responseSchemeUri)
+          && equals(givenSchemeType, responseSchemeType)
+          && equals(givenNumber, responseNumber)
+          && equals(givenNumberType, responseNumberType)
+          && equals(givenVolume, responseVolume)
+          && equals(givenIssue, responseIssue)
+          && equals(givenFirstPage, responseFirstPage)
+          && equals(givenLastPage, responseLastPage)
+          && equals(givenPublicationYear, responsePublicationYear)
+          && equals(givenPublisher, responsePublisher)
+          && equals(givenEdition, responseEdition)
 //          && compareCreators(givenCreators, responseCreators)
           && compareTitles(givenTitles, responseTitles)
           && compareRelatedItemContributors(givenContributors, responseContributors)
@@ -1039,7 +1042,7 @@ public class CompareValues {
       return false;
     }
 
-    Comparator<DataCiteRelatedItemContributor> comparator = Comparator.comparing(DataCiteRelatedItemContributor::getName);
+    Comparator<DataCiteRelatedItemContributor> comparator = Comparator.comparing(DataCiteRelatedItemContributor::getName, Comparator.nullsFirst(Comparator.naturalOrder()));
     givenContributors.sort(comparator);
     responseContributors.sort(comparator);
 
@@ -1062,11 +1065,11 @@ public class CompareValues {
       String givenContrubutorType = givenContributor.getContributorType();
       String responseContrubutorType = responseContributor.getContributorType();
 
-      if (!(Objects.equals(givenName, responseName)
-          && Objects.equals(givenNameType, responseNameType)
-          && Objects.equals(givenGivenName, responseGivenName)
-          && Objects.equals(givenFamilyName, responseFamilyName)
-          && Objects.equals(givenContrubutorType, responseContrubutorType)
+      if (!(equals(givenName, responseName)
+          && equals(givenNameType, responseNameType)
+          && equals(givenGivenName, responseGivenName)
+          && equals(givenFamilyName, responseFamilyName)
+          && equals(givenContrubutorType, responseContrubutorType)
       )) {
 //          && compareLocationPolygons(givenPolygons, responsePolygons))){
         System.out.println("given related item contributor: " + givenName + " " + givenNameType + " " + givenGivenName + " " + givenFamilyName + " " + givenContrubutorType );
@@ -1076,5 +1079,15 @@ public class CompareValues {
       }
     }
     return equals;
+  }
+
+  public static boolean equals(Object given, Object response) {
+    if (Objects.equals(given, response)) {
+      return true;
+    }
+    if (given instanceof String && response == null && ((String) given).isEmpty()) {
+      return true;
+    }
+    return false;
   }
 }

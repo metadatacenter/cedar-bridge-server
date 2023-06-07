@@ -15,6 +15,7 @@ import org.apache.http.util.EntityUtils;
 
 import org.metadatacenter.cedar.bridge.resource.CedarInstanceParser;
 import org.metadatacenter.cedar.bridge.resource.CEDARProperties.CEDARDataCiteInstance;
+import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.DataCiteDate;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.DataCiteSchema;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
@@ -129,8 +130,10 @@ public class DataCiteResource extends CedarMicroserviceResource {
     if (true) {
       try {
         // Get DOI request json
-        String jsonData = getRequestJson(dataCiteInstance);
-
+        String jsonData = "";
+        if (dataCiteInstance!=null && !dataCiteInstance.isEmpty()) {
+          jsonData = getRequestJson(dataCiteInstance);
+        }
         // Send HTTP request and get response
         HttpResponse<String> httResponse = httpDataCitePostCall(endpointUrl, basicAuth, jsonData);
 
@@ -235,6 +238,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
   private static String getRequestJson(JsonNode metadata) {
     ObjectMapper mapper = new ObjectMapper();
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
+    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
     DataCiteSchema dataCiteSchema = new DataCiteSchema();
     try {
       // Deserialize JSON-LD to CedarDataCiteInstance Class
@@ -245,12 +250,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
       CedarInstanceParser.parseCEDARInstance(cedarInstance, dataCiteSchema);
 
       //Serialize DataCiteRequest Class to json
-      mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-      mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-//      SimpleModule module = new SimpleModule();
-//      module.addSerializer(List.class, new EmptyListMapSerializer());
-//      mapper.registerModule(module);
-
       String requestJsonString = mapper.writeValueAsString(dataCiteSchema);
       System.out.println("DataCite Request Json: " + requestJsonString);
       return requestJsonString;
@@ -318,15 +317,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
       throw new RuntimeException(e);
     } catch (CedarProcessingException e) {
       throw new RuntimeException(e);
-    }
-  }
-
-  static class EmptyListMapSerializer extends JsonSerializer<List<Map<String, Object>>> {
-    @Override
-    public void serialize(List<Map<String, Object>> value, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-      if (value != null && !value.isEmpty()) {
-        jsonGenerator.writeObject(value);
-      }
     }
   }
 }
