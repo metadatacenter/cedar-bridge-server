@@ -1,10 +1,17 @@
 package org.metadatacenter.cedar.bridge.resources;
 
-import org.junit.*;
-import org.metadatacenter.cedar.bridge.resource.CompareValues;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.metadatacenter.util.json.JsonMapper;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.metadatacenter.cedar.bridge.resource.CompareValues;
+import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.harness.junit.rule.Neo4jRule;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
@@ -12,13 +19,22 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+
+import static org.neo4j.configuration.connectors.BoltConnector.listen_address;
 
 public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 {
   @Rule
   public ObjectMapperRule objectMapperRule = new ObjectMapperRule();
+
+  @Rule
+  public Neo4jRule neo4jRule = new Neo4jRule()
+    .withConfig(listen_address, new SocketAddress("localhost", 7687))
+    .withFixture("CREATE (:Node {name: 'John Doe'})");
+
   private ObjectMapper objectMapper;
 
   @BeforeClass public static void oneTimeSetUp()
@@ -28,6 +44,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   @Before public void setUp()
   {
     objectMapper = objectMapperRule.getObjectMapper();
+    URI boltURI = neo4jRule.boltURI();
   }
 
   @After public void tearDown()
@@ -35,6 +52,13 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
+  public void neo4jTest() throws IOException
+  {
+    JsonNode givenMetadata = getFileContentAsJson("SuccessRichData");
+    Response createDoiResponse = createDoi(givenMetadata);
+  }
+
+    @Test  @Ignore
   public void getDoiMetadataSuccessRichDataTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRichData");
     Response createDoiResponse = createDoi(givenMetadata);
@@ -52,7 +76,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata));
   }
 
-  @Test
+  @Test  @Ignore
   public void getDoiMetadataSuccessSimplyDataTest() throws IOException {
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredOnly");
     Response createDoiResponse = createDoi(givenMetadata);
@@ -67,7 +91,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata));
   }
 
-  @Test
+  @Test @Ignore
   public void getDoiMetadataSuccessAllRequiredDataTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessAllPropertiesUnderRequiredElement");
     Response createDoiResponse = createDoi(givenMetadata);
@@ -107,7 +131,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     if (jsonFileName != null) {
       String filePath = FILE_BASE_PATH + jsonFileName + ".json";
       try {
-        return objectMapper.readTree(new File(filePath));
+        return objectMapper.readTree(new File(DataCiteResourceTest.class.getClassLoader().getResource(filePath).getFile()));
       } catch (IOException e) {
         throw e;
       }

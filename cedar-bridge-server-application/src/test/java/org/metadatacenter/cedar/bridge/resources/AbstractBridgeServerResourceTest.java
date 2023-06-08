@@ -31,7 +31,7 @@ public abstract class AbstractBridgeServerResourceTest
 
   protected static final String BASE_URL = "http://localhost";
 
-  protected static final String FILE_BASE_PATH = "src/test/resources/TestJsonFiles/";
+  protected static final String FILE_BASE_PATH = "TestJsonFiles/";
 
   @ClassRule
   public static final DropwizardAppRule<BridgeServerConfiguration> RULE =

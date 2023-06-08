@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
+import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/datacite")
 @Produces(MediaType.APPLICATION_JSON)
@@ -107,7 +108,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
   public Response createDOI(JsonNode dataCiteInstance) throws CedarException, IOException, InterruptedException {
     CedarRequestContext c = buildRequestContext();
 
-//    c.must(c.user()).be(LoggedIn);
+    c.must(c.user()).be(LoggedIn);
 
     Map<String, Object> response = new HashMap<>();
 
