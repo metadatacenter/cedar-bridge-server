@@ -121,9 +121,9 @@ public class DataCiteResource extends CedarMicroserviceResource {
     String basicAuth =
         Base64.getEncoder().encodeToString((repositoryID + ":" + password).getBytes(StandardCharsets.UTF_8));
 
-//    Pair<Boolean, JsonNode> validationResultPair = validateCEDARInstance(c, templateId, dataCiteInstance);
-//    boolean validates = validationResultPair.getLeft();
-//    JsonNode validationResult = validationResultPair.getRight();
+    Pair<Boolean, JsonNode> validationResultPair = validateCEDARInstance(c, templateId, dataCiteInstance);
+    boolean validates = validationResultPair.getLeft();
+    JsonNode validationResult = validationResultPair.getRight();
 
     //Call CEDAR validation endpoint and continue if return true
 //    if (validates){

@@ -16,7 +16,9 @@ public class CedarInstanceParser {
         data.setType("dois");
 
         //Pass prefix value from CEDAR class to DataCite class
-        attributes.setPrefix(cedarDataCiteInstance.getPrefix().getValue());
+        if (cedarDataCiteInstance.getPrefix() != null) {
+            attributes.setPrefix(cedarDataCiteInstance.getPrefix().getValue());
+        }
 
         // set event value
         attributes.setEvent("publish");
