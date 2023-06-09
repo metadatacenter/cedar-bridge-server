@@ -341,6 +341,21 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
+  public void dataCiteInstanceRequiredPlusAllElementExpandedTest() throws IOException{
+    JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusAllElementExpanded");
+    Response createDoiResponse = createDoi(givenMetadata);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata));
+  }
+
+  @Test
   public void dataCiteInstanceEmptyJsonTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailEmptyJson");
     Response createDoiResponse = createDoi(givenMetadata);

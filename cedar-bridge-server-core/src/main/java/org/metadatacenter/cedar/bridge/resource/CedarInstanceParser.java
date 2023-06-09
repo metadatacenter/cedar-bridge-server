@@ -5,7 +5,6 @@ import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 public class CedarInstanceParser {
     public static void parseCEDARInstance(CEDARDataCiteInstance cedarDataCiteInstance, DataCiteSchema dataCiteSchema) {
@@ -53,7 +52,7 @@ public class CedarInstanceParser {
 
         //Pass subjects values
         List<Subject> subjectList = cedarDataCiteInstance.getSubjectElement().getSubjects();
-        if (!subjectList.isEmpty()){
+        if (!(CheckEmptyList.emptySubjectList(subjectList))) {
             attributes.setSubjects(parseSubjectValue(subjectList));
         }
 
@@ -62,13 +61,13 @@ public class CedarInstanceParser {
 
         //Pass contributors values
         List<Contributor> contributorList = cedarDataCiteInstance.getContributorElement().getContributors();
-        if (!contributorList.isEmpty()){
+        if (!CheckEmptyList.emptyContributorList(contributorList)){
             attributes.setContributors(parseContributorValue(contributorList));
         }
 
         //Pass dates values
         List<Date> dateList = cedarDataCiteInstance.getDateElement().getDates();
-        if (!dateList.isEmpty()){
+        if (!CheckEmptyList.emptyDateList(dateList)){
             attributes.setDates(parseDateValue(dateList));
         }
 
@@ -77,13 +76,13 @@ public class CedarInstanceParser {
 
         //Pass alternateIdentifier values
         List<AlternateIdentifier> alternateIdentifierList = cedarDataCiteInstance.getAlternateIdentifierElement().getAlternateIdentifiers();
-        if (! alternateIdentifierList.isEmpty()){
+        if (!CheckEmptyList.emptyAlternateIdentifierList(alternateIdentifierList)){
             attributes.setAlternateIdentifiers(parseAlternateIdentifier(alternateIdentifierList));
         }
 
         //Pass relatedIdentifier values
         List<RelatedIdentifier> relatedIdentifierList = cedarDataCiteInstance.getRelatedIdentifierElement().getRelatedIdentifiers();
-        if (!relatedIdentifierList.isEmpty()){
+        if (!CheckEmptyList.emptyRelatedIdentifierList(relatedIdentifierList)){
             attributes.setRelatedIdentifiers(parseRelatedIdentifier(relatedIdentifierList));
         }
 
@@ -104,31 +103,31 @@ public class CedarInstanceParser {
 
         //Pass rights values
         List<Rights> rightsList = cedarDataCiteInstance.getRightsElement().getRightsList();
-        if (!rightsList.isEmpty()){
+        if (!CheckEmptyList.emptyRightsList(rightsList)){
             attributes.setRightsList(parseRightsValue(rightsList));
         }
 
         //Pass description values
         List<Description> descriptionList = cedarDataCiteInstance.getDescriptionElement().getDescriptions();
-        if (!descriptionList.isEmpty()){
+        if (!CheckEmptyList.emptyDescriptionList(descriptionList)){
             attributes.setDescriptions(parseDescriptionValue(descriptionList));
         }
 
         //Pass geoLocation values
         List<GeoLocation> geoLocationList = cedarDataCiteInstance.getGeoLocationElement().getGeoLocations();
-        if (!geoLocationList.isEmpty()){
+        if (!CheckEmptyList.emptyGeoLocationList(geoLocationList)){
             attributes.setGeoLocations(parseGeoLocationValue(geoLocationList));
         }
 
         //Pass fundingReference values
         List<FundingReference> fundingReferenceList = cedarDataCiteInstance.getFundingReferenceElement().getFundingReferences();
-        if (!fundingReferenceList.isEmpty()){
+        if (!CheckEmptyList.emptyFundingReferenceList(fundingReferenceList)){
             attributes.setFundingReferences(parseFundingReference(fundingReferenceList));
         }
 
         //Pass relatedItem values
         List<RelatedItem> relatedItemList = cedarDataCiteInstance.getRelatedItemElement().getRelatedItems();
-        if (!relatedItemList.isEmpty()){
+        if (!CheckEmptyList.emptyRelatedItemList(relatedItemList)){
             attributes.setRelatedItems(parseRelatedItemValue(relatedItemList));
         }
 
@@ -196,13 +195,13 @@ public class CedarInstanceParser {
 
             // Set values to corresponding Affiliation list in dataCiteCreator
             List<Affiliation> affiliationList = c.getAffiliations();
-            if (affiliationList != null && !affiliationList.isEmpty()) {
+            if (affiliationList != null && !affiliationList.isEmpty() && !CheckEmptyList.emptyAffiliationList(affiliationList)) {
                 dataCiteCreator.setAffiliations(parseAffiliationValue(affiliationList));
             }
 
             // Set values to corresponding Affiliation list in dataCiteCreator
             List<NameIdentifier> nameIdentifierList = c.getNameIdentifiers();
-            if (nameIdentifierList != null && !affiliationList.isEmpty()) {
+            if (nameIdentifierList != null && !affiliationList.isEmpty() && !CheckEmptyList.emptyNameIdentifierList(nameIdentifierList)) {
                 dataCiteCreator.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList));
             }
 
@@ -302,13 +301,13 @@ public class CedarInstanceParser {
 
             // Set values to corresponding Affiliation list in dataCiteCreator
             List<Affiliation> affiliationList = c.getAffiliations();
-            if (affiliationList != null && !affiliationList.isEmpty()) {
+            if (affiliationList != null && !CheckEmptyList.emptyAffiliationList(affiliationList)) {
                 dataCiteContributor.setAffiliations(parseAffiliationValue(affiliationList));
             }
 
             // Set values to corresponding nameIdentifierList list in dataCiteCreator
             List<NameIdentifier> nameIdentifierList = c.getNameIdentifiers();
-            if (nameIdentifierList != null && !nameIdentifierList.isEmpty()) {
+            if (nameIdentifierList != null && !CheckEmptyList.emptyNameIdentifierList(nameIdentifierList)) {
                 dataCiteContributor.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList));
             }
             // Add dataCiteContributor to the list

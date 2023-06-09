@@ -33,7 +33,6 @@ public class DataCiteMetaDataParser {
             affiliationIdentifierSchemeURI.setId(a.getAffiliationSchemeURI());
 
             //set CEDAR Affiliation class value
-            affiliation.setAffiliation(affiliationName);
             affiliation.setAffiliationIdentifier(affiliationIdentifier);
             affiliation.setAffiliationIdentifierScheme(affiliationIdentifierScheme);
             affiliation.setAffiliationIdentifierSchemeURI(affiliationIdentifierSchemeURI);
