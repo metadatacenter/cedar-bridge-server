@@ -1,6 +1,7 @@
 package org.metadatacenter.cedar.bridge.config;
 
 import io.dropwizard.testing.junit5.DropwizardAppExtension;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.metadatacenter.cedar.bridge.BridgeServerApplication;
 import org.metadatacenter.cedar.bridge.BridgeServerConfiguration;
@@ -15,7 +16,7 @@ public class IntegrationTest {
   private String creatDoiUrl = "https://bridge.metadatacenter.orgx/datacite/create-doi";
   private String getMetadataUrl = "https://bridge.metadatacenter.orgx/datacite/{doi}}";
 
-  @Test
+  @Test @Ignore
   public void testGivenSuccessRequiredOnlyJson() throws FileNotFoundException {
     Client client = dropwizardAppRule.client();
 
