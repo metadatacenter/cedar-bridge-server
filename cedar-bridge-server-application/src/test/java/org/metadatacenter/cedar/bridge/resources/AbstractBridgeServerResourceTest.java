@@ -14,6 +14,8 @@ import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.config.environment.CedarEnvironmentVariableProvider;
 import org.metadatacenter.model.SystemComponent;
 import org.metadatacenter.util.test.TestUserUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.client.Client;
 import java.util.Map;
@@ -28,11 +30,16 @@ public abstract class AbstractBridgeServerResourceTest
 
   protected static String baseUrlGetDoiMetadata;
   protected static String baseUrlCreateDoi;
+  protected static Logger log;
 
   protected static final String BASE_URL = "http://localhost";
 
-  protected static final String FILE_BASE_PATH = "src/test/resources/TestJsonFiles/";
+  protected static final String FILE_BASE_PATH = "TestJsonFiles/";
   protected static final String displayAffiliation = "?affiliation=true";
+
+  static {
+    log = LoggerFactory.getLogger("Cedar Bridge Server Test");
+  }
 
   @ClassRule
   public static final DropwizardAppRule<BridgeServerConfiguration> RULE =

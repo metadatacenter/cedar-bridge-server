@@ -483,13 +483,10 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceUnsupportedMediaTypeTest() throws IOException{
-    File contentFile = new File(FILE_BASE_PATH + "FailUnsupportedMediaType.xml");
-    byte[] contentBytes = Files.readAllBytes(contentFile.toPath());
-
     Response createDoiResponse = RULE.client().target(baseUrlCreateDoi)
         .request(MediaType.APPLICATION_XML)
         .header("Authorization", authHeaderAdmin)
-        .post(Entity.entity(contentBytes, MediaType.APPLICATION_XML));
+        .post(Entity.text(""));
 
     Assert.assertEquals(CedarResponseStatus.HTTP_VERSION_NOT_SUPPORTED.getStatusCode(), createDoiResponse.getStatus());
   }
@@ -526,8 +523,9 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     if (jsonFileName != null) {
       String filePath = FILE_BASE_PATH + jsonFileName + ".json";
       try {
-        return objectMapper.readTree(new File(filePath));
+        return objectMapper.readTree(new File(DataCiteResourceTest.class.getClassLoader().getResource(filePath).getFile()));
       } catch (IOException e) {
+        log.error("Error reading input file:" + filePath);
         throw e;
       }
     }
