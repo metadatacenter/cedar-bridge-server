@@ -52,12 +52,6 @@
     </dependency>
 
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
     </dependency>
@@ -69,12 +63,55 @@
 
     <dependency>
       <groupId>io.dropwizard</groupId>
+      <artifactId>dropwizard-jersey</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.dropwizard</groupId>
       <artifactId>dropwizard-testing</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.dropwizard</groupId>
       <artifactId>dropwizard-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+        <groupId>org.neo4j.test</groupId>
+        <artifactId>neo4j-harness</artifactId>
+        <scope>test</scope>
+    </dependency>
+
+    <dependency>
+        <groupId>org.neo4j.driver</groupId>
+        <artifactId>neo4j-java-driver</artifactId>
+        <scope>test</scope>
+    </dependency>
+
+      <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-graphdb-api</artifactId>
+          <scope>test</scope>
+    </dependency>
+
+      <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-configuration</artifactId>
+          <scope>test</scope>
+      </dependency>
+
+    <dependency>
+	<groupId>org.glassfish.jersey.core</groupId>
+	<artifactId>jersey-common</artifactId>
+        <scope>test</scope>
+     </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
 
