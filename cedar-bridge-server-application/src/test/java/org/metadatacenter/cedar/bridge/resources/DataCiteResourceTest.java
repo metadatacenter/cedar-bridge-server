@@ -39,18 +39,20 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRichDataTest() throws IOException{
+    // Retrieve the given DataCite instance from the file
     JsonNode givenMetadata = getFileContentAsJson("SuccessRichData");
+
+    // Create a DOI using the given DataCite instance
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
-//      Map<String, Object> summary = createDoiResponse.readEntity(new GenericType<>(){});
-//      System.out.println(JsonMapper.MAPPER.valueToTree(summary));
-
+    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
     Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
     Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
+    // Compare the given DataCite instance with the response metadata
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
     Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata));
   }

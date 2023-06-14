@@ -5,15 +5,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+import java.util.Map;
 
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SubjectElement {
-    @JsonIgnore
     @JsonProperty("@context")
-    private String context;
+    private Map<String, String> context;
 
-    @JsonIgnore
     @JsonProperty("@id")
     private String id;
 
@@ -26,5 +25,21 @@ public class SubjectElement {
 
     public void setSubjects(List<Subject> subjects) {
         this.subjects = subjects;
+    }
+
+    public Map<String, String> getContext() {
+        return context;
+    }
+
+    public void setContext(Map<String, String> context) {
+        this.context = context;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

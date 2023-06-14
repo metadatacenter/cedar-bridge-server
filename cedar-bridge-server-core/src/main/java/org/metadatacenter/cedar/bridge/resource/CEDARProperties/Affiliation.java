@@ -4,18 +4,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Map;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Affiliation {
-    @JsonIgnore
     @JsonProperty("@context")
-    private String context;
+    private Map<String, String> context;
 
-    @JsonIgnore
     @JsonProperty("@id")
     private String id;
-
-//    @JsonProperty("affiliation")
-//    private ValueFormat affiliation;
 
     @JsonProperty("affiliationIdentifier")
     private ValueFormat affiliationIdentifier;
@@ -25,14 +22,6 @@ public class Affiliation {
 
     @JsonProperty("affiliationIdentifierSchemeURI")
     private SchemeURI affiliationIdentifierSchemeURI;
-
-//    public ValueFormat getAffiliation() {
-//        return affiliation;
-//    }
-//
-//    public void setAffiliation(ValueFormat affiliation) {
-//        this.affiliation = affiliation;
-//    }
 
     public ValueFormat getAffiliationIdentifier() {
         return affiliationIdentifier;
@@ -56,5 +45,21 @@ public class Affiliation {
 
     public void setAffiliationIdentifierSchemeURI(SchemeURI affiliationIdentifierSchemeURI) {
         this.affiliationIdentifierSchemeURI = affiliationIdentifierSchemeURI;
+    }
+
+    public Map<String, String> getContext() {
+        return context;
+    }
+
+    public void setContext(Map<String, String> context) {
+        this.context = context;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

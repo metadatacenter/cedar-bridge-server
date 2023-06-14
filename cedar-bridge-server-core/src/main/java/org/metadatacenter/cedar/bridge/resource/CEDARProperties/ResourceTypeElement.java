@@ -4,14 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Map;
+
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ResourceTypeElement {
-    @JsonIgnore
     @JsonProperty("@context")
-    private String context;
+    private Map<String, String> context;
 
-    @JsonIgnore
     @JsonProperty("@id")
     private String id;
 
@@ -35,5 +35,21 @@ public class ResourceTypeElement {
 
     public void setResourceTypeGeneral(IdFormat resourceTypeGeneral) {
         this.resourceTypeGeneral = resourceTypeGeneral;
+    }
+
+    public Map<String, String> getContext() {
+        return context;
+    }
+
+    public void setContext(Map<String, String> context) {
+        this.context = context;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }
