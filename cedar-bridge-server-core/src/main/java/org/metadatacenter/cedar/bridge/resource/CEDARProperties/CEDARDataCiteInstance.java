@@ -1,43 +1,39 @@
 package org.metadatacenter.cedar.bridge.resource.CEDARProperties;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Map;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CEDARDataCiteInstance {
-//    @JsonIgnore
-//    @JsonProperty("@context")
-//    private String context;
-//
-//    @JsonIgnore
-//    @JsonProperty("@id")
-//    private String id;
-//
-//    @JsonIgnore
+    @JsonIgnore
+    @JsonProperty("@context")
+    private Map<String, String> context;
+
+    @JsonIgnore
+    @JsonProperty("@id")
+    private String id;
+
 //    @JsonProperty("schema:isBasedOn")
 //    private String schemaIsBasedOn;
 //
-//    @JsonIgnore
 //    @JsonProperty("schema:name")
 //    private String schemaName;
 //
-//    @JsonIgnore
 //    @JsonProperty("schema:description")
 //    private String schemaDescription;
 //
-//    @JsonIgnore
 //    @JsonProperty("pav:createdOn")
 //    private String pavCreatedOn;
 //
-//    @JsonIgnore
 //    @JsonProperty("pav:createdBy")
 //    private String pavCreatedBy;
 //
-//    @JsonIgnore
 //    @JsonProperty("pav:lastUpdatedOn")
 //    private String pavLastUpdatedOn;
 //
-//    @JsonIgnore
 //    @JsonProperty("oslc:modifiedBy")
 //    private String oslcModifiedBy;
 
@@ -263,5 +259,21 @@ public class CEDARDataCiteInstance {
 
     public void setDescriptionElement(DescriptionElement descriptionElement) {
         this.descriptionElement = descriptionElement;
+    }
+
+    public Map<String, String> getContext() {
+        return context;
+    }
+
+    public void setContext(Map<String, String> context) {
+        this.context = context;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

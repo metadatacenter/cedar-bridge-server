@@ -277,6 +277,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       return requestJsonString;
 
     } catch (IOException e) {
+      e.printStackTrace();
       throw new RuntimeException(e);
     }
   }

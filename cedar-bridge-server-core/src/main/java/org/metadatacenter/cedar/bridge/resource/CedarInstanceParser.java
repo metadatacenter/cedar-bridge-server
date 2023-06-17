@@ -581,7 +581,7 @@ public class CedarInstanceParser {
             String publisher = r.getPublisher().toString();
             String edition = r.getEdition().toString();
             String number = r.getNumber().toString();
-            String numberType = r.getNumberTYpe().toString();
+            String numberType = r.getNumberType().toString();
 
             dataCiteRelatedItem.setRelatedItemType(relatedItemType);
             dataCiteRelatedItem.setRelationType(relationType);

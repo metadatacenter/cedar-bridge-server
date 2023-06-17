@@ -111,7 +111,7 @@ public class CheckEmptyList {
         && (relatedItemList.get(0).getRelatedItemIdentifier().getSchemeURi().toString()==null || relatedItemList.get(0).getRelatedItemIdentifier().getSchemeURi().toString().equals(""))
         && (relatedItemList.get(0).getRelatedItemIdentifier().getSchemeType().toString()==null || relatedItemList.get(0).getRelatedItemIdentifier().getSchemeType().toString().equals(""))
         && (relatedItemList.get(0).getNumber().toString()==null || relatedItemList.get(0).getNumber().toString().equals(""))
-        && (relatedItemList.get(0).getNumberTYpe().toString()==null || relatedItemList.get(0).getNumberTYpe().toString().equals(""))
+        && (relatedItemList.get(0).getNumberType().toString()==null || relatedItemList.get(0).getNumberType().toString().equals(""))
         && (relatedItemList.get(0).getVolume().toString()==null || relatedItemList.get(0).getVolume().toString().equals(""))
         && (relatedItemList.get(0).getIssue().toString()==null || relatedItemList.get(0).getIssue().toString().equals(""))
         && (relatedItemList.get(0).getFirstPage().toString()==null || relatedItemList.get(0).getFirstPage().toString().equals(""))
