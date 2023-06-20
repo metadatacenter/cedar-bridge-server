@@ -8,34 +8,33 @@ import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CEDARDataCiteInstance {
-    @JsonIgnore
-    @JsonProperty("@context")
-    private Map<String, String> context;
 
-    @JsonIgnore
+    @JsonProperty("@context")
+    private Context context;
+
     @JsonProperty("@id")
     private String id;
 
-//    @JsonProperty("schema:isBasedOn")
-//    private String schemaIsBasedOn;
-//
-//    @JsonProperty("schema:name")
-//    private String schemaName;
-//
-//    @JsonProperty("schema:description")
-//    private String schemaDescription;
-//
-//    @JsonProperty("pav:createdOn")
-//    private String pavCreatedOn;
-//
-//    @JsonProperty("pav:createdBy")
-//    private String pavCreatedBy;
-//
-//    @JsonProperty("pav:lastUpdatedOn")
-//    private String pavLastUpdatedOn;
-//
-//    @JsonProperty("oslc:modifiedBy")
-//    private String oslcModifiedBy;
+    @JsonProperty("schema:isBasedOn")
+    private String schemaIsBasedOn;
+
+    @JsonProperty("schema:name")
+    private String schemaName;
+
+    @JsonProperty("schema:description")
+    private String schemaDescription;
+
+    @JsonProperty("pav:createdOn")
+    private String pavCreatedOn;
+
+    @JsonProperty("pav:createdBy")
+    private String pavCreatedBy;
+
+    @JsonProperty("pav:lastUpdatedOn")
+    private String pavLastUpdatedOn;
+
+    @JsonProperty("oslc:modifiedBy")
+    private String oslcModifiedBy;
 
     @JsonProperty("prefix")
     private ValueFormat prefix;
@@ -261,11 +260,11 @@ public class CEDARDataCiteInstance {
         this.descriptionElement = descriptionElement;
     }
 
-    public Map<String, String> getContext() {
+    public Context getContext() {
         return context;
     }
 
-    public void setContext(Map<String, String> context) {
+    public void setContext(Context context) {
         this.context = context;
     }
 
@@ -275,5 +274,61 @@ public class CEDARDataCiteInstance {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getSchemaIsBasedOn() {
+        return schemaIsBasedOn;
+    }
+
+    public void setSchemaIsBasedOn(String schemaIsBasedOn) {
+        this.schemaIsBasedOn = schemaIsBasedOn;
+    }
+
+    public String getSchemaName() {
+        return schemaName;
+    }
+
+    public void setSchemaName(String schemaName) {
+        this.schemaName = schemaName;
+    }
+
+    public String getSchemaDescription() {
+        return schemaDescription;
+    }
+
+    public void setSchemaDescription(String schemaDescription) {
+        this.schemaDescription = schemaDescription;
+    }
+
+    public String getPavCreatedOn() {
+        return pavCreatedOn;
+    }
+
+    public void setPavCreatedOn(String pavCreatedOn) {
+        this.pavCreatedOn = pavCreatedOn;
+    }
+
+    public String getPavCreatedBy() {
+        return pavCreatedBy;
+    }
+
+    public void setPavCreatedBy(String pavCreatedBy) {
+        this.pavCreatedBy = pavCreatedBy;
+    }
+
+    public String getPavLastUpdatedOn() {
+        return pavLastUpdatedOn;
+    }
+
+    public void setPavLastUpdatedOn(String pavLastUpdatedOn) {
+        this.pavLastUpdatedOn = pavLastUpdatedOn;
+    }
+
+    public String getOslcModifiedBy() {
+        return oslcModifiedBy;
+    }
+
+    public void setOslcModifiedBy(String oslcModifiedBy) {
+        this.oslcModifiedBy = oslcModifiedBy;
     }
 }

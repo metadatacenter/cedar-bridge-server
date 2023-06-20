@@ -30,13 +30,13 @@ public class CompareValues {
       CedarInstanceParser.parseCEDARInstance(cedarInstance, cedarConvertedDataCiteSchema);
 
       String cedarConvertedDataCiteSchemaString = mapper.writeValueAsString(cedarConvertedDataCiteSchema);
-      System.out.println("Cedar Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);
+//      System.out.println("Cedar Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);
 
       //Deserialize responseMetadata to DtaCiteSchema Class
       String responseMetadaString = responseMetadata.toString();
       DataCiteSchema responseDataCiteSchema = mapper.readValue(responseMetadaString, DataCiteSchema.class);
       String responseConvertedDataCiteSchemaString = mapper.writeValueAsString(responseDataCiteSchema);
-      System.out.println("DataCite response converted Schema: " + responseConvertedDataCiteSchemaString);
+//      System.out.println("DataCite response converted Schema: " + responseConvertedDataCiteSchemaString);
 
 
       //Compare cedarConvertedDataCiteSchema vs responseDataCiteSchema

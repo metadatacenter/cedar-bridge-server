@@ -17,14 +17,14 @@ public class CreatorElement {
     private String id;
 
     @JsonProperty("creator")
-    private List<Creator> Creators;
+    private List<Creator> creators;
 
     public List<Creator> getCreators() {
-        return Creators;
+        return creators;
     }
 
-    public void setCreators(List<Creator> Creators) {
-        this.Creators = Creators;
+    public void setCreators(List<Creator> creators) {
+        this.creators = creators;
     }
 
     public Map<String, String> getContext() {

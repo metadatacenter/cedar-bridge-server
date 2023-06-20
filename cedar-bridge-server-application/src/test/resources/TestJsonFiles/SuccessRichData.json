@@ -601,13 +601,9 @@
         "Affiliation": [
           {
             "@context": {
-              "affiliation": "https://schema.metadatacenter.org/properties/9179e76e-a700-485e-aff0-62ef53cb5dae",
               "affiliationIdentifier": "https://schema.metadatacenter.org/properties/1c405b8f-a36a-4b35-a7e5-52ad7828f5a4",
               "affiliationIdentifierScheme": "https://schema.metadatacenter.org/properties/ac3137bc-0bd2-4e50-ad4e-6592bf71e681",
               "affiliationIdentifierSchemeURI": "https://schema.metadatacenter.org/properties/3b1e62d4-f1b6-4874-b36e-d7740a7f7b05"
-            },
-            "affiliation": {
-              "@value": "affiliation1"
             },
             "affiliationIdentifier": {
               "@value": "affiliation identifier 1"
@@ -621,13 +617,9 @@
           },
           {
             "@context": {
-              "affiliation": "https://schema.metadatacenter.org/properties/9179e76e-a700-485e-aff0-62ef53cb5dae",
               "affiliationIdentifier": "https://schema.metadatacenter.org/properties/1c405b8f-a36a-4b35-a7e5-52ad7828f5a4",
               "affiliationIdentifierScheme": "https://schema.metadatacenter.org/properties/ac3137bc-0bd2-4e50-ad4e-6592bf71e681",
               "affiliationIdentifierSchemeURI": "https://schema.metadatacenter.org/properties/3b1e62d4-f1b6-4874-b36e-d7740a7f7b05"
-            },
-            "affiliation": {
-              "@value": "affiliation2"
             },
             "affiliationIdentifier": {
               "@value": "affiliation identifier 2"
@@ -685,13 +677,9 @@
         "Affiliation": [
           {
             "@context": {
-              "affiliation": "https://schema.metadatacenter.org/properties/9179e76e-a700-485e-aff0-62ef53cb5dae",
               "affiliationIdentifier": "https://schema.metadatacenter.org/properties/1c405b8f-a36a-4b35-a7e5-52ad7828f5a4",
               "affiliationIdentifierScheme": "https://schema.metadatacenter.org/properties/ac3137bc-0bd2-4e50-ad4e-6592bf71e681",
               "affiliationIdentifierSchemeURI": "https://schema.metadatacenter.org/properties/3b1e62d4-f1b6-4874-b36e-d7740a7f7b05"
-            },
-            "affiliation": {
-              "@value": "affiliation1"
             },
             "affiliationIdentifier": {
               "@value": "affiliation identifier 1"
@@ -809,13 +797,9 @@
         "Affiliation": [
           {
             "@context": {
-              "affiliation": "https://schema.metadatacenter.org/properties/9179e76e-a700-485e-aff0-62ef53cb5dae",
               "affiliationIdentifier": "https://schema.metadatacenter.org/properties/1c405b8f-a36a-4b35-a7e5-52ad7828f5a4",
               "affiliationIdentifierScheme": "https://schema.metadatacenter.org/properties/ac3137bc-0bd2-4e50-ad4e-6592bf71e681",
               "affiliationIdentifierSchemeURI": "https://schema.metadatacenter.org/properties/3b1e62d4-f1b6-4874-b36e-d7740a7f7b05"
-            },
-            "affiliation": {
-              "@value": "contributor_affiliation"
             },
             "affiliationIdentifier": {
               "@value": "contributor_affiliation_identifier"
@@ -829,13 +813,9 @@
           },
           {
             "@context": {
-              "affiliation": "https://schema.metadatacenter.org/properties/9179e76e-a700-485e-aff0-62ef53cb5dae",
               "affiliationIdentifier": "https://schema.metadatacenter.org/properties/1c405b8f-a36a-4b35-a7e5-52ad7828f5a4",
               "affiliationIdentifierScheme": "https://schema.metadatacenter.org/properties/ac3137bc-0bd2-4e50-ad4e-6592bf71e681",
               "affiliationIdentifierSchemeURI": "https://schema.metadatacenter.org/properties/3b1e62d4-f1b6-4874-b36e-d7740a7f7b05"
-            },
-            "affiliation": {
-              "@value": "contributor_affiliation2"
             },
             "affiliationIdentifier": {
               "@value": "contributor_affiliation_identifier2"

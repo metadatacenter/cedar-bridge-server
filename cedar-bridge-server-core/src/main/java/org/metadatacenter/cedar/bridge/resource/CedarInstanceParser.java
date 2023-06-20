@@ -23,6 +23,7 @@ public class CedarInstanceParser {
         attributes.setEvent("publish");
 
         // Set url and schemeVersion
+        //TODO: URL should be the openview url of the artifact!
         attributes.setUrl("https://schema.datacite.org/meta/kernel-4.0/index.html");
         attributes.setSchemaVersion("http://datacite.org/schema/kernel-4");
 

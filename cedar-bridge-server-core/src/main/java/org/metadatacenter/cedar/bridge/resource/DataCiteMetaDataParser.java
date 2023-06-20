@@ -8,12 +8,12 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class DataCiteMetaDataParser {
-    private static String DATACITE_ID_URL = "http://purl.org/datacite/v4.4/";
-    private static String PERSOANL_ID_URL = "http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Persoanl";
-    private static String ORGANIZATIONAL_ID_URL = "http://www.w3.org/2006/vcard/ns#Organizational";
-    private static String LANG_ID_URL = "https://www.omg.org/spec/LCC/Languages/LaISO639-1-LanguageCodes/az";
-    private static String DATE_TYPE = "xsd:date";
-    private static String DECIMAL_TYPE = "xsd:decimal";
+    private static final String DATACITE_ID_URL = "http://purl.org/datacite/v4.4/";
+    private static final String PERSOANL_ID_URL = "http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Persoanl";
+    private static final String ORGANIZATIONAL_ID_URL = "http://www.w3.org/2006/vcard/ns#Organizational";
+    private static final String LANG_ID_URL = "https://www.omg.org/spec/LCC/Languages/LaISO639-1-LanguageCodes/az";
+    private static final String DATE_TYPE = "xsd:date";
+    private static final String DECIMAL_TYPE = "xsd:decimal";
 
     public static void parseDataCiteSchema(DataCiteSchema dataCiteSchema, CEDARDataCiteInstance cedarInstance) {
         Attributes dataCiteAttributes = dataCiteSchema.getData().getAttributes();
@@ -45,7 +45,9 @@ public class DataCiteMetaDataParser {
         cedarInstance.setDateElement(parseDateValue(dataCiteAttributes.getDates()));
 
         //pass lang value
-        cedarInstance.setLanguage(parseLangValue(dataCiteAttributes.getLanguage()));
+        if (dataCiteAttributes.getLanguage() != null){
+            cedarInstance.setLanguage(parseLangValue(dataCiteAttributes.getLanguage()));
+        }
 
         //pass alternateIdentifier value
         cedarInstance.setAlternateIdentifierElement(parseAlternateIdentifierValue(dataCiteAttributes.getAlternateIdentifiers()));
@@ -57,7 +59,9 @@ public class DataCiteMetaDataParser {
         cedarInstance.setSizeElement(parseSizeValue(dataCiteAttributes.getSizes()));
 
         //pass version value
-        cedarInstance.setVersion(parseVersionValue(dataCiteAttributes.getVersion()));
+        if (dataCiteAttributes.getVersion() != null){
+            cedarInstance.setVersion(parseVersionValue(dataCiteAttributes.getVersion()));
+        }
 
         //pass rights value
         cedarInstance.setRightsElement(parseRightsValue(dataCiteAttributes.getRightsList()));
@@ -76,7 +80,8 @@ public class DataCiteMetaDataParser {
 
         cedarInstance.setContext(setContext());
 
-        cedarInstance.setId("https://repo.metadatacenter.org/template-instances/05066e6a-ba57-40c1-b457-4df55125e40e");
+        //TODO: update template id with the lastest one
+        cedarInstance.setSchemaIsBasedOn("https://repo.metadatacenter.org/templates/b786f6cc-d812-44e3-99b5-b1dd59fd12ea");
     }
 
     private static ValueFormat parsePrefixValue(String dataCitePrefix){
@@ -166,17 +171,20 @@ public class DataCiteMetaDataParser {
         List<Creator> creatorList = new ArrayList<>();
 
         for (DataCiteCreator c : dataCiteCreators) {
+            System.out.println("this is one creator instance");
             Creator creator = new Creator();
             // retrieve values from DataCiteScheme
             ValueFormat name = new ValueFormat(), givenName = new ValueFormat(), familyName = new ValueFormat();
             IdFormat nameType = new IdFormat();
             name.setValue(c.getName());
             String dataCiteNameType = c.getNameType();
-            nameType.setLabel(dataCiteNameType);
-            if (dataCiteNameType.equals("Personal")){
-                nameType.setId(PERSOANL_ID_URL);
-            } else{
-                nameType.setId(ORGANIZATIONAL_ID_URL);
+            if (dataCiteNameType != null) {
+                nameType.setLabel(dataCiteNameType);
+                if (dataCiteNameType.equals("Personal")){
+                    nameType.setId(PERSOANL_ID_URL);
+                } else{
+                    nameType.setId(ORGANIZATIONAL_ID_URL);
+                }
             }
             givenName.setValue(c.getGivenName());
             familyName .setValue(c.getFamilyName());
@@ -213,7 +221,7 @@ public class DataCiteMetaDataParser {
         // set creatorElement value
         creatorElement.setCreators(creatorList);
         Map<String, String> context = new HashMap<>();
-        context.put("creator", "https://schema.metadatacenter.org/properties/cf32ea42-9cc4-4ccc-bf0d-1d62d1aae7ac");
+        context.put("creator", "https://schema.metadatacenter.org/properties/34bab781-2c2a-4e9b-baf6-c4b923264314");
         creatorElement.setContext(context);
         creatorElement.setId("https://repo.metadatacenter.org/template-element-instances/e0eae987-86c3-42a9-9906-594b0f926880");
 
@@ -231,8 +239,10 @@ public class DataCiteMetaDataParser {
             IdFormat titleType = new IdFormat();
 
             titleName.setValue(t.getTitle());
-            titleType.setLabel(t.getTitleType());
-            titleType.setId(DATACITE_ID_URL + t.getTitleType());
+            if (t.getTitleType()!=null){
+                titleType.setLabel(t.getTitleType());
+                titleType.setId(DATACITE_ID_URL + t.getTitleType());
+            }
 //            language.setValue(t.getLang());
 
             title.setTitleName(titleName);
@@ -241,7 +251,7 @@ public class DataCiteMetaDataParser {
 
             //set @context and @id
             Map<String, String> context = new HashMap<>();
-            context.put("language", "https://schema.metadatacenter.org/properties/6c972ff2-1f4d-45bb-9f60-7573a999548a");
+//            context.put("language", "https://schema.metadatacenter.org/properties/6c972ff2-1f4d-45bb-9f60-7573a999548a");
             context.put("titleName", "https://schema.metadatacenter.org/properties/24c6ed0a-277b-4b1e-8278-b2b1c64a8a27");
             context.put("titleType", "https://schema.metadatacenter.org/properties/9b5eb75f-3355-4ddb-903d-c716f4816b12");
             title.setContext(context);
@@ -251,7 +261,7 @@ public class DataCiteMetaDataParser {
         }
         titleElement.setTitles(titleList);
         Map<String, String> context = new HashMap<>();
-        context.put("Title", "https://schema.metadatacenter.org/properties/b0c0b0e9-e5d0-48ec-8716-e7c8d8dbd7a5");
+        context.put("Title", "https://schema.metadatacenter.org/properties/6207824f-2927-488f-a8c6-2eb7d426a7cf");
         titleElement.setContext(context);
         titleElement.setId("https://repo.metadatacenter.org/template-element-instances/30fcc8f6-f9c8-41b4-944b-25b659b45496");
 
@@ -300,8 +310,8 @@ public class DataCiteMetaDataParser {
         resourceTypeElement.setResourceType(resourceType);
         resourceTypeElement.setResourceTypeGeneral(resourceTypeGeneral);
         Map<String, String> context = new HashMap<>();
-        context.put("ResourceType", "https://schema.metadatacenter.org/properties/467fc1e2-fb85-42fb-a93e-8c379b59748b");
-        context.put("resourceTypeGeneral", "https://schema.metadatacenter.org/properties/5b34d6ae-0f7f-4535-b7a1-b41dea86d37b");
+        context.put("ResourceType", "https://schema.metadatacenter.org/properties/0f3fe782-7903-4388-ab6a-58408ba03889");
+        context.put("resourceTypeGeneral", "https://schema.metadatacenter.org/properties/1a3bc29e-5e03-4f16-b672-0df52315f126");
         resourceTypeElement.setContext(context);
         resourceTypeElement.setId("https://repo.metadatacenter.org/template-element-instances/9590d7d8-2174-4ee0-aeda-1c9385d476f6");
         return resourceTypeElement;
@@ -360,11 +370,13 @@ public class DataCiteMetaDataParser {
             IdFormat nameType = new IdFormat(), contributorType = new IdFormat();
             name.setValue(c.getName());
             String dataCiteNameType = c.getNameType();
-            nameType.setLabel(dataCiteNameType);
-            if (dataCiteNameType.equals("Personal")){
-                nameType.setId(PERSOANL_ID_URL);
-            } else{
-                nameType.setId(ORGANIZATIONAL_ID_URL);
+            if (dataCiteNameType != null) {
+                nameType.setLabel(dataCiteNameType);
+                if (dataCiteNameType.equals("Personal")){
+                    nameType.setId(PERSOANL_ID_URL);
+                } else{
+                    nameType.setId(ORGANIZATIONAL_ID_URL);
+                }
             }
             givenName.setValue(c.getGivenName());
             familyName .setValue(c.getFamilyName());
@@ -405,7 +417,7 @@ public class DataCiteMetaDataParser {
         // set creatorElement value
         contributorElement.setContributors(contributorList);
         Map<String, String> context = new HashMap<>();
-        context.put("Contributor", "https://schema.metadatacenter.org/properties/d1652b2f-bf8a-416c-b878-683f82832525");
+        context.put("Contributor", "https://schema.metadatacenter.org/properties/98f2167c-3ed3-4058-9bf6-1142ebcdea46");
         contributorElement.setContext(context);
         contributorElement.setId("https://repo.metadatacenter.org/template-element-instances/b215d0d8-70f9-41fa-898c-78f2e366d7c1");
 
@@ -520,13 +532,13 @@ public class DataCiteMetaDataParser {
 
             //set @context and @id
             Map<String, String> context = new HashMap<>();
-            context.put("RelatedIdentifier", "https://schema.metadatacenter.org/properties/da9e58cf-9dcc-4ef9-9cf9-f4bc58936f8b");
-            context.put("relatedIdentifierType", "https://schema.metadatacenter.org/properties/47a48fd6-97a2-4198-8c06-b9b96608db7e");
-            context.put("relatedMetadataScheme", "https://schema.metadatacenter.org/properties/da9e58cf-9dcc-4ef9-9cf9-f4bc58936f8b");
-            context.put("relationType", "https://schema.metadatacenter.org/properties/47a48fd6-97a2-4198-8c06-b9b96608db7e");
-            context.put("resourceTypeGeneral", "https://schema.metadatacenter.org/properties/da9e58cf-9dcc-4ef9-9cf9-f4bc58936f8b");
-            context.put("schemeType", "https://schema.metadatacenter.org/properties/47a48fd6-97a2-4198-8c06-b9b96608db7e");
-            context.put("schemeURI", "https://schema.metadatacenter.org/properties/47a48fd6-97a2-4198-8c06-b9b96608db7e");
+            context.put("RelatedIdentifier", "https://schema.metadatacenter.org/properties/ab1fcf96-2a7c-4418-b698-9da8d42edf64");
+            context.put("relatedIdentifierType", "https://schema.metadatacenter.org/properties/886dba05-0110-4768-82c8-f0ceee4944bb");
+            context.put("relatedMetadataScheme", "https://schema.metadatacenter.org/properties/3eb9d332-a035-46ae-8559-834028a50980");
+            context.put("relationType", "https://schema.metadatacenter.org/properties/24b03c68-f713-44e1-bb63-f39e7a006d61");
+            context.put("resourceTypeGeneral", "https://schema.metadatacenter.org/properties/e7e7821a-f1cc-4243-b817-638276fa33fb");
+            context.put("schemeType", "https://schema.metadatacenter.org/properties/9abe3743-9af2-4520-b85a-79b9292c3c39");
+            context.put("schemeURI", "https://schema.metadatacenter.org/properties/a985716f-3b3d-4b32-8267-3badd7353c29");
             relatedIdentifier.setContext(context);
             relatedIdentifier.setId("https://repo.metadatacenter.org/template-element-instances/fe3e5e43-7bd3-43e3-96ee-fa10f2c04ac6");
 
@@ -650,7 +662,7 @@ public class DataCiteMetaDataParser {
             //set @context and @id
             Map<String, String> context = new HashMap<>();
             context.put("Description", "https://schema.metadatacenter.org/properties/aec05c4d-06c4-43c1-bfcb-7c341c81fab7");
-            context.put("Language", "https://schema.metadatacenter.org/properties/f44f0eb7-7f06-495d-a6b0-3f2efa01d633");
+//            context.put("Language", "https://schema.metadatacenter.org/properties/f44f0eb7-7f06-495d-a6b0-3f2efa01d633");
             context.put("descriptionType", "https://schema.metadatacenter.org/properties/ba34a97c-9400-4e79-9581-b9218651231d");
             description.setContext(context);
             description.setId("https://repo.metadatacenter.org/template-element-instances/4a5f07af-9d5b-49b2-a452-065ad88efc65");
@@ -660,7 +672,7 @@ public class DataCiteMetaDataParser {
 
         descriptionElement.setDescriptions(descriptionList);
         Map<String, String> context = new HashMap<>();
-        context.put("Description", "https://schema.metadatacenter.org/properties/8412f2b5-e687-4b70-a332-54713a1ec096");
+        context.put("Description", "https://schema.metadatacenter.org/properties/06dd25de-ef4d-432e-8592-71e94758856b");
         descriptionElement.setContext(context);
         descriptionElement.setId("https://repo.metadatacenter.org/template-element-instances/70915cbd-b0a0-4327-a4eb-42c55a9650ea");
 
@@ -675,57 +687,62 @@ public class DataCiteMetaDataParser {
             GeoLocation geoLocation = new GeoLocation();
 
             //set up geoLocationBox
-            GeoLocationBox geoLocationBox = new GeoLocationBox();
-            FloatFormat eastBondLongitude = new FloatFormat();
-            FloatFormat westBondLongitude = new FloatFormat();
-            FloatFormat northBondLatitude = new FloatFormat();
-            FloatFormat southBondLatitude = new FloatFormat();
-            eastBondLongitude.setValue(g.getGeoLocationBox().getEastBoundLongitude());
-            eastBondLongitude.setType(DECIMAL_TYPE);
-            westBondLongitude.setValue(g.getGeoLocationBox().getWestBoundLongitude());
-            westBondLongitude.setType(DECIMAL_TYPE);
-            northBondLatitude.setValue(g.getGeoLocationBox().getNorthBoundLatitude());
-            northBondLatitude.setType(DECIMAL_TYPE);
-            southBondLatitude.setValue(g.getGeoLocationBox().getSouthBoundLatitude());
-            southBondLatitude.setType(DECIMAL_TYPE);
-            geoLocationBox.setEastBoundLongitude(eastBondLongitude);
-            geoLocationBox.setWestBoundLongitude(westBondLongitude);
-            geoLocationBox.setNorthBoundLatitude(northBondLatitude);
-            geoLocationBox.setSouthBoundLatitude(southBondLatitude);
-            Map<String, String> geoLocationBoxContext = new HashMap<>();
-            geoLocationBoxContext.put("eastBoundLongitude", "https://schema.metadatacenter.org/properties/9cee2101-38ad-4ae9-922c-55a89e049741");
-            geoLocationBoxContext.put("westBoundLongitude", "https://schema.metadatacenter.org/properties/dd27b92a-04d1-435c-bab1-b6acdc1df9eb");
-            geoLocationBoxContext.put("northBoundLatitude", "https://schema.metadatacenter.org/properties/b89449e7-2c74-469b-a32c-9684aaf208ad");
-            geoLocationBoxContext.put("southBoundLatitude", "https://schema.metadatacenter.org/properties/a4171ee9-162e-4e32-89dd-cad62d60f4d9");
-            geoLocationBox.setContext(geoLocationBoxContext);
-            geoLocationBox.setId("https://repo.metadatacenter.org/template-element-instances/c210ff7d-9ebc-4029-a852-33ed411c5883");
+            if (g.getGeoLocationBox()!=null){
+                GeoLocationBox geoLocationBox = new GeoLocationBox();
+                FloatFormat eastBondLongitude = new FloatFormat();
+                FloatFormat westBondLongitude = new FloatFormat();
+                FloatFormat northBondLatitude = new FloatFormat();
+                FloatFormat southBondLatitude = new FloatFormat();
+                eastBondLongitude.setValue(g.getGeoLocationBox().getEastBoundLongitude());
+                eastBondLongitude.setType(DECIMAL_TYPE);
+                westBondLongitude.setValue(g.getGeoLocationBox().getWestBoundLongitude());
+                westBondLongitude.setType(DECIMAL_TYPE);
+                northBondLatitude.setValue(g.getGeoLocationBox().getNorthBoundLatitude());
+                northBondLatitude.setType(DECIMAL_TYPE);
+                southBondLatitude.setValue(g.getGeoLocationBox().getSouthBoundLatitude());
+                southBondLatitude.setType(DECIMAL_TYPE);
+                geoLocationBox.setEastBoundLongitude(eastBondLongitude);
+                geoLocationBox.setWestBoundLongitude(westBondLongitude);
+                geoLocationBox.setNorthBoundLatitude(northBondLatitude);
+                geoLocationBox.setSouthBoundLatitude(southBondLatitude);
+                Map<String, String> geoLocationBoxContext = new HashMap<>();
+                geoLocationBoxContext.put("eastBoundLongitude", "https://schema.metadatacenter.org/properties/9cee2101-38ad-4ae9-922c-55a89e049741");
+                geoLocationBoxContext.put("westBoundLongitude", "https://schema.metadatacenter.org/properties/dd27b92a-04d1-435c-bab1-b6acdc1df9eb");
+                geoLocationBoxContext.put("northBoundLatitude", "https://schema.metadatacenter.org/properties/5f41ba88-3fb0-4871-88ef-23d0a7f1326e");
+                geoLocationBoxContext.put("southBoundLatitude", "https://schema.metadatacenter.org/properties/a4171ee9-162e-4e32-89dd-cad62d60f4d9");
+                geoLocationBox.setContext(geoLocationBoxContext);
+                geoLocationBox.setId("https://repo.metadatacenter.org/template-element-instances/c210ff7d-9ebc-4029-a852-33ed411c5883");
+
+                geoLocation.setGeoLocationBox(geoLocationBox);
+            }
 
             //set up geoLocationPoint
-            Point geoLocationPoint = new Point();
-            FloatFormat pointLongitude = new FloatFormat();
-            FloatFormat pointLatitude = new FloatFormat();
-            pointLongitude.setValue(g.getGeoLocationPoint().getPointLongitude());
-            pointLongitude.setType(DECIMAL_TYPE);
-            pointLatitude.setValue(g.getGeoLocationPoint().getPointLatitude());
-            pointLatitude.setType(DECIMAL_TYPE);
-            geoLocationPoint.setPointLatitude(pointLatitude);
-            geoLocationPoint.setPointLongitude(pointLongitude);
-            Map<String, String> pointContext = new HashMap<>();
-            pointContext.put("pointLatitude", "https://schema.metadatacenter.org/properties/9f74832e-0eb9-4b3b-bb73-8c9e4f4fa52a");
-            pointContext.put("pointLongitude", "https://schema.metadatacenter.org/properties/89e06703-c7b7-420e-b24a-48969fb58ccb");
-            geoLocationPoint.setContext(pointContext);
-            geoLocationPoint.setId("https://repo.metadatacenter.org/template-element-instances/bdc1c54b-c4b9-48f2-945e-dc7dd1f37916");
+            if (g.getGeoLocationPoint()!=null){
+                Point geoLocationPoint = new Point();
+                FloatFormat pointLongitude = new FloatFormat();
+                FloatFormat pointLatitude = new FloatFormat();
+                pointLongitude.setValue(g.getGeoLocationPoint().getPointLongitude());
+                pointLongitude.setType(DECIMAL_TYPE);
+                pointLatitude.setValue(g.getGeoLocationPoint().getPointLatitude());
+                pointLatitude.setType(DECIMAL_TYPE);
+                geoLocationPoint.setPointLatitude(pointLatitude);
+                geoLocationPoint.setPointLongitude(pointLongitude);
+                Map<String, String> pointContext = new HashMap<>();
+                pointContext.put("pointLatitude", "https://schema.metadatacenter.org/properties/9f74832e-0eb9-4b3b-bb73-8c9e4f4fa52a");
+                pointContext.put("pointLongitude", "https://schema.metadatacenter.org/properties/89e06703-c7b7-420e-b24a-48969fb58ccb");
+                geoLocationPoint.setContext(pointContext);
+                geoLocationPoint.setId("https://repo.metadatacenter.org/template-element-instances/bdc1c54b-c4b9-48f2-945e-dc7dd1f37916");
+
+                geoLocation.setGeoLocationPoint(geoLocationPoint);
+            }
 
             //set up geoLocationPlace
             ValueFormat geoLocationPlace = new ValueFormat();
             geoLocationPlace.setValue(g.getGeoLocationPlace());
-
-            //set values of geoLocation
             geoLocation.setGeoLocationPlace(geoLocationPlace);
-            geoLocation.setGeoLocationBox(geoLocationBox);
-            geoLocation.setGeoLocationPoint(geoLocationPoint);
+
             Map<String, String> geoLocationContext = new HashMap<>();
-            geoLocationContext.put("Geo Location Box", "https://schema.metadatacenter.org/properties/4d921843-f5c3-41d0-a0b6-92ffb755efc6");
+            geoLocationContext.put("Geo Location Box", "https://schema.metadatacenter.org/properties/5fa30be5-6669-4565-83e6-3d9a819542cf");
             geoLocationContext.put("Geo Location Point", "https://schema.metadatacenter.org/properties/41febfbd-fa3c-40ce-b94e-30ba4009a950");
             geoLocationContext.put("geoLocationPlace", "https://schema.metadatacenter.org/properties/37cbffe7-b904-472d-bd36-887b003177ab");
             geoLocation.setContext(geoLocationContext);
@@ -753,6 +770,7 @@ public class DataCiteMetaDataParser {
             awardTitle.setValue(f.getAwardTitle());
             funderName.setValue(f.getFunderName());
 
+            //setup awardNumber values
             AwardNumber awardNumber = new AwardNumber();
             ValueFormat awardNumberField = new ValueFormat();
             SchemeURI awardUri = new SchemeURI();
@@ -766,6 +784,7 @@ public class DataCiteMetaDataParser {
             awardNumber.setContext(awardNumberContext);
             awardNumber.setId("https://repo.metadatacenter.org/template-element-instances/f32d369b-9333-4b54-862b-425de5dfdd24");
 
+            //set up funderIdentifier values
             FunderIdentifier funderIdentifier = new FunderIdentifier();
             ValueFormat funderIdentifierField = new ValueFormat();
             IdFormat funderIdentifierType= new IdFormat();
@@ -773,8 +792,8 @@ public class DataCiteMetaDataParser {
             funderIdentifierField.setValue(f.getFunderIdentifier());
 
             String funderIdentifierTypeValue = f.getFunderIdentifierType();
-            funderIdentifierType.setLabel(funderIdentifierTypeValue);
             if (funderIdentifierTypeValue != null){
+                funderIdentifierType.setLabel(funderIdentifierTypeValue);
                 switch (funderIdentifierTypeValue) {
                     case "GRID" -> funderIdentifierType.setId("https://www.grid.ac/");
                     case "ISNI" -> funderIdentifierType.setId("http://id.loc.gov/ontologies/bibframe/Isni");
@@ -819,7 +838,6 @@ public class DataCiteMetaDataParser {
 
     private static List<Creator> parseRelatedItemCreatorValue(List<DataCiteCreator> dataCiteCreators){
         List<Creator> creatorList = new ArrayList<>();
-
         for (DataCiteCreator c : dataCiteCreators) {
             Creator creator = new Creator();
             // retrieve values from DataCiteScheme
@@ -827,11 +845,13 @@ public class DataCiteMetaDataParser {
             IdFormat nameType = new IdFormat();
             name.setValue(c.getName());
             String dataCiteNameType = c.getNameType();
-            nameType.setLabel(dataCiteNameType);
-            if (dataCiteNameType.equals("Personal")){
-                nameType.setId(PERSOANL_ID_URL);
-            } else{
-                nameType.setId(ORGANIZATIONAL_ID_URL);
+            if (dataCiteNameType != null) {
+                nameType.setLabel(dataCiteNameType);
+                if (dataCiteNameType.equals("Personal")){
+                    nameType.setId(PERSOANL_ID_URL);
+                } else{
+                    nameType.setId(ORGANIZATIONAL_ID_URL);
+                }
             }
             givenName.setValue(c.getGivenName());
             familyName .setValue(c.getFamilyName());
@@ -865,11 +885,13 @@ public class DataCiteMetaDataParser {
             IdFormat nameType = new IdFormat(), contributorType = new IdFormat();
             name.setValue(c.getName());
             String dataCiteNameType = c.getNameType();
-            nameType.setLabel(dataCiteNameType);
-            if (dataCiteNameType.equals("Personal")){
-                nameType.setId(PERSOANL_ID_URL);
-            } else{
-                nameType.setId(ORGANIZATIONAL_ID_URL);
+            if (dataCiteNameType != null) {
+                nameType.setLabel(dataCiteNameType);
+                if (dataCiteNameType.equals("Personal")){
+                    nameType.setId(PERSOANL_ID_URL);
+                } else{
+                    nameType.setId(ORGANIZATIONAL_ID_URL);
+                }
             }
             givenName.setValue(c.getGivenName());
             familyName .setValue(c.getFamilyName());
@@ -928,7 +950,9 @@ public class DataCiteMetaDataParser {
 
     private static RelatedIdentifier parseRelatedItemIdentifier(DataCiteRelatedItemIdentifier dataCiteRelatedItemIdentifier){
         RelatedIdentifier relatedIdentifier = new RelatedIdentifier();
-        ValueFormat identifier = new ValueFormat(), relatedMetadataScheme = new ValueFormat(), schemeType = new ValueFormat();
+        ValueFormat identifier = new ValueFormat(),
+            relatedMetadataScheme = new ValueFormat(),
+            schemeType = new ValueFormat();
         IdFormat identifierType = new IdFormat();
         SchemeURI schemeUri = new SchemeURI();
 
@@ -975,14 +999,17 @@ public class DataCiteMetaDataParser {
                 edition = new ValueFormat(),
                 number = new ValueFormat();
 
+            Integer givenYear = r.getPublicationYear();
             PublicationYear publicationYear = new PublicationYear();
-            Calendar calendar = Calendar.getInstance();
-            calendar.set(Calendar.YEAR, r.getPublicationYear());
-            calendar.set(Calendar.MONTH, Calendar.JANUARY);
-            calendar.set(Calendar.DAY_OF_MONTH, 1);
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-            publicationYear.setValue(formatter.format(calendar.getTime()));
-            publicationYear.setType("xsd:date");
+            if (givenYear != null){
+                Calendar calendar = Calendar.getInstance();
+                calendar.set(Calendar.YEAR, givenYear);
+                calendar.set(Calendar.MONTH, Calendar.JANUARY);
+                calendar.set(Calendar.DAY_OF_MONTH, 1);
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+                publicationYear.setValue(formatter.format(calendar.getTime()));
+                publicationYear.setType("xsd:date");
+            }
 
             relatedItemType.setLabel(r.getRelatedItemType());
             relatedItemType.setId(DATACITE_ID_URL + r.getRelatedItemType());
@@ -996,8 +1023,8 @@ public class DataCiteMetaDataParser {
             edition.setValue(r.getEdition());
             number.setValue(r.getNumber());
             String givenNumberType = r.getNumberType();
-            numberType.setLabel(givenNumberType);
             if (givenNumberType != null){
+                numberType.setLabel(givenNumberType);
                 switch (givenNumberType) {
                     case "Report" -> numberType.setId("http://purl.bioontology.org/ontology/SNOMEDCT/229059009");
                     case "Article" -> numberType.setId("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C47902");
@@ -1017,10 +1044,18 @@ public class DataCiteMetaDataParser {
             relatedItem.setNumber(number);
             relatedItem.setNumberType(numberType);
             relatedItem.setPublicationYear(publicationYear);
-            relatedItem.setCreators(parseRelatedItemCreatorValue(r.getCreators()));
-            relatedItem.setContributors(parserRelatedItemContributorValue(r.getContributors()));
-            relatedItem.setTitles(parseRelatedItemTitleValue(r.getTitles()));
-            relatedItem.setRelatedItemIdentifier(parseRelatedItemIdentifier(r.getRelatedItemIdentifier()));
+            if (r.getCreators()!=null){
+                relatedItem.setCreators(parseRelatedItemCreatorValue(r.getCreators()));
+            }
+            if (r.getContributors()!=null){
+                relatedItem.setContributors(parserRelatedItemContributorValue(r.getContributors()));
+            }
+            if (r.getTitles()!=null){
+                relatedItem.setTitles(parseRelatedItemTitleValue(r.getTitles()));
+            }
+            if (r.getRelatedItemIdentifier()!=null){
+                relatedItem.setRelatedItemIdentifier(parseRelatedItemIdentifier(r.getRelatedItemIdentifier()));
+            }
 
             Map<String, String> context = new HashMap<>();
             context.put("Contributor", "https://schema.metadatacenter.org/properties/b5c80c42-6fb3-40c6-b995-2f40eb3a2e5f");
@@ -1046,34 +1081,73 @@ public class DataCiteMetaDataParser {
 
         relatedItemElement.setRelatedItems(relatedItemList);
         Map<String, String> context = new HashMap<>();
-        context.put("Related Item", "https://schema.metadatacenter.org/properties/4dc933ba-6150-4616-83b5-7634fbc248f4");
+        context.put("Related Item", "https://schema.metadatacenter.org/properties/dd7ef8b2-363e-48fb-bb4e-aee73fc8d8af");
         relatedItemElement.setContext(context);
         relatedItemElement.setId("https://repo.metadatacenter.org/template-element-instances/432975ab-2bf5-4891-ab3c-51fc5bf6ebd0");
 
         return relatedItemElement;
     }
 
-    private static Map<String, String> setContext(){
-        Map<String, String> context = new HashMap<>();
-        context.put("AlternateIdentifierElement", "https://schema.metadatacenter.org/properties/98b76457-433d-4967-9e07-2a8ff6802724");
-        context.put("ContributorElement", "https://schema.metadatacenter.org/properties/ee837035-ba8c-4b50-86c1-3dc3a82b3301");
-        context.put("CreatorElement", "https://schema.metadatacenter.org/properties/a20119c8-261d-435a-b0a6-d1ad3c8294a3");
-        context.put("DateElement", "https://schema.metadatacenter.org/properties/0e89aa8e-d3b4-448a-ac46-f7c9c1b47a61");
-        context.put("DescriptionElement", "https://schema.metadatacenter.org/properties/6b05030e-64b0-430a-9adf-b395ebededa8");
-        context.put("FormatElement", "https://schema.metadatacenter.org/properties/449d8e25-e7f3-4fd9-81d3-5793142ddc5d");
-        context.put("FundingReferenceElement", "https://schema.metadatacenter.org/properties/37e01b4f-8f5c-41f2-abbd-37bfe438f7ae");
-        context.put("GeoLocationElement", "https://schema.metadatacenter.org/properties/6312f436-1538-4495-b81c-f1faee8cb4c3");
-        context.put("Language", "https://schema.metadatacenter.org/properties/923c0e7e-1adc-40db-90d2-b8f95cb230df");
-        context.put("PublicationYearElement", "https://schema.metadatacenter.org/properties/6706ab5c-2535-4d6c-8384-2a4abdfef364");
-        context.put("PublisherElement", "https://schema.metadatacenter.org/properties/1dcf8897-b0a0-40d7-805b-774265d391af");
-        context.put("RelatedIdentifierElement", "https://schema.metadatacenter.org/properties/9e8c283e-3e46-49dc-b231-ff5200891b41");
-        context.put("RelatedItemElement", "https://schema.metadatacenter.org/properties/7077ab69-1a2c-4108-99a4-6cbec9c3f881");
-        context.put("ResourceTypeElement", "https://schema.metadatacenter.org/properties/f69fc956-fbec-43ba-9dd5-3a260a44b189");
-        context.put("RightsElement", "https://schema.metadatacenter.org/properties/2008889e-e789-4f12-8d40-4c2591dbd653");
-        context.put("SizeElement", "https://schema.metadatacenter.org/properties/89a94784-6e24-4021-8be2-7756b8842507");
-        context.put("SubjectElement", "https://schema.metadatacenter.org/properties/06efec71-fd9f-4ece-95cc-80cc26e3cd48");
-        context.put("TitleElement", "https://schema.metadatacenter.org/properties/a49876f8-11d7-4b40-9b01-3c664cc93bb2");
-        context.put("Version", "https://schema.metadatacenter.org/properties/49b1bc7e-afa6-4cf4-bfce-80e3c6587899");
+    private static Context setContext(){
+        Context context = new Context();
+        context.setRdfs("http://www.w3.org/2000/01/rdf-schema#");
+        context.setXsd("http://www.w3.org/2001/XMLSchema#");
+        context.setPav("http://purl.org/pav/");
+        context.setSchema("http://schema.org/");
+        context.setOslc("http://open-services.net/ns/core#");
+        context.setSkos("http://www.w3.org/2004/02/skos/core#");
+
+        TypeFormat label = new TypeFormat(),
+            isBasedOn = new TypeFormat(),
+            name = new TypeFormat(),
+            description = new TypeFormat(),
+            derivedFrom = new TypeFormat(),
+            createdOn = new TypeFormat(),
+            createdBy = new TypeFormat(),
+            lastUpdatedOn = new TypeFormat(),
+            modifiedBy = new TypeFormat(),
+            notation = new TypeFormat();
+
+        label.setType("xsd:string");
+        isBasedOn.setType("@id");
+        description.setType("xsd:string");
+        derivedFrom.setType("@id");
+        createdOn.setType("xsd:dateTime");
+        createdBy.setType("@id");
+        lastUpdatedOn.setType("xsd:dateTime");
+        modifiedBy.setType("@id");
+        notation.setType("xsd:string");
+
+        context.setLabel(label);
+        context.setIsBasedOn(isBasedOn);
+        context.setDescription(description);
+        context.setDerivedFrom(derivedFrom);
+        context.setCreatedOn(createdOn);
+        context.setCreatedBy(createdBy);
+        context.setLastUpdatedOn(lastUpdatedOn);
+        context.setModifiedBy(modifiedBy);
+        context.setNotation(notation);
+
+        context.setPrefix("https://schema.metadatacenter.org/properties/c5c19810-b058-48cf-b0ae-de2e9f82a95e");
+        context.setTitleElement("https://schema.metadatacenter.org/properties/92f85368-6534-4e90-86af-ffecc29e793d");
+        context.setPublisherElement("https://schema.metadatacenter.org/properties/1dcf8897-b0a0-40d7-805b-774265d391af");
+        context.setPublicationYearElement("https://schema.metadatacenter.org/properties/6706ab5c-2535-4d6c-8384-2a4abdfef364");
+        context.setSubjectElement("https://schema.metadatacenter.org/properties/06efec71-fd9f-4ece-95cc-80cc26e3cd48");
+        context.setDateElement("https://schema.metadatacenter.org/properties/8e0032f8-84fe-42e0-a05c-3e82681ea207");
+        context.setLanguage("https://schema.metadatacenter.org/properties/923c0e7e-1adc-40db-90d2-b8f95cb230df");
+        context.setRelatedIdentifierElement("https://schema.metadatacenter.org/properties/9e8c283e-3e46-49dc-b231-ff5200891b41");
+        context.setSizeElement("https://schema.metadatacenter.org/properties/89a94784-6e24-4021-8be2-7756b8842507");
+        context.setFormatElement("https://schema.metadatacenter.org/properties/449d8e25-e7f3-4fd9-81d3-5793142ddc5d");
+        context.setVersion("https://schema.metadatacenter.org/properties/49b1bc7e-afa6-4cf4-bfce-80e3c6587899");
+        context.setRightsElement("https://schema.metadatacenter.org/properties/2008889e-e789-4f12-8d40-4c2591dbd653");
+        context.setDescriptionElement("https://schema.metadatacenter.org/properties/1da57f09-9f69-4459-8cda-caa86ac5a3f1");
+        context.setFundingReferenceElement("https://schema.metadatacenter.org/properties/37e01b4f-8f5c-41f2-abbd-37bfe438f7ae");
+        context.setResourceTypeElement("https://schema.metadatacenter.org/properties/35b3ab6d-590f-41e9-87ee-83a718ef3052");
+        context.setCreatorElement("https://schema.metadatacenter.org/properties/31665a54-e9a2-4ab5-b8b0-a2b135100d98");
+        context.setAlternateIdentifierElement("https://schema.metadatacenter.org/properties/98b76457-433d-4967-9e07-2a8ff6802724");
+        context.setContributorElement("https://schema.metadatacenter.org/properties/48cd5362-7b07-4f93-a041-3cc93c20fa28");
+        context.setRelatedItemElement("https://schema.metadatacenter.org/properties/da2043d8-a44d-4044-ade8-82527b9c0eaf");
+        context.setGeoLocationElement("https://schema.metadatacenter.org/properties/2b8ce63b-1039-409a-a041-415d3fc0a2ba");
 
         return context;
     }
