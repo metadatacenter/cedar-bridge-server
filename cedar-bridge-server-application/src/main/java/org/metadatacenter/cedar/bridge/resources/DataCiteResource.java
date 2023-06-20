@@ -96,22 +96,22 @@ public class DataCiteResource extends CedarMicroserviceResource {
       String jsonResponse = httpResponse.body();
       JsonNode jsonResource = JsonMapper.MAPPER.readTree(jsonResponse);
 
-      // Deserialize DataCite response json file to DataCiteRequest Class
-      ObjectMapper mapper = new ObjectMapper();
-      mapper.enable(SerializationFeature.INDENT_OUTPUT);
-      mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-      DataCiteSchema dataCiteResponse = mapper.readValue(jsonResponse, DataCiteSchema.class);
-
-      String dataCiteResponseString = mapper.writeValueAsString(dataCiteResponse);
-      System.out.println("DataCiteResponse converted to Data Cite Schema Json: " + dataCiteResponseString);
-
-      // Pass the value from dataCiteResponse to cedarDataCiteInstance
-      CEDARDataCiteInstance cedarDataCiteInstance = new CEDARDataCiteInstance();
-      DataCiteMetaDataParser.parseDataCiteSchema(dataCiteResponse, cedarDataCiteInstance);
-
-      //Serialize DataCiteRequest Class to json
-      String cedarDataCiteInstanceString = mapper.writeValueAsString(cedarDataCiteInstance);
-      System.out.println("Converted Cedar DataCite Instance JSON-LD: " + cedarDataCiteInstanceString);
+//      // Deserialize DataCite response json file to DataCiteRequest Class
+//      ObjectMapper mapper = new ObjectMapper();
+//      mapper.enable(SerializationFeature.INDENT_OUTPUT);
+//      mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+//      DataCiteSchema dataCiteResponse = mapper.readValue(jsonResponse, DataCiteSchema.class);
+//
+//      String dataCiteResponseString = mapper.writeValueAsString(dataCiteResponse);
+//      System.out.println("DataCiteResponse converted to Data Cite Schema Json: " + dataCiteResponseString);
+//
+//      // Pass the value from dataCiteResponse to cedarDataCiteInstance
+//      CEDARDataCiteInstance cedarDataCiteInstance = new CEDARDataCiteInstance();
+//      DataCiteMetaDataParser.parseDataCiteSchema(dataCiteResponse, cedarDataCiteInstance);
+//
+//      //Serialize DataCiteRequest Class to json
+//      String cedarDataCiteInstanceString = mapper.writeValueAsString(cedarDataCiteInstance);
+//      System.out.println("Converted Cedar DataCite Instance JSON-LD: " + cedarDataCiteInstanceString);
 
       return Response.status(statusCode).entity(jsonResource).build();
     } catch (Exception e) {

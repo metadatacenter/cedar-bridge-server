@@ -226,17 +226,18 @@ public class DataCiteMetaDataParser {
 
         for (DataCiteTitle t : dataCiteTitles) {
             Title title = new Title();
-            ValueFormat titleName = new ValueFormat(), language = new ValueFormat();
+            ValueFormat titleName = new ValueFormat();
+//                language = new ValueFormat();
             IdFormat titleType = new IdFormat();
 
             titleName.setValue(t.getTitle());
             titleType.setLabel(t.getTitleType());
             titleType.setId(DATACITE_ID_URL + t.getTitleType());
-            language.setValue(t.getLang());
+//            language.setValue(t.getLang());
 
             title.setTitleName(titleName);
             title.setTitleType(titleType);
-            title.setLanguage(language);
+//            title.setLanguage(language);
 
             //set @context and @id
             Map<String, String> context = new HashMap<>();
@@ -633,17 +634,18 @@ public class DataCiteMetaDataParser {
         for (DataCiteDescription d : dataCiteDescriptions){
             Description description = new Description();
 
-            ValueFormat descriptionField = new ValueFormat(), lang = new ValueFormat();
+            ValueFormat descriptionField = new ValueFormat();
+//                lang = new ValueFormat();
             IdFormat descriptionType = new IdFormat();
 
             descriptionField.setValue(d.getDescription());
             descriptionType.setLabel(d.getDescriptionType());
             descriptionType.setId(DATACITE_ID_URL + d.getDescriptionType());
-            lang.setValue(d.getLang());
+//            lang.setValue(d.getLang());
 
             description.setDescription(descriptionField);
             description.setDescriptionType(descriptionType);
-            description.setLanguage(lang);
+//            description.setLanguage(lang);
 
             //set @context and @id
             Map<String, String> context = new HashMap<>();
@@ -769,9 +771,18 @@ public class DataCiteMetaDataParser {
             IdFormat funderIdentifierType= new IdFormat();
             SchemeURI funderSchemeUri = new SchemeURI();
             funderIdentifierField.setValue(f.getFunderIdentifier());
-            funderIdentifierType.setLabel(f.getFunderIdentifierType());
-            //TODO: check funder Identifier type id
-            funderIdentifierType.setId("https://www.grid.ac/");
+
+            String funderIdentifierTypeValue = f.getFunderIdentifierType();
+            funderIdentifierType.setLabel(funderIdentifierTypeValue);
+            if (funderIdentifierTypeValue != null){
+                switch (funderIdentifierTypeValue) {
+                    case "GRID" -> funderIdentifierType.setId("https://www.grid.ac/");
+                    case "ISNI" -> funderIdentifierType.setId("http://id.loc.gov/ontologies/bibframe/Isni");
+                    case "ROR" -> funderIdentifierType.setId("http://purl.obolibrary.org/obo/BE_ROR");
+                    case "Other" -> funderIdentifierType.setId("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17649");
+                }
+            }
+
             funderSchemeUri.setId(f.getSchemeUri());
             funderIdentifier.setFunderIdentifier(funderIdentifierField);
             funderIdentifier.setFunderIdentifierType(funderIdentifierType);

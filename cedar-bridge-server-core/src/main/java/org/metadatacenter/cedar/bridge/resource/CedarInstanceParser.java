@@ -225,11 +225,11 @@ public class CedarInstanceParser {
             dataCiteTitle.setTitle(titleName);
             dataCiteTitle.setTitleType(titleType);
 
-            // titles as subProperty under relatedItem property don't have language
-            if (t.getLanguage() != null) {
-                String language = t.getLanguage().toString();
-                dataCiteTitle.setLang(language);
-            }
+//            // titles as subProperty under relatedItem property don't have language
+//            if (t.getLanguage() != null) {
+//                String language = t.getLanguage().toString();
+//                dataCiteTitle.setLang(language);
+//            }
             //Add dataCiteTitle to the list
             dataCiteTitles.add(dataCiteTitle);
         }
@@ -427,12 +427,12 @@ public class CedarInstanceParser {
         for(Description d : descriptionList) {
             DataCiteDescription dataCiteDescription = new DataCiteDescription();
             String description = d.getDescription().toString();
-            String descriptionTYpe = d.getDescriptionType().toString();
-            String lang = d.getLanguage().toString();
+            String descriptionType = d.getDescriptionType().toString();
+//            String lang = d.getLanguage().toString();
 
             dataCiteDescription.setDescription(description);
-            dataCiteDescription.setDescriptionType(descriptionTYpe);
-            dataCiteDescription.setLang(lang);
+            dataCiteDescription.setDescriptionType(descriptionType);
+//            dataCiteDescription.setLang(lang);
 
             dataCiteDescriptions.add(dataCiteDescription);
         }
@@ -464,18 +464,7 @@ public class CedarInstanceParser {
             Float westBoundLongitude = g.getGeoLocationBox().getWestBoundLongitude().getValue();
             Float southBoundLatitude = g.getGeoLocationBox().getSouthBoundLatitude().getValue();
             Float northBoundLatitude = g.getGeoLocationBox().getNorthBoundLatitude().getValue();
-//            if (eastBoundLongitude != null) {
-//                dataCiteGeoLocationBox.setEastBoundLongitude(eastBoundLongitude);
-//            }
-//            if (westBoundLongitude != null) {
-//                dataCiteGeoLocationBox.setWestBoundLongitude(westBoundLongitude);
-//            }
-//            if (southBoundLatitude != null) {
-//                dataCiteGeoLocationBox.setSouthBoundLatitude(southBoundLatitude);
-//            }
-//            if (northBoundLatitude != null) {
-//                dataCiteGeoLocationBox.setNorthBoundLatitude(northBoundLatitude);
-//            }
+
             if (eastBoundLongitude != null || westBoundLongitude != null || southBoundLatitude != null || northBoundLatitude != null){
                 dataCiteGeoLocationBox.setEastBoundLongitude(eastBoundLongitude);
                 dataCiteGeoLocationBox.setWestBoundLongitude(westBoundLongitude);
@@ -484,53 +473,53 @@ public class CedarInstanceParser {
                 dataCiteGeoLocation.setGeoLocationBox(dataCiteGeoLocationBox);
             }
 
-            //parse value in geoLocationPolygons
-            List<GeoLocationPolygon> geoLocationPolygonList = g.getGeoLocationPolygonList();
-            List<DataCiteGeoLocationPolygon> dataCiteGeoLocationPolygons = new ArrayList<>();
-            if (geoLocationPolygonList != null || !geoLocationPolygonList.isEmpty()){
-                for (GeoLocationPolygon glp: geoLocationPolygonList){
-                    DataCiteGeoLocationPolygon dataCiteGeoLocationPolygon = new DataCiteGeoLocationPolygon();
-                    List<DataCiteGeoLocationPoint> dataCiteGeoLocationPointList = new ArrayList<>();
-
-                    // parse value in polygonPointsList
-                    List<Point> polygonPointlist = glp.getPolygonPointsList();
-                    if (polygonPointlist != null || !polygonPointlist.isEmpty()){
-                        for (Point p : polygonPointlist){
-                            DataCiteGeoLocationPoint dataCiteGeoLocationPoint = new DataCiteGeoLocationPoint();
-                            Float polygonPointLongitude = p.getPointLongitude().getValue();
-                            Float polygonPointLatitude = p.getPointLatitude().getValue();
-                            if (polygonPointLongitude != null) {
-                                dataCiteGeoLocationPoint.setPointLongitude(polygonPointLongitude);
-                            }
-                            if (polygonPointLatitude != null) {
-                                dataCiteGeoLocationPoint.setPointLatitude(polygonPointLatitude);
-                            }
-                            dataCiteGeoLocationPointList.add(dataCiteGeoLocationPoint);
-                        }
-                        // set polygonPoint attributes
-                        dataCiteGeoLocationPolygon.setPolygonPointsList(dataCiteGeoLocationPointList);
-                    }
-
-                    //parse value of inPolygonPoint
-                    if (glp.getInPolygonPoint() != null){
-                        Float inPolygonPointLongitude = glp.getInPolygonPoint().getPointLongitude().getValue();
-                        Float inPolygonPointLatitude = glp.getInPolygonPoint().getPointLatitude().getValue();
-
-                        // set inPolygonPoint attributes
-                        DataCiteGeoLocationPoint inPolygonPoint = new DataCiteGeoLocationPoint();
-                        if (inPolygonPointLongitude != null) {
-                            inPolygonPoint.setPointLongitude(inPolygonPointLongitude);
-                        }
-                        if (inPolygonPointLatitude != null) {
-                            inPolygonPoint.setPointLatitude(inPolygonPointLatitude);
-                        }
-                        dataCiteGeoLocationPolygon.setInPolygonPoint(inPolygonPoint);
-                    }
-
-                    dataCiteGeoLocationPolygons.add(dataCiteGeoLocationPolygon);
-            }
-                dataCiteGeoLocation.setGeoLocationPolygonList(dataCiteGeoLocationPolygons);
-            }
+//            //parse value in geoLocationPolygons
+//            List<GeoLocationPolygon> geoLocationPolygonList = g.getGeoLocationPolygonList();
+//            List<DataCiteGeoLocationPolygon> dataCiteGeoLocationPolygons = new ArrayList<>();
+//            if (geoLocationPolygonList != null || !geoLocationPolygonList.isEmpty()){
+//                for (GeoLocationPolygon glp: geoLocationPolygonList){
+//                    DataCiteGeoLocationPolygon dataCiteGeoLocationPolygon = new DataCiteGeoLocationPolygon();
+//                    List<DataCiteGeoLocationPoint> dataCiteGeoLocationPointList = new ArrayList<>();
+//
+//                    // parse value in polygonPointsList
+//                    List<Point> polygonPointlist = glp.getPolygonPointsList();
+//                    if (polygonPointlist != null || !polygonPointlist.isEmpty()){
+//                        for (Point p : polygonPointlist){
+//                            DataCiteGeoLocationPoint dataCiteGeoLocationPoint = new DataCiteGeoLocationPoint();
+//                            Float polygonPointLongitude = p.getPointLongitude().getValue();
+//                            Float polygonPointLatitude = p.getPointLatitude().getValue();
+//                            if (polygonPointLongitude != null) {
+//                                dataCiteGeoLocationPoint.setPointLongitude(polygonPointLongitude);
+//                            }
+//                            if (polygonPointLatitude != null) {
+//                                dataCiteGeoLocationPoint.setPointLatitude(polygonPointLatitude);
+//                            }
+//                            dataCiteGeoLocationPointList.add(dataCiteGeoLocationPoint);
+//                        }
+//                        // set polygonPoint attributes
+//                        dataCiteGeoLocationPolygon.setPolygonPointsList(dataCiteGeoLocationPointList);
+//                    }
+//
+//                    //parse value of inPolygonPoint
+//                    if (glp.getInPolygonPoint() != null){
+//                        Float inPolygonPointLongitude = glp.getInPolygonPoint().getPointLongitude().getValue();
+//                        Float inPolygonPointLatitude = glp.getInPolygonPoint().getPointLatitude().getValue();
+//
+//                        // set inPolygonPoint attributes
+//                        DataCiteGeoLocationPoint inPolygonPoint = new DataCiteGeoLocationPoint();
+//                        if (inPolygonPointLongitude != null) {
+//                            inPolygonPoint.setPointLongitude(inPolygonPointLongitude);
+//                        }
+//                        if (inPolygonPointLatitude != null) {
+//                            inPolygonPoint.setPointLatitude(inPolygonPointLatitude);
+//                        }
+//                        dataCiteGeoLocationPolygon.setInPolygonPoint(inPolygonPoint);
+//                    }
+//
+//                    dataCiteGeoLocationPolygons.add(dataCiteGeoLocationPolygon);
+//            }
+//                dataCiteGeoLocation.setGeoLocationPolygonList(dataCiteGeoLocationPolygons);
+//            }
 
             //add dataCiteGeoLocation to the list
             dataCiteGeoLocations.add(dataCiteGeoLocation);
@@ -616,18 +605,18 @@ public class CedarInstanceParser {
             dataCiteRelatedItem.setRelatedItemIdentifier(dataCiteRelatedItemIdentifier);
 
             //parse creators values
-            if (r.getCreators() != null && !r.getCreators().isEmpty()){
+            if (r.getCreators() != null && !r.getCreators().isEmpty() && !CheckEmptyList.emptyRelatedItemCreatorList(r.getCreators())){
                 dataCiteRelatedItem.setCreators(parseCreatorValue(r.getCreators()));
             }
 
             // parse titles values
-            if (r.getTitles() != null && !r.getTitles().isEmpty()){
+            if (r.getTitles() != null && !r.getTitles().isEmpty() && !CheckEmptyList.emptyRelatedItemTitleList(r.getTitles())){
                 dataCiteRelatedItem.setTitles(parseTitleValue(r.getTitles()));
             }
 
             //parse contributors values
             List<Contributor> contributorList = r.getContributors();
-            if (contributorList != null && !contributorList.isEmpty()){
+            if (contributorList != null && !contributorList.isEmpty() && !CheckEmptyList.emptyRelatedItemContributorList(r.getContributors())){
                 List<DataCiteRelatedItemContributor> dataCiteRelatedItemContributors = new ArrayList<>();
                 for (Contributor c : contributorList) {
                     DataCiteRelatedItemContributor dataCiteRelatedItemContributor = new DataCiteRelatedItemContributor();

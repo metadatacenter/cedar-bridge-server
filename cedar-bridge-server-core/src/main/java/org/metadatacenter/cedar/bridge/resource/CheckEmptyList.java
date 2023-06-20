@@ -75,8 +75,8 @@ public class CheckEmptyList {
   public static boolean emptyDescriptionList(List<Description> descriptionList){
     return descriptionList.size()==1
         && (descriptionList.get(0).getDescription().toString()==null || descriptionList.get(0).getDescription().toString().equals(""))
-        && (descriptionList.get(0).getDescriptionType().toString()==null || descriptionList.get(0).getDescriptionType().toString().equals(""))
-        && (descriptionList.get(0).getLanguage().toString()==null || descriptionList.get(0).getLanguage().toString().equals(""));
+        && (descriptionList.get(0).getDescriptionType().toString()==null || descriptionList.get(0).getDescriptionType().toString().equals(""));
+//        && (descriptionList.get(0).getLanguage().toString()==null || descriptionList.get(0).getLanguage().toString().equals(""));
   }
 
   public static boolean emptyGeoLocationList(List<GeoLocation> geoLocationList){
