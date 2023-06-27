@@ -21,28 +21,28 @@ public class DataCiteMetaDataParser {
         cedarInstance.setPrefix(parsePrefixValue(dataCiteAttributes.getPrefix()));
 
         //pass creators values
-        cedarInstance.setCreatorElement(parseCreatorValue(dataCiteAttributes.getCreators()));
+        cedarInstance.setCreators(parseCreatorValue(dataCiteAttributes.getCreators()));
 
         //pass titles values
-        cedarInstance.setTitleElement(parseTitleValue(dataCiteAttributes.getTitles()));
+        cedarInstance.setTitles(parseTitleValue(dataCiteAttributes.getTitles()));
 
         //pass publisher value
-        cedarInstance.setPublisherElement(parsePublisherValue(dataCiteAttributes.getPublisher()));
+        cedarInstance.setPublisher(parsePublisherValue(dataCiteAttributes.getPublisher()));
 
         //pass publicationYear value
-        cedarInstance.setPublicationYearElement(parsePublicationYearValue(dataCiteAttributes.getPublicationYear()));
+        cedarInstance.setPublicationYear(parsePublicationYearValue(dataCiteAttributes.getPublicationYear()));
 
         //pass resourceType value
-        cedarInstance.setResourceTypeElement(parseResourceTypeValue(dataCiteAttributes.getTypes()));
+        cedarInstance.setResourceType(parseResourceTypeValue(dataCiteAttributes.getTypes()));
 
         //pass subject values
-        cedarInstance.setSubjectElement(parseSubjectValue(dataCiteAttributes.getSubjects()));
+        cedarInstance.setSubjects(parseSubjectValue(dataCiteAttributes.getSubjects()));
 
         //pass contributor values
-        cedarInstance.setContributorElement(parseContributorValue(dataCiteAttributes.getContributors()));
+        cedarInstance.setContributors(parseContributorValue(dataCiteAttributes.getContributors()));
 
         //pass date values
-        cedarInstance.setDateElement(parseDateValue(dataCiteAttributes.getDates()));
+        cedarInstance.setDates(parseDateValue(dataCiteAttributes.getDates()));
 
         //pass lang value
         if (dataCiteAttributes.getLanguage() != null){
@@ -50,13 +50,16 @@ public class DataCiteMetaDataParser {
         }
 
         //pass alternateIdentifier value
-        cedarInstance.setAlternateIdentifierElement(parseAlternateIdentifierValue(dataCiteAttributes.getAlternateIdentifiers()));
+        cedarInstance.setAlternateIdentifiers(parseAlternateIdentifierValue(dataCiteAttributes.getAlternateIdentifiers()));
 
         //pass relatedIdentifier value
-        cedarInstance.setRelatedIdentifierElement(parseRelatedIdentifierValue(dataCiteAttributes.getRelatedIdentifiers()));
+        cedarInstance.setRelatedIdentifiers(parseRelatedIdentifierValue(dataCiteAttributes.getRelatedIdentifiers()));
 
         //pass size value
-        cedarInstance.setSizeElement(parseSizeValue(dataCiteAttributes.getSizes()));
+        cedarInstance.setSizes(parseSizeValue(dataCiteAttributes.getSizes()));
+
+        //pass format value
+        cedarInstance.setFormats(parseFormatValue(dataCiteAttributes.getFormats()));
 
         //pass version value
         if (dataCiteAttributes.getVersion() != null){
@@ -64,19 +67,19 @@ public class DataCiteMetaDataParser {
         }
 
         //pass rights value
-        cedarInstance.setRightsElement(parseRightsValue(dataCiteAttributes.getRightsList()));
+        cedarInstance.setRightsList(parseRightsValue(dataCiteAttributes.getRightsList()));
 
         //pass description value
-        cedarInstance.setDescriptionElement(parseDescriptionValue(dataCiteAttributes.getDescriptions()));
+        cedarInstance.setDescriptions(parseDescriptionValue(dataCiteAttributes.getDescriptions()));
 
         //pass geoLocation value
-        cedarInstance.setGeoLocationElement(parseGeoLocationValue(dataCiteAttributes.getGeoLocations()));
+        cedarInstance.setGeoLocations(parseGeoLocationValue(dataCiteAttributes.getGeoLocations()));
 
         //pass fundingReference value
-        cedarInstance.setFundingReferenceElement(parseFundingReferenceValue(dataCiteAttributes.getFundingReferences()));
+        cedarInstance.setFundingReferences(parseFundingReferenceValue(dataCiteAttributes.getFundingReferences()));
 
         //pass relatedItem value
-        cedarInstance.setRelatedItemElement(parseRelatedItemValue(dataCiteAttributes.getRelatedItems()));
+        cedarInstance.setRelatedItems(parseRelatedItemValue(dataCiteAttributes.getRelatedItems()));
 
         cedarInstance.setContext(setContext());
 
@@ -166,8 +169,8 @@ public class DataCiteMetaDataParser {
         return nameIdentifierList;
     }
 
-    private static CreatorElement parseCreatorValue(List<DataCiteCreator> dataCiteCreators)    {
-        CreatorElement creatorElement = new CreatorElement();
+    private static List<Creator> parseCreatorValue(List<DataCiteCreator> dataCiteCreators)    {
+//        CreatorElement creatorElement = new CreatorElement();
         List<Creator> creatorList = new ArrayList<>();
 
         for (DataCiteCreator c : dataCiteCreators) {
@@ -218,24 +221,24 @@ public class DataCiteMetaDataParser {
 
             creatorList.add(creator);
         }
-        // set creatorElement value
-        creatorElement.setCreators(creatorList);
-        Map<String, String> context = new HashMap<>();
-        context.put("creator", "https://schema.metadatacenter.org/properties/34bab781-2c2a-4e9b-baf6-c4b923264314");
-        creatorElement.setContext(context);
-        creatorElement.setId("https://repo.metadatacenter.org/template-element-instances/e0eae987-86c3-42a9-9906-594b0f926880");
+//        // set creatorElement value
+//        creatorElement.setCreators(creatorList);
+//        Map<String, String> context = new HashMap<>();
+//        context.put("creator", "https://schema.metadatacenter.org/properties/34bab781-2c2a-4e9b-baf6-c4b923264314");
+//        creatorElement.setContext(context);
+//        creatorElement.setId("https://repo.metadatacenter.org/template-element-instances/e0eae987-86c3-42a9-9906-594b0f926880");
 
-        return creatorElement;
+//        return creatorElement;
+
+        return creatorList;
     }
 
-    private static TitleElement parseTitleValue(List<DataCiteTitle> dataCiteTitles) {
-        TitleElement titleElement = new TitleElement();
+    private static List<Title> parseTitleValue(List<DataCiteTitle> dataCiteTitles) {
         List<Title> titleList = new ArrayList<>();
 
         for (DataCiteTitle t : dataCiteTitles) {
             Title title = new Title();
             ValueFormat titleName = new ValueFormat();
-//                language = new ValueFormat();
             IdFormat titleType = new IdFormat();
 
             titleName.setValue(t.getTitle());
@@ -243,15 +246,12 @@ public class DataCiteMetaDataParser {
                 titleType.setLabel(t.getTitleType());
                 titleType.setId(DATACITE_ID_URL + t.getTitleType());
             }
-//            language.setValue(t.getLang());
 
             title.setTitleName(titleName);
             title.setTitleType(titleType);
-//            title.setLanguage(language);
 
             //set @context and @id
             Map<String, String> context = new HashMap<>();
-//            context.put("language", "https://schema.metadatacenter.org/properties/6c972ff2-1f4d-45bb-9f60-7573a999548a");
             context.put("titleName", "https://schema.metadatacenter.org/properties/24c6ed0a-277b-4b1e-8278-b2b1c64a8a27");
             context.put("titleType", "https://schema.metadatacenter.org/properties/9b5eb75f-3355-4ddb-903d-c716f4816b12");
             title.setContext(context);
@@ -259,29 +259,17 @@ public class DataCiteMetaDataParser {
 
             titleList.add(title);
         }
-        titleElement.setTitles(titleList);
-        Map<String, String> context = new HashMap<>();
-        context.put("Title", "https://schema.metadatacenter.org/properties/6207824f-2927-488f-a8c6-2eb7d426a7cf");
-        titleElement.setContext(context);
-        titleElement.setId("https://repo.metadatacenter.org/template-element-instances/30fcc8f6-f9c8-41b4-944b-25b659b45496");
 
-        return titleElement;
+        return titleList;
     }
 
-    private static PublisherElement parsePublisherValue(String givenPublisher){
-        PublisherElement publisherElement = new PublisherElement();
+    private static Publisher parsePublisherValue(String givenPublisher){
         Publisher publisher = new Publisher();
         publisher.setValue(givenPublisher);
-        publisherElement.setPublisher(publisher);
-        Map<String, String> context = new HashMap<>();
-        context.put("Publisher", "https://schema.metadatacenter.org/properties/8e4aa4d3-c0bf-42bf-8f26-03745416058e");
-        publisherElement.setContext(context);
-        publisherElement.setId("https://repo.metadatacenter.org/template-element-instances/81723cca-83d6-4e83-8eed-a85cff55cb29");
-        return publisherElement;
+        return publisher;
     }
 
-    private static PublicationYearElement parsePublicationYearValue(Integer givenPublicationYear){
-        PublicationYearElement publicationYearElement = new PublicationYearElement();
+    private static PublicationYear parsePublicationYearValue(Integer givenPublicationYear){
         PublicationYear publicationYear = new PublicationYear();
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR, givenPublicationYear);
@@ -290,35 +278,17 @@ public class DataCiteMetaDataParser {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
         publicationYear.setValue(formatter.format(calendar.getTime()));
         publicationYear.setType("xsd:date");
-        publicationYearElement.setPublicationYear(publicationYear);
 
-        Map<String, String> context = new HashMap<>();
-        context.put("PublicationYear", "https://schema.metadatacenter.org/properties/8d3c881c-46ae-47e4-aaa7-69f7b39a5ee8");
-        publicationYearElement.setContext(context);
-        publicationYearElement.setId("https://repo.metadatacenter.org/template-element-instances/36fae4d7-631e-4b6c-891b-3c8cd74d56b2");
-
-        return publicationYearElement;
+        return publicationYear;
     }
 
-    private static ResourceTypeElement parseResourceTypeValue(DataCiteType dataCiteType){
-        ResourceTypeElement resourceTypeElement = new ResourceTypeElement();
+    private static ValueFormat parseResourceTypeValue(DataCiteType dataCiteType){
         ValueFormat resourceType = new ValueFormat();
-        IdFormat resourceTypeGeneral = new IdFormat();
         resourceType.setValue(dataCiteType.getResourceType());
-        resourceTypeGeneral.setLabel(dataCiteType.getResourceTypeGeneral());
-        resourceTypeGeneral.setId(DATACITE_ID_URL + dataCiteType.getResourceTypeGeneral());
-        resourceTypeElement.setResourceType(resourceType);
-        resourceTypeElement.setResourceTypeGeneral(resourceTypeGeneral);
-        Map<String, String> context = new HashMap<>();
-        context.put("ResourceType", "https://schema.metadatacenter.org/properties/0f3fe782-7903-4388-ab6a-58408ba03889");
-        context.put("resourceTypeGeneral", "https://schema.metadatacenter.org/properties/1a3bc29e-5e03-4f16-b672-0df52315f126");
-        resourceTypeElement.setContext(context);
-        resourceTypeElement.setId("https://repo.metadatacenter.org/template-element-instances/9590d7d8-2174-4ee0-aeda-1c9385d476f6");
-        return resourceTypeElement;
+        return resourceType;
     }
 
-    private static SubjectElement parseSubjectValue(List<DataCiteSubject> dataCiteSubjects){
-        SubjectElement subjectElement = new SubjectElement();
+    private static List<Subject> parseSubjectValue(List<DataCiteSubject> dataCiteSubjects){
         List<Subject> subjectList = new ArrayList<>();
 
         for (DataCiteSubject s : dataCiteSubjects) {
@@ -350,17 +320,11 @@ public class DataCiteMetaDataParser {
 
             subjectList.add(subject);
         }
-        subjectElement.setSubjects(subjectList);
-        Map<String, String> context = new HashMap<>();
-        context.put("Subject", "https://schema.metadatacenter.org/properties/58ed2553-c4cc-41fb-9206-19b0185c6416");
-        subjectElement.setContext(context);
-        subjectElement.setId("https://repo.metadatacenter.org/template-element-instances/1dff3904-8146-4aba-a094-4afaa094ab21");
 
-        return subjectElement;
+        return subjectList;
     }
 
-    private static ContributorElement parseContributorValue(List<DataCiteContributor> dataCiteContributors){
-        ContributorElement contributorElement = new ContributorElement();
+    private static List<Contributor> parseContributorValue(List<DataCiteContributor> dataCiteContributors){
         List<Contributor> contributorList = new ArrayList<>();
 
         for (DataCiteContributor c : dataCiteContributors) {
@@ -414,18 +378,11 @@ public class DataCiteMetaDataParser {
 
             contributorList.add(contributor);
         }
-        // set creatorElement value
-        contributorElement.setContributors(contributorList);
-        Map<String, String> context = new HashMap<>();
-        context.put("Contributor", "https://schema.metadatacenter.org/properties/98f2167c-3ed3-4058-9bf6-1142ebcdea46");
-        contributorElement.setContext(context);
-        contributorElement.setId("https://repo.metadatacenter.org/template-element-instances/b215d0d8-70f9-41fa-898c-78f2e366d7c1");
 
-        return contributorElement;
+        return contributorList;
     }
 
-    private static DateElement parseDateValue(List<DataCiteDate> dataCiteDates){
-        DateElement dateElement = new DateElement();
+    private static List<Date> parseDateValue(List<DataCiteDate> dataCiteDates){
         List<Date> dateList = new ArrayList<>();
 
         for (DataCiteDate d : dataCiteDates) {
@@ -453,13 +410,8 @@ public class DataCiteMetaDataParser {
 
             dateList.add(cedarDate);
         }
-        dateElement.setDates(dateList);
-        Map<String, String> context = new HashMap<>();
-        context.put("Date", "https://schema.metadatacenter.org/properties/4084c760-30fa-43f8-8441-498f73314100");
-        dateElement.setContext(context);
-        dateElement.setId("https://repo.metadatacenter.org/template-element-instances/e2e824c3-36d0-4f2a-9c0b-903bf7c9e760");
 
-        return dateElement;
+        return dateList;
     }
 
     private static IdFormat parseLangValue(String dataCiteLang){
@@ -469,8 +421,7 @@ public class DataCiteMetaDataParser {
         return lang;
     }
 
-    private static AlternateIdentifierElement parseAlternateIdentifierValue(List<DataCiteAlternateIdentifier> dataCiteAlternateIdentifiers){
-        AlternateIdentifierElement alternateIdentifierElement = new AlternateIdentifierElement();
+    private static List<AlternateIdentifier> parseAlternateIdentifierValue(List<DataCiteAlternateIdentifier> dataCiteAlternateIdentifiers){
         List<AlternateIdentifier> alternateIdentifierList = new ArrayList<>();
 
         for (DataCiteAlternateIdentifier a : dataCiteAlternateIdentifiers) {
@@ -492,17 +443,11 @@ public class DataCiteMetaDataParser {
 
             alternateIdentifierList.add(alternateIdentifier);
         }
-        alternateIdentifierElement.setAlternateIdentifiers(alternateIdentifierList);
-        Map<String, String> context = new HashMap<>();
-        context.put("Alternate Identifier", "https://schema.metadatacenter.org/properties/a034fbed-8aea-41c3-80b6-250921ea2bca");
-        alternateIdentifierElement.setContext(context);
-        alternateIdentifierElement.setId("https://repo.metadatacenter.org/template-element-instances/810aaaf0-16bf-4392-a81d-722d94605a24");
 
-        return alternateIdentifierElement;
+        return alternateIdentifierList;
     }
 
-    private static RelatedIdentifierElement parseRelatedIdentifierValue(List<DataCiteRelatedIdentifier> dataCiteRelatedIdentifiers){
-        RelatedIdentifierElement relatedIdentifierElement = new RelatedIdentifierElement();
+    private static List<RelatedIdentifier> parseRelatedIdentifierValue(List<DataCiteRelatedIdentifier> dataCiteRelatedIdentifiers){
         List<RelatedIdentifier> relatedIdentifierList = new ArrayList<>();
 
         for (DataCiteRelatedIdentifier r : dataCiteRelatedIdentifiers) {
@@ -544,17 +489,11 @@ public class DataCiteMetaDataParser {
 
             relatedIdentifierList.add(relatedIdentifier);
         }
-        relatedIdentifierElement.setRelatedIdentifiers(relatedIdentifierList);
-        Map<String, String> context = new HashMap<>();
-        context.put("Related Identifier", "https://schema.metadatacenter.org/properties/c689fe26-eb9c-4240-9b35-32f16fff78ad");
-        relatedIdentifierElement.setContext(context);
-        relatedIdentifierElement.setId("https://repo.metadatacenter.org/template-element-instances/49f1f43b-4e27-4bda-af8f-6a999ef8956d");
 
-        return relatedIdentifierElement;
+        return relatedIdentifierList;
     }
 
-    private static SizeElement parseSizeValue(List<String> dataCiteSizes){
-        SizeElement sizeElement = new SizeElement();
+    private static List<ValueFormat> parseSizeValue(List<String> dataCiteSizes){
         List<ValueFormat> sizeList = new ArrayList<>();
 
         for(String s : dataCiteSizes){
@@ -563,17 +502,10 @@ public class DataCiteMetaDataParser {
             sizeList.add(size);
         }
 
-        sizeElement.setSizes(sizeList);
-        Map<String, String> context = new HashMap<>();
-        context.put("Size", "https://schema.metadatacenter.org/properties/c69e7211-0d72-471b-a1b8-ce8457d49c0f");
-        sizeElement.setContext(context);
-        sizeElement.setId("https://repo.metadatacenter.org/template-element-instances/0f392e2b-b4cf-4eb0-950b-a31c3219d6ef");
-
-        return sizeElement;
+        return sizeList;
     }
 
-    private static FormatElement parseFormatValue(List<String> dataCiteFormats){
-        FormatElement formatElement = new FormatElement();
+    private static List<ValueFormat> parseFormatValue(List<String> dataCiteFormats){
         List<ValueFormat> formatList = new ArrayList<>();
 
         for(String f : dataCiteFormats){
@@ -582,13 +514,7 @@ public class DataCiteMetaDataParser {
             formatList.add(format);
         }
 
-        formatElement.setFormats(formatList);
-        Map<String, String> context = new HashMap<>();
-        context.put("Format", "https://schema.metadatacenter.org/properties/fd102295-61b4-45f5-9b74-ed3fac02c748");
-        formatElement.setContext(context);
-        formatElement.setId("https://repo.metadatacenter.org/template-element-instances/4faa5e45-9067-42a0-9baa-cfd60474adf6");
-
-        return formatElement;
+        return formatList;
     }
 
     private static ValueFormat parseVersionValue(String dataCiteVersion){
@@ -597,8 +523,7 @@ public class DataCiteMetaDataParser {
         return version;
     }
 
-    private static RightsElement parseRightsValue(List<DataCiteRights> dataCiteRights){
-        RightsElement rightsElement = new RightsElement();
+    private static List<Rights> parseRightsValue(List<DataCiteRights> dataCiteRights){
         List<Rights> rightsList = new ArrayList<>();
 
         for (DataCiteRights r : dataCiteRights) {
@@ -630,39 +555,29 @@ public class DataCiteMetaDataParser {
 
             rightsList.add(rights);
         }
-        rightsElement.setRightsList(rightsList);
-        Map<String, String> context = new HashMap<>();
-        context.put("Rights", "https://schema.metadatacenter.org/properties/a9b61f81-6a7a-4de5-a7fb-301a31eeb79b");
-        rightsElement.setContext(context);
-        rightsElement.setId("https://repo.metadatacenter.org/template-element-instances/67ed92dc-baae-4f9d-a31e-4e63b8a1fc48");
 
-        return rightsElement;
+        return rightsList;
     }
 
-    private static DescriptionElement parseDescriptionValue(List<DataCiteDescription> dataCiteDescriptions){
-        DescriptionElement descriptionElement = new DescriptionElement();
+    private static List<Description> parseDescriptionValue(List<DataCiteDescription> dataCiteDescriptions){
         List<Description> descriptionList = new ArrayList<>();
 
         for (DataCiteDescription d : dataCiteDescriptions){
             Description description = new Description();
 
             ValueFormat descriptionField = new ValueFormat();
-//                lang = new ValueFormat();
             IdFormat descriptionType = new IdFormat();
 
             descriptionField.setValue(d.getDescription());
             descriptionType.setLabel(d.getDescriptionType());
             descriptionType.setId(DATACITE_ID_URL + d.getDescriptionType());
-//            lang.setValue(d.getLang());
 
             description.setDescription(descriptionField);
             description.setDescriptionType(descriptionType);
-//            description.setLanguage(lang);
 
             //set @context and @id
             Map<String, String> context = new HashMap<>();
             context.put("Description", "https://schema.metadatacenter.org/properties/aec05c4d-06c4-43c1-bfcb-7c341c81fab7");
-//            context.put("Language", "https://schema.metadatacenter.org/properties/f44f0eb7-7f06-495d-a6b0-3f2efa01d633");
             context.put("descriptionType", "https://schema.metadatacenter.org/properties/ba34a97c-9400-4e79-9581-b9218651231d");
             description.setContext(context);
             description.setId("https://repo.metadatacenter.org/template-element-instances/4a5f07af-9d5b-49b2-a452-065ad88efc65");
@@ -670,17 +585,10 @@ public class DataCiteMetaDataParser {
             descriptionList.add(description);
         }
 
-        descriptionElement.setDescriptions(descriptionList);
-        Map<String, String> context = new HashMap<>();
-        context.put("Description", "https://schema.metadatacenter.org/properties/06dd25de-ef4d-432e-8592-71e94758856b");
-        descriptionElement.setContext(context);
-        descriptionElement.setId("https://repo.metadatacenter.org/template-element-instances/70915cbd-b0a0-4327-a4eb-42c55a9650ea");
-
-        return descriptionElement;
+        return descriptionList;
     }
 
-    private static GeoLocationElement parseGeoLocationValue(List<DataCiteGeoLocation> dataCiteGeolocations){
-        GeoLocationElement geoLocationElement = new GeoLocationElement();
+    private static List<GeoLocation> parseGeoLocationValue(List<DataCiteGeoLocation> dataCiteGeolocations){
         List<GeoLocation> geoLocationList = new ArrayList<>();
 
         for (DataCiteGeoLocation g : dataCiteGeolocations){
@@ -751,45 +659,28 @@ public class DataCiteMetaDataParser {
             geoLocationList.add(geoLocation);
         }
 
-        geoLocationElement.setGeoLocations(geoLocationList);
-        Map<String, String> context = new HashMap<>();
-        context.put("GeoLocation", "https://schema.metadatacenter.org/properties/136f46fd-c86d-42af-b181-18d4e9aadd53");
-        geoLocationElement.setContext(context);
-        geoLocationElement.setId("https://repo.metadatacenter.org/template-element-instances/5dcf9244-85d7-4a3c-b304-bb3ce84f96e2");
-
-        return geoLocationElement;
+        return geoLocationList;
     }
 
-    private static FundingReferenceElement parseFundingReferenceValue(List<DataCiteFundingReference> dataCiteFundingReferences){
-        FundingReferenceElement fundingReferenceElement = new FundingReferenceElement();
+    private static List<FundingReference> parseFundingReferenceValue(List<DataCiteFundingReference> dataCiteFundingReferences){
         List<FundingReference> fundingReferenceList = new ArrayList<>();
 
         for (DataCiteFundingReference f : dataCiteFundingReferences){
             FundingReference fundingReference = new FundingReference();
-            ValueFormat awardTitle = new ValueFormat(), funderName = new ValueFormat();
+            ValueFormat awardTitle = new ValueFormat(),
+                funderName = new ValueFormat(),
+                awardNumberField = new ValueFormat(),
+                funderIdentifierField = new ValueFormat();
+            SchemeURI awardUri = new SchemeURI(),
+                funderSchemeUri = new SchemeURI();
+            IdFormat funderIdentifierType= new IdFormat();
+
             awardTitle.setValue(f.getAwardTitle());
             funderName.setValue(f.getFunderName());
-
-            //setup awardNumber values
-            AwardNumber awardNumber = new AwardNumber();
-            ValueFormat awardNumberField = new ValueFormat();
-            SchemeURI awardUri = new SchemeURI();
             awardNumberField.setValue(f.getAwardNumber());
-            awardUri.setId(f.getAwardUri());
-            awardNumber.setAwardNumber(awardNumberField);
-            awardNumber.setAwardURI(awardUri);
-            Map<String, String> awardNumberContext = new HashMap<>();
-            awardNumberContext.put("awardNumber", "https://schema.metadatacenter.org/properties/d82aedc1-6da5-4203-bf5d-99db2a7fd57f");
-            awardNumberContext.put("awardURI", "https://schema.metadatacenter.org/properties/d3f86f46-32ee-4edb-acc3-65982320478b");
-            awardNumber.setContext(awardNumberContext);
-            awardNumber.setId("https://repo.metadatacenter.org/template-element-instances/f32d369b-9333-4b54-862b-425de5dfdd24");
-
-            //set up funderIdentifier values
-            FunderIdentifier funderIdentifier = new FunderIdentifier();
-            ValueFormat funderIdentifierField = new ValueFormat();
-            IdFormat funderIdentifierType= new IdFormat();
-            SchemeURI funderSchemeUri = new SchemeURI();
             funderIdentifierField.setValue(f.getFunderIdentifier());
+            awardUri.setId(f.getAwardUri());
+            funderSchemeUri.setId(f.getSchemeUri());
 
             String funderIdentifierTypeValue = f.getFunderIdentifierType();
             if (funderIdentifierTypeValue != null){
@@ -802,38 +693,30 @@ public class DataCiteMetaDataParser {
                 }
             }
 
-            funderSchemeUri.setId(f.getSchemeUri());
-            funderIdentifier.setFunderIdentifier(funderIdentifierField);
-            funderIdentifier.setFunderIdentifierType(funderIdentifierType);
-            funderIdentifier.setSchemeURI(funderSchemeUri);
-            Map<String, String> funderIdentifierContext = new HashMap<>();
-            funderIdentifierContext.put("SchemeURI", "https://schema.metadatacenter.org/properties/1d02cacc-4b80-43d8-a1f9-ec920975b555");
-            funderIdentifierContext.put("funderIdentifier", "https://schema.metadatacenter.org/properties/eb5130b4-e22e-4b58-a837-168fc32f76c7");
-            funderIdentifierContext.put("funderIdentifierType", "https://schema.metadatacenter.org/properties/faf1a977-326b-4a4d-9935-3eb44d07deec");
-            funderIdentifier.setContext(funderIdentifierContext);
-            funderIdentifier.setId("https://repo.metadatacenter.org/template-element-instances/dfc07e72-6235-459b-8e79-b285f66dad97");
-
             fundingReference.setAwardTitle(awardTitle);
             fundingReference.setFunderName(funderName);
-            fundingReference.setAwardNumber(awardNumber);
-            fundingReference.setFunderIdentifier(funderIdentifier);
+            fundingReference.setAwardNumber(awardNumberField);
+            fundingReference.setFunderIdentifier(funderIdentifierField);
+            fundingReference.setAwardURI(awardUri);
+            fundingReference.setSchemeURI(funderSchemeUri);
+            fundingReference.setFunderIdentifierType(funderIdentifierType);
+
             Map<String, String> funderContext = new HashMap<>();
-            funderContext.put("Award Number", "https://schema.metadatacenter.org/properties/e0c6ef21-7a29-4369-8e04-39ada1fd70db");
-            funderContext.put("Funder Identifier", "https://schema.metadatacenter.org/properties/0fa1701e-a3a1-4265-83aa-ee20cf457090");
             funderContext.put("awardTitle", "https://schema.metadatacenter.org/properties/9afc27b4-407a-4079-98c5-e7669f012d69");
             funderContext.put("funderName", "https://schema.metadatacenter.org/properties/18666fcd-6f8e-4886-90f7-153d1193985c");
+            funderContext.put("funderIdentifier", "https://schema.metadatacenter.org/properties/67927c8d-4572-4ba5-b5da-0c1d89f77c7c");
+            funderContext.put("funderIdentifierType", "https://schema.metadatacenter.org/properties/a666abd0-8f05-43d7-9aea-dab007d4454a");
+            funderContext.put("SchemeURI", "https://schema.metadatacenter.org/properties/9146dbf5-8e4e-4dd4-ab0d-d573509fc60d");
+            funderContext.put("awardNumber", "https://schema.metadatacenter.org/properties/3aa01f27-0495-43e9-9bf4-b89c8ce8ea32");
+            funderContext.put("awardURI", "https://schema.metadatacenter.org/properties/30a02941-ea11-433d-b145-c1694997e152");
+
             fundingReference.setContext(funderContext);
             fundingReference.setId("https://repo.metadatacenter.org/template-element-instances/b4b9390b-dfa0-4c69-b87e-3b89478f54c7");
 
             fundingReferenceList.add(fundingReference);
         }
-        fundingReferenceElement.setFundingReferences(fundingReferenceList);
-        Map<String, String> context = new HashMap<>();
-        context.put("Funding Reference", "https://schema.metadatacenter.org/properties/033803b0-11f9-41dd-8845-ea8fc40db4df");
-        fundingReferenceElement.setContext(context);
-        fundingReferenceElement.setId("https://repo.metadatacenter.org/template-element-instances/e2dcc74c-c89c-4440-bd24-e1a8ffc1cef2");
 
-        return fundingReferenceElement;
+        return fundingReferenceList;
     }
 
     private static List<Creator> parseRelatedItemCreatorValue(List<DataCiteCreator> dataCiteCreators){
@@ -981,8 +864,7 @@ public class DataCiteMetaDataParser {
         return relatedIdentifier;
     }
 
-    private static RelatedItemElement parseRelatedItemValue(List<DataCiteRelatedItem> dataCiteRelatedItems){
-        RelatedItemElement relatedItemElement = new RelatedItemElement();
+    private static List<RelatedItem> parseRelatedItemValue(List<DataCiteRelatedItem> dataCiteRelatedItems){
         List<RelatedItem> relatedItemList = new ArrayList<>();
 
         for (DataCiteRelatedItem r : dataCiteRelatedItems){
@@ -990,14 +872,19 @@ public class DataCiteMetaDataParser {
 
             IdFormat relatedItemType = new IdFormat(),
                 relationType = new IdFormat(),
-                numberType = new IdFormat();
+                numberType = new IdFormat(),
+                identifierType = new IdFormat();
             ValueFormat volume = new ValueFormat(),
                 issue = new ValueFormat(),
                 firstPage = new ValueFormat(),
                 lastPage = new ValueFormat(),
                 publisher = new ValueFormat(),
                 edition = new ValueFormat(),
-                number = new ValueFormat();
+                number = new ValueFormat(),
+                identifier = new ValueFormat(),
+                relatedMetadataScheme = new ValueFormat(),
+                schemeType = new ValueFormat();
+            SchemeURI schemeUri = new SchemeURI();
 
             Integer givenYear = r.getPublicationYear();
             PublicationYear publicationYear = new PublicationYear();
@@ -1015,12 +902,18 @@ public class DataCiteMetaDataParser {
             relatedItemType.setId(DATACITE_ID_URL + r.getRelatedItemType());
             relationType.setLabel(r.getRelationType());
             relationType.setId(DATACITE_ID_URL + r.getRelationType());
+            identifierType.setLabel(r.getRelatedItemIdentifier().getRelatedItemIdentifierType());
+            identifierType.setId(DATACITE_ID_URL + r.getRelatedItemIdentifier().getRelatedItemIdentifierType());
             volume.setValue(r.getVolume());
             issue.setValue(r.getIssue());
             firstPage.setValue(r.getFirstPage());
             lastPage.setValue(r.getLastPage());
             publisher.setValue(r.getPublisher());
             edition.setValue(r.getEdition());
+            identifier.setValue(r.getRelatedItemIdentifier().getRelatedItemIdentifier());
+            relatedMetadataScheme.setValue(r.getRelatedItemIdentifier().getRelatedMetadataScheme());
+            schemeType.setValue(r.getRelatedItemIdentifier().getSchemeType());
+            schemeUri.setId(r.getRelatedItemIdentifier().getSchemeUri());
             number.setValue(r.getNumber());
             String givenNumberType = r.getNumberType();
             if (givenNumberType != null){
@@ -1035,6 +928,7 @@ public class DataCiteMetaDataParser {
 
             relatedItem.setRelatedItemType(relatedItemType);
             relatedItem.setRelationType(relationType);
+            relatedItem.setRelatedIdentifierType(identifierType);
             relatedItem.setVolume(volume);
             relatedItem.setIssue(issue);
             relatedItem.setFirstPage(firstPage);
@@ -1043,6 +937,10 @@ public class DataCiteMetaDataParser {
             relatedItem.setEdition(edition);
             relatedItem.setNumber(number);
             relatedItem.setNumberType(numberType);
+            relatedItem.setRelatedIdentifier(identifier);
+            relatedItem.setRelatedMetadataScheme(relatedMetadataScheme);
+            relatedItem.setSchemeType(schemeType);
+            relatedItem.setSchemeURi(schemeUri);
             relatedItem.setPublicationYear(publicationYear);
             if (r.getCreators()!=null){
                 relatedItem.setCreators(parseRelatedItemCreatorValue(r.getCreators()));
@@ -1053,16 +951,12 @@ public class DataCiteMetaDataParser {
             if (r.getTitles()!=null){
                 relatedItem.setTitles(parseRelatedItemTitleValue(r.getTitles()));
             }
-            if (r.getRelatedItemIdentifier()!=null){
-                relatedItem.setRelatedItemIdentifier(parseRelatedItemIdentifier(r.getRelatedItemIdentifier()));
-            }
 
             Map<String, String> context = new HashMap<>();
             context.put("Contributor", "https://schema.metadatacenter.org/properties/b5c80c42-6fb3-40c6-b995-2f40eb3a2e5f");
             context.put("Creator", "https://schema.metadatacenter.org/properties/d4b21626-059a-4241-b0eb-c27ca857ba5d");
             context.put("PublicationYear", "https://schema.metadatacenter.org/properties/2d6ae075-bf91-4f28-9288-7e3daed7d5cd");
             context.put("Publisher", "https://schema.metadatacenter.org/properties/26dfc091-8eed-4411-bd4f-7e867c3ea26e");
-            context.put("Related Item Identifier Element", "https://schema.metadatacenter.org/properties/a79b45c0-8959-45cc-8061-d2c6802f35f1");
             context.put("Title", "https://schema.metadatacenter.org/properties/93b034c4-c719-4d5f-9963-c8297c081863");
             context.put("edition", "https://schema.metadatacenter.org/properties/97dd4fbb-b5c2-4d80-b410-b48315470d9c");
             context.put("firstPage", "https://schema.metadatacenter.org/properties/344171db-4639-4c95-9785-70a0182b3cba");
@@ -1073,19 +967,18 @@ public class DataCiteMetaDataParser {
             context.put("relatedItemType", "https://schema.metadatacenter.org/properties/234f4448-88d6-461c-9ea0-fd465cdbbbf1");
             context.put("relationType", "https://schema.metadatacenter.org/properties/4e314807-2064-4af1-88c5-e411549c24fd");
             context.put("volume", "https://schema.metadatacenter.org/properties/9bdeae88-1488-468a-b94a-e15470e2a9cf");
+            context.put("relatedIdentifier", "https://schema.metadatacenter.org/properties/6424638b-acd5-42b2-ba56-f9eb905f8fd2");
+            context.put("relatedIdentifierType", "https://schema.metadatacenter.org/properties/11e459bf-29de-48bb-8951-01e5c5883a76");
+            context.put("relatedMetadataScheme", "https://schema.metadatacenter.org/properties/a146013c-626f-43e7-a61c-8fad6da3a445");
+            context.put("schemeURI", "https://schema.metadatacenter.org/properties/46505fed-903b-462f-ae3a-6db6337b8ff4");
+            context.put("schemeType", "https://schema.metadatacenter.org/properties/33495b52-778e-49ca-8d49-b19b85006c80");
             relatedItem.setContext(context);
             relatedItem.setId("https://repo.metadatacenter.org/template-element-instances/e20355b6-2c2c-480a-b258-268564158b23");
 
             relatedItemList.add(relatedItem);
         }
 
-        relatedItemElement.setRelatedItems(relatedItemList);
-        Map<String, String> context = new HashMap<>();
-        context.put("Related Item", "https://schema.metadatacenter.org/properties/dd7ef8b2-363e-48fb-bb4e-aee73fc8d8af");
-        relatedItemElement.setContext(context);
-        relatedItemElement.setId("https://repo.metadatacenter.org/template-element-instances/432975ab-2bf5-4891-ab3c-51fc5bf6ebd0");
-
-        return relatedItemElement;
+        return relatedItemList;
     }
 
     private static Context setContext(){
@@ -1110,6 +1003,7 @@ public class DataCiteMetaDataParser {
 
         label.setType("xsd:string");
         isBasedOn.setType("@id");
+        name.setType("xsd:string");
         description.setType("xsd:string");
         derivedFrom.setType("@id");
         createdOn.setType("xsd:dateTime");
@@ -1129,25 +1023,25 @@ public class DataCiteMetaDataParser {
         context.setNotation(notation);
 
         context.setPrefix("https://schema.metadatacenter.org/properties/c5c19810-b058-48cf-b0ae-de2e9f82a95e");
-        context.setTitleElement("https://schema.metadatacenter.org/properties/92f85368-6534-4e90-86af-ffecc29e793d");
-        context.setPublisherElement("https://schema.metadatacenter.org/properties/1dcf8897-b0a0-40d7-805b-774265d391af");
-        context.setPublicationYearElement("https://schema.metadatacenter.org/properties/6706ab5c-2535-4d6c-8384-2a4abdfef364");
-        context.setSubjectElement("https://schema.metadatacenter.org/properties/06efec71-fd9f-4ece-95cc-80cc26e3cd48");
-        context.setDateElement("https://schema.metadatacenter.org/properties/8e0032f8-84fe-42e0-a05c-3e82681ea207");
-        context.setLanguage("https://schema.metadatacenter.org/properties/923c0e7e-1adc-40db-90d2-b8f95cb230df");
-        context.setRelatedIdentifierElement("https://schema.metadatacenter.org/properties/9e8c283e-3e46-49dc-b231-ff5200891b41");
-        context.setSizeElement("https://schema.metadatacenter.org/properties/89a94784-6e24-4021-8be2-7756b8842507");
-        context.setFormatElement("https://schema.metadatacenter.org/properties/449d8e25-e7f3-4fd9-81d3-5793142ddc5d");
-        context.setVersion("https://schema.metadatacenter.org/properties/49b1bc7e-afa6-4cf4-bfce-80e3c6587899");
-        context.setRightsElement("https://schema.metadatacenter.org/properties/2008889e-e789-4f12-8d40-4c2591dbd653");
-        context.setDescriptionElement("https://schema.metadatacenter.org/properties/1da57f09-9f69-4459-8cda-caa86ac5a3f1");
-        context.setFundingReferenceElement("https://schema.metadatacenter.org/properties/37e01b4f-8f5c-41f2-abbd-37bfe438f7ae");
-        context.setResourceTypeElement("https://schema.metadatacenter.org/properties/35b3ab6d-590f-41e9-87ee-83a718ef3052");
-        context.setCreatorElement("https://schema.metadatacenter.org/properties/31665a54-e9a2-4ab5-b8b0-a2b135100d98");
-        context.setAlternateIdentifierElement("https://schema.metadatacenter.org/properties/98b76457-433d-4967-9e07-2a8ff6802724");
-        context.setContributorElement("https://schema.metadatacenter.org/properties/48cd5362-7b07-4f93-a041-3cc93c20fa28");
-        context.setRelatedItemElement("https://schema.metadatacenter.org/properties/da2043d8-a44d-4044-ade8-82527b9c0eaf");
-        context.setGeoLocationElement("https://schema.metadatacenter.org/properties/2b8ce63b-1039-409a-a041-415d3fc0a2ba");
+        context.setCreator("https://schema.metadatacenter.org/properties/fcbe7f27-e429-4204-9e02-c743fe13fa01");
+        context.setTitle("https://schema.metadatacenter.org/properties/88556557-7e94-4738-8fe7-1a8bd0f5ad0a");
+        context.setPublisher("https://schema.metadatacenter.org/properties/e500dc8f-cd0f-4404-a684-5ed9dace2f19");
+        context.setPublicationYear("https://schema.metadatacenter.org/properties/7fe11cba-9053-42b6-aa8e-3ed25e951600");
+        context.setResourceType("https://schema.metadatacenter.org/properties/20792991-6163-40fd-8352-5d9b6d24ff26");
+        context.setSubject("https://schema.metadatacenter.org/properties/6c9e03ad-9629-424e-a894-0b47f6e64a0f");
+        context.setContributor("https://schema.metadatacenter.org/properties/f422fff1-11c0-4533-8e7f-2fb0dbaea367");
+        context.setDateElement("https://schema.metadatacenter.org/properties/fd947c0a-9d99-4a72-ae9c-84e09ac64f14");
+        context.setLanguage("https://schema.metadatacenter.org/properties/3399c7e8-80cd-4c75-973e-afaec9bf78f8");
+        context.setAlternateIdentifierElement("https://schema.metadatacenter.org/properties/2e854cb7-4846-4848-9ab1-be35e96a1a35");
+        context.setRelatedIdentifierElement("https://schema.metadatacenter.org/properties/51774857-8b6a-4577-890c-eca0f3670eb0");
+        context.setSize("https://schema.metadatacenter.org/properties/618f3be1-ad89-4032-b803-2ef24a3ff31b");
+        context.setFormat("https://schema.metadatacenter.org/properties/dfeb2217-9a0e-4aff-b429-3c03e61774df");
+        context.setVersion("https://schema.metadatacenter.org/properties/4354b3d4-9c46-4ad8-a9c3-09c3e5bd6adc");
+        context.setRightsElement("https://schema.metadatacenter.org/properties/bbdae27a-aacb-4934-8c6b-0251cf8d4191");
+        context.setDescriptionElement("https://schema.metadatacenter.org/properties/793c5f5b-db52-448b-a867-f6e12411acfe");
+        context.setGeoLocation("https://schema.metadatacenter.org/properties/7052fcee-8170-40f1-a4c3-f88a6da60148");
+        context.setFundingReference("https://schema.metadatacenter.org/properties/e12e7d4a-332b-4d2c-9bd4-028e5edb5abe");
+        context.setRelatedItem("https://schema.metadatacenter.org/properties/4ce52aa8-ae0b-44a1-86ea-a461bd8d2449");
 
         return context;
     }

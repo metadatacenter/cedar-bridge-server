@@ -39,44 +39,45 @@ public class Context {
   private TypeFormat notation;
   @JsonProperty("prefix")
   private String prefix;
-  @JsonProperty("TitleElement")
-  private String titleElement;
-  @JsonProperty("PublisherElement")
-  private String publisherElement;
-  @JsonProperty("PublicationYearElement")
-  private String publicationYearElement;
-  @JsonProperty("SubjectElement")
-  private String subjectElement;
-  @JsonProperty("DateElement")
+  @JsonProperty("creator")
+  private String creator;
+  @JsonProperty("title")
+  private String title;
+  @JsonProperty("publisher")
+  private String publisher;
+  @JsonProperty("publicationYear")
+  private String publicationYear;
+  @JsonProperty("resourceType")
+  private String resourceType;
+  @JsonProperty("subject")
+  private String subject;
+  @JsonProperty("contributor")
+  private String contributor;
+  @JsonProperty("dateElement")
   private String dateElement;
-  @JsonProperty("Language")
+  @JsonProperty("language")
   private String language;
-  @JsonProperty("RelatedIdentifierElement")
-  private String relatedIdentifierElement;
-  @JsonProperty("SizeElement")
-  private String sizeElement;
-  @JsonProperty("FormatElement")
-  private String formatElement;
-  @JsonProperty("Version")
-  private String version;
-  @JsonProperty("RightsElement")
-  private String rightsElement;
-  @JsonProperty("DescriptionElement")
-  private String descriptionElement;
-  @JsonProperty("FundingReferenceElement")
-  private String fundingReferenceElement;
-  @JsonProperty("ResourceTypeElement")
-  private String resourceTypeElement;
-  @JsonProperty("CreatorElement")
-  private String creatorElement;
-  @JsonProperty("AlternateIdentifierElement")
+  @JsonProperty("alternateIdentifierElement")
   private String alternateIdentifierElement;
-  @JsonProperty("ContributorElement")
-  private String contributorElement;
-  @JsonProperty("RelatedItemElement")
-  private String relatedItemElement;
-  @JsonProperty("GeoLocationElement")
-  private String geoLocationElement;
+  @JsonProperty("relatedIdentifierElement")
+  private String relatedIdentifierElement;
+  @JsonProperty("size")
+  private String size;
+  @JsonProperty("format")
+  private String format;
+  @JsonProperty("version")
+  private String version;
+  @JsonProperty("rightsElement")
+  private String rightsElement;
+  @JsonProperty("descriptionElement")
+  private String descriptionElement;
+  @JsonProperty("geoLocation")
+  private String geoLocation;
+  @JsonProperty("fundingReference")
+  private String fundingReference;
+  @JsonProperty("relatedItem")
+  private String relatedItem;
+
 
   public String getRdfs() {
     return rdfs;
@@ -214,36 +215,60 @@ public class Context {
     this.prefix = prefix;
   }
 
-  public String getTitleElement() {
-    return titleElement;
+  public String getCreator() {
+    return creator;
   }
 
-  public void setTitleElement(String titleElement) {
-    this.titleElement = titleElement;
+  public void setCreator(String creator) {
+    this.creator = creator;
   }
 
-  public String getPublisherElement() {
-    return publisherElement;
+  public String getTitle() {
+    return title;
   }
 
-  public void setPublisherElement(String publisherElement) {
-    this.publisherElement = publisherElement;
+  public void setTitle(String title) {
+    this.title = title;
   }
 
-  public String getPublicationYearElement() {
-    return publicationYearElement;
+  public String getPublisher() {
+    return publisher;
   }
 
-  public void setPublicationYearElement(String publicationYearElement) {
-    this.publicationYearElement = publicationYearElement;
+  public void setPublisher(String publisher) {
+    this.publisher = publisher;
   }
 
-  public String getSubjectElement() {
-    return subjectElement;
+  public String getPublicationYear() {
+    return publicationYear;
   }
 
-  public void setSubjectElement(String subjectElement) {
-    this.subjectElement = subjectElement;
+  public void setPublicationYear(String publicationYear) {
+    this.publicationYear = publicationYear;
+  }
+
+  public String getResourceType() {
+    return resourceType;
+  }
+
+  public void setResourceType(String resourceType) {
+    this.resourceType = resourceType;
+  }
+
+  public String getSubject() {
+    return subject;
+  }
+
+  public void setSubject(String subject) {
+    this.subject = subject;
+  }
+
+  public String getContributor() {
+    return contributor;
+  }
+
+  public void setContributor(String contributor) {
+    this.contributor = contributor;
   }
 
   public String getDateElement() {
@@ -262,6 +287,14 @@ public class Context {
     this.language = language;
   }
 
+  public String getAlternateIdentifierElement() {
+    return alternateIdentifierElement;
+  }
+
+  public void setAlternateIdentifierElement(String alternateIdentifierElement) {
+    this.alternateIdentifierElement = alternateIdentifierElement;
+  }
+
   public String getRelatedIdentifierElement() {
     return relatedIdentifierElement;
   }
@@ -270,20 +303,20 @@ public class Context {
     this.relatedIdentifierElement = relatedIdentifierElement;
   }
 
-  public String getSizeElement() {
-    return sizeElement;
+  public String getSize() {
+    return size;
   }
 
-  public void setSizeElement(String sizeElement) {
-    this.sizeElement = sizeElement;
+  public void setSize(String size) {
+    this.size = size;
   }
 
-  public String getFormatElement() {
-    return formatElement;
+  public String getFormat() {
+    return format;
   }
 
-  public void setFormatElement(String formatElement) {
-    this.formatElement = formatElement;
+  public void setFormat(String format) {
+    this.format = format;
   }
 
   public String getVersion() {
@@ -310,59 +343,27 @@ public class Context {
     this.descriptionElement = descriptionElement;
   }
 
-  public String getFundingReferenceElement() {
-    return fundingReferenceElement;
+  public String getGeoLocation() {
+    return geoLocation;
   }
 
-  public void setFundingReferenceElement(String fundingReferenceElement) {
-    this.fundingReferenceElement = fundingReferenceElement;
+  public void setGeoLocation(String geoLocation) {
+    this.geoLocation = geoLocation;
   }
 
-  public String getResourceTypeElement() {
-    return resourceTypeElement;
+  public String getFundingReference() {
+    return fundingReference;
   }
 
-  public void setResourceTypeElement(String resourceTypeElement) {
-    this.resourceTypeElement = resourceTypeElement;
+  public void setFundingReference(String fundingReference) {
+    this.fundingReference = fundingReference;
   }
 
-  public String getCreatorElement() {
-    return creatorElement;
+  public String getRelatedItem() {
+    return relatedItem;
   }
 
-  public void setCreatorElement(String creatorElement) {
-    this.creatorElement = creatorElement;
-  }
-
-  public String getAlternateIdentifierElement() {
-    return alternateIdentifierElement;
-  }
-
-  public void setAlternateIdentifierElement(String alternateIdentifierElement) {
-    this.alternateIdentifierElement = alternateIdentifierElement;
-  }
-
-  public String getContributorElement() {
-    return contributorElement;
-  }
-
-  public void setContributorElement(String contributorElement) {
-    this.contributorElement = contributorElement;
-  }
-
-  public String getRelatedItemElement() {
-    return relatedItemElement;
-  }
-
-  public void setRelatedItemElement(String relatedItemElement) {
-    this.relatedItemElement = relatedItemElement;
-  }
-
-  public String getGeoLocationElement() {
-    return geoLocationElement;
-  }
-
-  public void setGeoLocationElement(String geoLocationElement) {
-    this.geoLocationElement = geoLocationElement;
+  public void setRelatedItem(String relatedItem) {
+    this.relatedItem = relatedItem;
   }
 }

@@ -93,11 +93,11 @@ public class CheckEmptyList {
   public static boolean emptyFundingReferenceList(List<FundingReference> fundingReferenceList){
     return fundingReferenceList.size()==1
         && (fundingReferenceList.get(0).getFunderName().toString()==null || fundingReferenceList.get(0).getFunderName().toString().equals(""))
-        && (fundingReferenceList.get(0).getFunderIdentifier().getFunderIdentifier().toString()==null || fundingReferenceList.get(0).getFunderIdentifier().getFunderIdentifier().toString().equals(""))
-        && (fundingReferenceList.get(0).getFunderIdentifier().getFunderIdentifierType().toString()==null || fundingReferenceList.get(0).getFunderIdentifier().getFunderIdentifierType().toString().equals(""))
-        && (fundingReferenceList.get(0).getFunderIdentifier().getSchemeURI().toString()==null || fundingReferenceList.get(0).getFunderIdentifier().getSchemeURI().toString().equals(""))
-        && (fundingReferenceList.get(0).getAwardNumber().getAwardURI().toString()==null || fundingReferenceList.get(0).getAwardNumber().getAwardURI().toString().equals(""))
-        && (fundingReferenceList.get(0).getAwardNumber().getAwardURI().toString()==null || fundingReferenceList.get(0).getAwardNumber().getAwardURI().toString().equals(""))
+        && (fundingReferenceList.get(0).getFunderIdentifier().toString()==null || fundingReferenceList.get(0).getFunderIdentifier().toString().equals(""))
+        && (fundingReferenceList.get(0).getFunderIdentifierType().toString()==null || fundingReferenceList.get(0).getFunderIdentifierType().toString().equals(""))
+        && (fundingReferenceList.get(0).getSchemeURI().toString()==null || fundingReferenceList.get(0).getSchemeURI().toString().equals(""))
+        && (fundingReferenceList.get(0).getAwardURI().toString()==null || fundingReferenceList.get(0).getAwardURI().toString().equals(""))
+        && (fundingReferenceList.get(0).getAwardURI().toString()==null || fundingReferenceList.get(0).getAwardURI().toString().equals(""))
         && (fundingReferenceList.get(0).getAwardTitle().toString()==null || fundingReferenceList.get(0).getAwardTitle().toString().equals(""));
   }
 
@@ -105,11 +105,11 @@ public class CheckEmptyList {
     return relatedItemList.size()==1
         && (relatedItemList.get(0).getRelatedItemType().toString()==null || relatedItemList.get(0).getRelatedItemType().toString().equals(""))
         && (relatedItemList.get(0).getRelationType().toString()==null || relatedItemList.get(0).getRelationType().toString().equals(""))
-        && (relatedItemList.get(0).getRelatedItemIdentifier().getRelatedIdentifier().toString()==null || relatedItemList.get(0).getRelatedItemIdentifier().getRelatedIdentifier().toString().equals(""))
-        && (relatedItemList.get(0).getRelatedItemIdentifier().getRelatedIdentifierType().toString()==null || relatedItemList.get(0).getRelatedItemIdentifier().getRelatedIdentifierType().toString().equals(""))
-        && (relatedItemList.get(0).getRelatedItemIdentifier().getRelatedMetadataScheme().toString()==null || relatedItemList.get(0).getRelatedItemIdentifier().getRelatedMetadataScheme().toString().equals(""))
-        && (relatedItemList.get(0).getRelatedItemIdentifier().getSchemeURi().toString()==null || relatedItemList.get(0).getRelatedItemIdentifier().getSchemeURi().toString().equals(""))
-        && (relatedItemList.get(0).getRelatedItemIdentifier().getSchemeType().toString()==null || relatedItemList.get(0).getRelatedItemIdentifier().getSchemeType().toString().equals(""))
+        && (relatedItemList.get(0).getRelatedIdentifier().toString()==null || relatedItemList.get(0).getRelatedIdentifier().toString().equals(""))
+        && (relatedItemList.get(0).getRelatedIdentifierType().toString()==null || relatedItemList.get(0).getRelatedIdentifierType().toString().equals(""))
+        && (relatedItemList.get(0).getRelatedMetadataScheme().toString()==null || relatedItemList.get(0).getRelatedMetadataScheme().toString().equals(""))
+        && (relatedItemList.get(0).getSchemeURi().toString()==null || relatedItemList.get(0).getSchemeURi().toString().equals(""))
+        && (relatedItemList.get(0).getSchemeType().toString()==null || relatedItemList.get(0).getSchemeType().toString().equals(""))
         && (relatedItemList.get(0).getNumber().toString()==null || relatedItemList.get(0).getNumber().toString().equals(""))
         && (relatedItemList.get(0).getNumberType().toString()==null || relatedItemList.get(0).getNumberType().toString().equals(""))
         && (relatedItemList.get(0).getVolume().toString()==null || relatedItemList.get(0).getVolume().toString().equals(""))

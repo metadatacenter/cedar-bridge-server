@@ -21,8 +21,6 @@ public class Title {
     @JsonProperty("titleType")
     private IdFormat titleType;
 
-    @JsonProperty("language")
-    private ValueFormat language;
 
     public ValueFormat getTitleName() {
         return titleName;
@@ -38,14 +36,6 @@ public class Title {
 
     public void setTitleType(IdFormat titleType) {
         this.titleType = titleType;
-    }
-
-    public ValueFormat getLanguage() {
-        return language;
-    }
-
-    public void setLanguage(ValueFormat language) {
-        this.language = language;
     }
 
     public Map<String, String> getContext() {

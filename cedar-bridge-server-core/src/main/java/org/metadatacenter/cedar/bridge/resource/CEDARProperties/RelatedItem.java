@@ -41,8 +41,20 @@ public class RelatedItem {
     @JsonProperty("edition")
     private ValueFormat edition;
 
-    @JsonProperty("Related Item Identifier Element")
-    private RelatedIdentifier relatedItemIdentifier;
+    @JsonProperty("relatedIdentifier")
+    private ValueFormat relatedIdentifier;
+
+    @JsonProperty("relatedIdentifierType")
+    private IdFormat relatedIdentifierType;
+
+    @JsonProperty("relatedMetadataScheme")
+    private ValueFormat relatedMetadataScheme;
+
+    @JsonProperty("schemeURI")
+    private SchemeURI schemeURi;
+
+    @JsonProperty("schemeType")
+    private ValueFormat schemeType;
 
     @JsonProperty("Creator")
     private List<Creator> creators;
@@ -131,12 +143,44 @@ public class RelatedItem {
         this.edition = edition;
     }
 
-    public RelatedIdentifier getRelatedItemIdentifier() {
-        return relatedItemIdentifier;
+    public ValueFormat getRelatedIdentifier() {
+        return relatedIdentifier;
     }
 
-    public void setRelatedItemIdentifier(RelatedIdentifier relatedItemIdentifier) {
-        this.relatedItemIdentifier = relatedItemIdentifier;
+    public void setRelatedIdentifier(ValueFormat relatedIdentifier) {
+        this.relatedIdentifier = relatedIdentifier;
+    }
+
+    public IdFormat getRelatedIdentifierType() {
+        return relatedIdentifierType;
+    }
+
+    public void setRelatedIdentifierType(IdFormat relatedIdentifierType) {
+        this.relatedIdentifierType = relatedIdentifierType;
+    }
+
+    public ValueFormat getRelatedMetadataScheme() {
+        return relatedMetadataScheme;
+    }
+
+    public void setRelatedMetadataScheme(ValueFormat relatedMetadataScheme) {
+        this.relatedMetadataScheme = relatedMetadataScheme;
+    }
+
+    public SchemeURI getSchemeURi() {
+        return schemeURi;
+    }
+
+    public void setSchemeURi(SchemeURI schemeURi) {
+        this.schemeURi = schemeURi;
+    }
+
+    public ValueFormat getSchemeType() {
+        return schemeType;
+    }
+
+    public void setSchemeType(ValueFormat schemeType) {
+        this.schemeType = schemeType;
     }
 
     public List<Creator> getCreators() {

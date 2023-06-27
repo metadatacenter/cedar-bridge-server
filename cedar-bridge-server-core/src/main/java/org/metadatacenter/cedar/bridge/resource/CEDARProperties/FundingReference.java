@@ -14,14 +14,23 @@ public class FundingReference {
     @JsonProperty("funderName")
     private ValueFormat funderName;
 
-    @JsonProperty("Award Number")
-    private AwardNumber awardNumber;
+    @JsonProperty("awardNumber")
+    private ValueFormat awardNumber;
+
+    @JsonProperty("awardURI")
+    private SchemeURI awardURI;
 
     @JsonProperty("awardTitle")
     private ValueFormat awardTitle;
 
-    @JsonProperty("Funder Identifier")
-    private FunderIdentifier funderIdentifier;
+    @JsonProperty("funderIdentifier")
+    private ValueFormat funderIdentifier;
+
+    @JsonProperty("funderIdentifierType")
+    private IdFormat funderIdentifierType;
+
+    @JsonProperty("schemeURI")
+    private SchemeURI schemeURI;
 
     public ValueFormat getFunderName() {
         return funderName;
@@ -29,14 +38,6 @@ public class FundingReference {
 
     public void setFunderName(ValueFormat funderName) {
         this.funderName = funderName;
-    }
-
-    public AwardNumber getAwardNumber() {
-        return awardNumber;
-    }
-
-    public void setAwardNumber(AwardNumber awardNumber) {
-        this.awardNumber = awardNumber;
     }
 
     public ValueFormat getAwardTitle() {
@@ -47,12 +48,44 @@ public class FundingReference {
         this.awardTitle = awardTitle;
     }
 
-    public FunderIdentifier getFunderIdentifier() {
+    public ValueFormat getAwardNumber() {
+        return awardNumber;
+    }
+
+    public void setAwardNumber(ValueFormat awardNumber) {
+        this.awardNumber = awardNumber;
+    }
+
+    public SchemeURI getAwardURI() {
+        return awardURI;
+    }
+
+    public void setAwardURI(SchemeURI awardURI) {
+        this.awardURI = awardURI;
+    }
+
+    public ValueFormat getFunderIdentifier() {
         return funderIdentifier;
     }
 
-    public void setFunderIdentifier(FunderIdentifier funderIdentifier) {
+    public void setFunderIdentifier(ValueFormat funderIdentifier) {
         this.funderIdentifier = funderIdentifier;
+    }
+
+    public IdFormat getFunderIdentifierType() {
+        return funderIdentifierType;
+    }
+
+    public void setFunderIdentifierType(IdFormat funderIdentifierType) {
+        this.funderIdentifierType = funderIdentifierType;
+    }
+
+    public SchemeURI getSchemeURI() {
+        return schemeURI;
+    }
+
+    public void setSchemeURI(SchemeURI schemeURI) {
+        this.schemeURI = schemeURI;
     }
 
     public Map<String, String> getContext() {
