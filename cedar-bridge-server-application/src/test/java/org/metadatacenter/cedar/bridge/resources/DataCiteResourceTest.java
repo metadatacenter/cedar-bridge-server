@@ -4,6 +4,8 @@ import org.junit.*;
 import org.metadatacenter.cedar.bridge.resource.CompareValues;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.metadatacenter.cedar.bridge.resource.DataCiteInstanceValidationException;
+import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.Data;
 import org.metadatacenter.http.CedarResponseStatus;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.json.JsonMapper;
@@ -38,7 +40,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRichDataTest() throws IOException{
+  public void dataCiteInstanceRichDataTest() throws IOException, DataCiteInstanceValidationException {
     // Retrieve the given DataCite instance from the file
     JsonNode givenMetadata = getFileContentAsJson("SuccessRichData");
 
@@ -58,7 +60,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceSimplyDataTest() throws IOException {
+  public void dataCiteInstanceSimplyDataTest() throws IOException, DataCiteInstanceValidationException {
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredOnly");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -73,7 +75,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceAllRequiredDataTest() throws IOException{
+  public void dataCiteInstanceAllRequiredDataTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessAllPropertiesUnderRequiredElement");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -88,7 +90,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusSubjectTest() throws IOException{
+  public void dataCiteInstanceRequiredPlusSubjectTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusSubject");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -103,7 +105,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusContributorTest() throws IOException{
+  public void dataCiteInstanceRequiredPlusContributorTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusContributor");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -118,7 +120,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusDateTest() throws IOException{
+  public void dataCiteInstanceRequiredPlusDateTest() throws IOException,DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusDate");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -133,7 +135,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusLangTest() throws IOException{
+  public void dataCiteInstanceRequiredPlusLangTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusLang");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -148,7 +150,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusAlternateIdentifierTest() throws IOException{
+  public void dataCiteInstanceRequiredPlusAlternateIdentifierTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusAlternateIdentifier");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -163,7 +165,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusRelatedIdentifierTest() throws IOException{
+  public void dataCiteInstanceRequiredPlusRelatedIdentifierTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusRelatedIdentifier");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -178,7 +180,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusAffiliationTest() throws IOException{
+  public void dataCiteInstanceRequiredPlusAffiliationTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusAffiliation");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -193,7 +195,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusSizeFormatVersionTest() throws IOException{
+  public void dataCiteInstanceRequiredPlusSizeFormatVersionTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusSizeFormatVersion");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -208,7 +210,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusRightsTest() throws IOException{
+  public void dataCiteInstanceRequiredPlusRightsTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusRights");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -223,7 +225,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusDescriptionTest() throws IOException{
+  public void dataCiteInstanceRequiredPlusDescriptionTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusDescription");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -238,7 +240,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusFundingRefTest() throws IOException{
+  public void dataCiteInstanceRequiredPlusFundingRefTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusFundingRef");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -253,7 +255,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusGeoLocTest() throws IOException{
+  public void dataCiteInstanceRequiredPlusGeoLocTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusGeoLoc");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -268,7 +270,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusRelatedItemTest() throws IOException{
+  public void dataCiteInstanceRequiredPlusRelatedItemTest() throws IOException, DataCiteInstanceValidationException {
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusRelatedItem");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -283,7 +285,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusRandomTest_1() throws IOException{
+  public void dataCiteInstanceRequiredPlusRandomTest_1() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusRandom1");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -298,7 +300,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusRandomTest_2() throws IOException{
+  public void dataCiteInstanceRequiredPlusRandomTest_2() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusRandom2");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -313,7 +315,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusRandomTest_3() throws IOException{
+  public void dataCiteInstanceRequiredPlusRandomTest_3() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusRandom3");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -328,7 +330,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusEmptyStringTest() throws IOException{
+  public void dataCiteInstanceRequiredPlusEmptyStringTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusEmptyString");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
@@ -343,7 +345,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceRequiredPlusAllElementExpandedTest() throws IOException{
+  public void dataCiteInstanceRequiredPlusAllElementExpandedTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusAllElementExpanded");
     Response createDoiResponse = createDoi(givenMetadata);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
