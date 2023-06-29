@@ -13,6 +13,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
 import org.metadatacenter.cedar.bridge.resource.CEDARProperties.CEDARDataCiteInstance;
 import org.metadatacenter.cedar.bridge.resource.CedarInstanceParser;
+import org.metadatacenter.cedar.bridge.resource.DataCiteInstanceValidationException;
 import org.metadatacenter.cedar.bridge.resource.DataCiteMetaDataParser;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.DataCiteSchema;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
@@ -220,7 +221,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
           return Response.status(statusCode).entity(jsonResource).build();
         }
       } catch (Exception e) {
-        return CedarResponse.internalServerError().exception(e).build();
+        return CedarResponse.internalServerError().errorMessage(e.getMessage()).exception(e).build();
       }
     } else {
       response.put("request", dataCiteInstance);
@@ -299,7 +300,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
    *
    * @return DataCite requested JSON scheme
    */
-  private static String getRequestJson(JsonNode metadata) {
+  private static String getRequestJson(JsonNode metadata) throws DataCiteInstanceValidationException {
     ObjectMapper mapper = new ObjectMapper();
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
     mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -382,9 +383,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
         System.out.println("The GET CEDAR Template request was failed with status code: " + statusCode);
       }
       return currentTemplateJsonNode;
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    } catch (CedarProcessingException e) {
+    } catch (IOException | CedarProcessingException e) {
       throw new RuntimeException(e);
     }
   }

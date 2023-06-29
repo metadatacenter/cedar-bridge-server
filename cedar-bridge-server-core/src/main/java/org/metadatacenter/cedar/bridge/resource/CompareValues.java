@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.*;
 
 public class CompareValues {
-  public static boolean compareResponseWithGivenMetadata(JsonNode givenMetadata, JsonNode responseMetadata) throws JsonProcessingException {
+  public static boolean compareResponseWithGivenMetadata(JsonNode givenMetadata, JsonNode responseMetadata) throws JsonProcessingException, DataCiteInstanceValidationException{
     ObjectMapper mapper = new ObjectMapper();
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
     mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);

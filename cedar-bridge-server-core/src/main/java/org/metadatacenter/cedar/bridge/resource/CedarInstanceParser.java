@@ -2,12 +2,14 @@ package org.metadatacenter.cedar.bridge.resource;
 
 import org.metadatacenter.cedar.bridge.resource.CEDARProperties.*;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
+import org.metadatacenter.exception.CedarException;
 
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CedarInstanceParser {
-    public static void parseCEDARInstance(CEDARDataCiteInstance cedarDataCiteInstance, DataCiteSchema dataCiteSchema) {
+    public static void parseCEDARInstance(CEDARDataCiteInstance cedarDataCiteInstance, DataCiteSchema dataCiteSchema) throws DataCiteInstanceValidationException{
         Data data = new Data();
         Attributes attributes = new Attributes();
 
@@ -15,7 +17,11 @@ public class CedarInstanceParser {
         data.setType("dois");
 
         //Pass prefix value from CEDAR class to DataCite class
-        if (cedarDataCiteInstance.getPrefix() != null) {
+        if (cedarDataCiteInstance.getPrefix() == null){
+            throw new DataCiteInstanceValidationException("The 'Prefix of DOI' is required, please provide your valid prefix");
+        } else if (!cedarDataCiteInstance.getPrefix().getValue().equals("10.82658")){
+            throw new DataCiteInstanceValidationException("The 'Prefix of DOI' is incorrect, please provide your valid prefix");
+        } else{
             attributes.setPrefix(cedarDataCiteInstance.getPrefix().getValue());
         }
 
@@ -30,24 +36,35 @@ public class CedarInstanceParser {
         // Pass creator values from CEDAR class to DataCite class
         List<Creator> creatorList = cedarDataCiteInstance.getCreators();
         if (!creatorList.isEmpty()) {
-            attributes.setCreators(parseCreatorValue(creatorList));
+            attributes.setCreators(parseCreatorValue(creatorList, "Creators"));
+        } else{
+            throw new DataCiteInstanceValidationException("The 'Creators' is required, please provide 'Creators' information");
         }
 
         //Pass titles values from CEDAR class to DataCite class
         List<Title> titlesList = cedarDataCiteInstance.getTitles();
         if (!titlesList.isEmpty()) {
-            attributes.setTitles(parseTitleValue(titlesList));
+            attributes.setTitles(parseTitleValue(titlesList, "Titles"));
+        } else{
+            throw new DataCiteInstanceValidationException("The 'Titles' is required, please provide 'Titles' information");
         }
 
         //Pass publisher values from CEDAR class to DataCite class
         String publisher = cedarDataCiteInstance.getPublisher().getValue();
-        if (publisher != null) {
+        if (publisher != null && !publisher.isEmpty()) {
             attributes.setPublisher(publisher);
+        } else{
+            throw new DataCiteInstanceValidationException("The 'Publisher' is required, please provide 'Publisher' information");
         }
 
         //Pass publisherYear values
         String publicationYear = cedarDataCiteInstance.getPublicationYear().toString();
-        if (publicationYear != null) {
+        String currentYear = String.valueOf(Year.now().getValue());
+        if (publicationYear == null){
+            throw new DataCiteInstanceValidationException("The 'Publication Year' is required, please provide current year: " + currentYear);
+        } else if (!publicationYear.equals(currentYear)){
+            throw new DataCiteInstanceValidationException("The 'Publication Year' should be the current year: " + currentYear);
+        } else{
             attributes.setPublicationYear(parsePublicationYearValue(publicationYear));
         }
 
@@ -58,7 +75,11 @@ public class CedarInstanceParser {
         }
 
         // Pass resourceType values
-        attributes.setTypes(parseTypeValue(cedarDataCiteInstance.getResourceType()));
+        if (cedarDataCiteInstance.getResourceType() == null || cedarDataCiteInstance.getResourceType().getValue() == null || cedarDataCiteInstance.getResourceType().getValue().equals("")){
+            throw new DataCiteInstanceValidationException("The 'Resource Type' is required, please select your source artifact type'");
+        } else{
+            attributes.setTypes(parseTypeValue(cedarDataCiteInstance.getResourceType()));
+        }
 
         //Pass contributors values
         List<Contributor> contributorList = cedarDataCiteInstance.getContributors();
@@ -136,7 +157,7 @@ public class CedarInstanceParser {
         dataCiteSchema.setData(data);
     }
 
-    private static List<DataCiteAffiliation> parseAffiliationValue(List<Affiliation> affiliationList){
+    private static List<DataCiteAffiliation> parseAffiliationValue(List<Affiliation> affiliationList, String element) throws DataCiteInstanceValidationException {
         List<DataCiteAffiliation> dataCiteAffiliationList = new ArrayList<>();
         if (!affiliationList.isEmpty()){
             for (Affiliation a : affiliationList) {
@@ -144,6 +165,9 @@ public class CedarInstanceParser {
                 // Retrieve values from CEDAR class
                 String affiliationIdentifier = a.getAffiliationIdentifier().toString();
                 String affiliationIdentifierScheme = a.getAffiliationIdentifierScheme().toString();
+                if (affiliationIdentifierScheme == null || affiliationIdentifierScheme.equals("")){
+                    throw new DataCiteInstanceValidationException("If the 'Affiliation Identifier' of '" + element + "' is used, 'Affiliation Identifier Scheme' is mandatory");
+                }
                 String affiliationSchemeURI = a.getAffiliationIdentifierSchemeURI().toString();
                 // set values to DataCite class
                 dataCiteAffiliation.setAffiliationIdentifier(affiliationIdentifier);
@@ -156,7 +180,7 @@ public class CedarInstanceParser {
     }
 
 
-    private static List<DataCiteNameIdentifier> parseNameIdentifierValue(List<NameIdentifier> nameIdentifierList) {
+    private static List<DataCiteNameIdentifier> parseNameIdentifierValue(List<NameIdentifier> nameIdentifierList, String element) throws DataCiteInstanceValidationException{
         List<DataCiteNameIdentifier> dataCiteNameIdentifierList = new ArrayList<>();
         if (!nameIdentifierList.isEmpty()) {
             for (NameIdentifier n : nameIdentifierList) {
@@ -164,6 +188,9 @@ public class CedarInstanceParser {
                 // Retrieve values from CEDAR class
                 String nameIdentifierName = n.getNameIdentifierName().toString();
                 String nameIdentifierScheme = n.getNameIdentifierScheme().toString();
+                if (nameIdentifierScheme == null || nameIdentifierScheme.equals("")){
+                    throw new DataCiteInstanceValidationException("If the 'Name Identifier' of '" + element + "' is used, 'Name Identifier Scheme' is mandatory");
+                }
                 String nameIdentifierSchemeUri = n.getNameIdentifierSchemeURI().toString();
                 // set values to DataCite class
                 dataCiteNameIdentifier.setNameIdentifier(nameIdentifierName);
@@ -177,7 +204,7 @@ public class CedarInstanceParser {
 
 
     // Parse CreatorElement values
-    private static List<DataCiteCreator> parseCreatorValue(List<Creator> creatorList) {
+    private static List<DataCiteCreator> parseCreatorValue(List<Creator> creatorList, String element) throws DataCiteInstanceValidationException {
         List<DataCiteCreator> dataCiteCreatorList = new ArrayList<>();
 
         //Loop each creator in creator list to get values
@@ -185,6 +212,13 @@ public class CedarInstanceParser {
             DataCiteCreator dataCiteCreator = new DataCiteCreator();
             // Retrieve values from CEDAR class
             String creatorName = c.getCreatorName().toString();
+            if (creatorName == null || creatorName.equals("")){
+                switch (element){
+                    case "Creators":throw new DataCiteInstanceValidationException("The 'Creator Name' property of 'Creators' is required, please provide the information");
+                    case "RelatedItems": throw new DataCiteInstanceValidationException("If 'Creators' of 'Related Items' is used, 'Creator Name' is mandatory");
+                }
+
+            }
             String nameType = c.getNameType().toString();
             String givenName = c.getGivenName().toString();
             String familyName = c.getFamilyName().toString();
@@ -197,13 +231,13 @@ public class CedarInstanceParser {
             // Set values to corresponding Affiliation list in dataCiteCreator
             List<Affiliation> affiliationList = c.getAffiliations();
             if (affiliationList != null && !affiliationList.isEmpty() && !CheckEmptyList.emptyAffiliationList(affiliationList)) {
-                dataCiteCreator.setAffiliations(parseAffiliationValue(affiliationList));
+                dataCiteCreator.setAffiliations(parseAffiliationValue(affiliationList, "Creators"));
             }
 
             // Set values to corresponding Affiliation list in dataCiteCreator
             List<NameIdentifier> nameIdentifierList = c.getNameIdentifiers();
-            if (nameIdentifierList != null && !affiliationList.isEmpty() && !CheckEmptyList.emptyNameIdentifierList(nameIdentifierList)) {
-                dataCiteCreator.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList));
+            if (nameIdentifierList != null && !nameIdentifierList.isEmpty() && !CheckEmptyList.emptyNameIdentifierList(nameIdentifierList)) {
+                dataCiteCreator.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList, "Creators"));
             }
 
             // Add dataCiteCreator to dataCiteCreator list
@@ -213,24 +247,26 @@ public class CedarInstanceParser {
     }
 
     // Parse TitleElement values
-    private static List<DataCiteTitle> parseTitleValue(List<Title> titlesList) {
+    private static List<DataCiteTitle> parseTitleValue(List<Title> titlesList, String element) throws DataCiteInstanceValidationException {
         List<DataCiteTitle> dataCiteTitles = new ArrayList<>();
 
         for (Title t : titlesList) {
             DataCiteTitle dataCiteTitle = new DataCiteTitle();
             // Retrieve values from CEDAR class
             String titleName = t.getTitleName().toString();
+            if (titleName == null || titleName.equals("")){
+                switch (element){
+                    case "Titles": throw new DataCiteInstanceValidationException("The 'Title' property of 'Titles' is required, please provide the information");
+                    case "RelatedItems": throw new DataCiteInstanceValidationException("If 'Titles' of 'Related Items' is used, 'Title' property is mandatory");
+                }
+
+            }
             String titleType = t.getTitleType().toString();
 
             // Set values to DataCite class
             dataCiteTitle.setTitle(titleName);
             dataCiteTitle.setTitleType(titleType);
 
-//            // titles as subProperty under relatedItem property don't have language
-//            if (t.getLanguage() != null) {
-//                String language = t.getLanguage().toString();
-//                dataCiteTitle.setLang(language);
-//            }
             //Add dataCiteTitle to the list
             dataCiteTitles.add(dataCiteTitle);
         }
@@ -279,17 +315,23 @@ public class CedarInstanceParser {
         return dataCiteType;
     }
 
-    private static List<DataCiteContributor> parseContributorValue(List<Contributor> contributorList){
+    private static List<DataCiteContributor> parseContributorValue(List<Contributor> contributorList) throws DataCiteInstanceValidationException {
         List<DataCiteContributor> dataCiteContributors = new ArrayList<>();
 
         for (Contributor c : contributorList) {
             DataCiteContributor dataCiteContributor = new DataCiteContributor();
             // Retrieve values from CEDAR class
             String name = c.getContributorName().toString();
+            if (name == null || name.equals("")){
+                throw new DataCiteInstanceValidationException("If 'Contributors' is used, then 'Contributor Name' is mandatory");
+            }
             String nameType = c.getNameType().toString();
             String givenName = c.getGivenName().toString();
             String familyName = c.getFamilyName().toString();
             String contributorType = c.getContributorType().toString();
+            if (contributorType == null || contributorType.equals("")){
+                throw new DataCiteInstanceValidationException("If 'Contributors' is used, then 'Contributor Type' is mandatory");
+            }
 
             dataCiteContributor.setName(name);
             dataCiteContributor.setNameType(nameType);
@@ -302,13 +344,13 @@ public class CedarInstanceParser {
             // Set values to corresponding Affiliation list in dataCiteCreator
             List<Affiliation> affiliationList = c.getAffiliations();
             if (affiliationList != null && !CheckEmptyList.emptyAffiliationList(affiliationList)) {
-                dataCiteContributor.setAffiliations(parseAffiliationValue(affiliationList));
+                dataCiteContributor.setAffiliations(parseAffiliationValue(affiliationList, "Contributors"));
             }
 
             // Set values to corresponding nameIdentifierList list in dataCiteCreator
             List<NameIdentifier> nameIdentifierList = c.getNameIdentifiers();
             if (nameIdentifierList != null && !CheckEmptyList.emptyNameIdentifierList(nameIdentifierList)) {
-                dataCiteContributor.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList));
+                dataCiteContributor.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList, "Contributors"));
             }
             // Add dataCiteContributor to the list
             dataCiteContributors.add(dataCiteContributor);
@@ -317,13 +359,16 @@ public class CedarInstanceParser {
         return dataCiteContributors;
     }
 
-    private static List<DataCiteDate> parseDateValue(List<Date> dateList){
+    private static List<DataCiteDate> parseDateValue(List<Date> dateList) throws DataCiteInstanceValidationException {
         List<DataCiteDate> dataCiteDates = new ArrayList<>();
 
         for (Date d : dateList) {
             DataCiteDate dataCiteDate = new DataCiteDate();
             String date = d.getDate().toString();
             String dateType = d.getDateType().toString();
+            if (dateType == null || dateType.equals("")){
+                throw new DataCiteInstanceValidationException("If 'Dates' is used, 'Date Type' is mandatory.");
+            }
             String dateInformation = d.getDateInformation().toString();
             dataCiteDate.setDate(date);
             dataCiteDate.setDateType(dateType);
@@ -335,13 +380,16 @@ public class CedarInstanceParser {
         return dataCiteDates;
     }
 
-    private static List<DataCiteAlternateIdentifier> parseAlternateIdentifier(List<AlternateIdentifier> alternateIdentifierList) {
+    private static List<DataCiteAlternateIdentifier> parseAlternateIdentifier(List<AlternateIdentifier> alternateIdentifierList) throws DataCiteInstanceValidationException {
         List<DataCiteAlternateIdentifier> dataCiteAlternateIdentifiers = new ArrayList<>();
 
         for (AlternateIdentifier a : alternateIdentifierList) {
             DataCiteAlternateIdentifier dataCiteAlternateIdentifier = new DataCiteAlternateIdentifier();
             String alternateIdentifier = a.getAlternateIdentifier().toString();
             String alternateIdentifierType = a.getAlternateIdentifierType().toString();
+            if (alternateIdentifierType == null || alternateIdentifierType.equals("")){
+                throw new DataCiteInstanceValidationException("If 'Alternate Identifiers' is used, 'Alternate Identifier Type' is mandatory.");
+            }
 
             dataCiteAlternateIdentifier.setAlternateIdentifier(alternateIdentifier);
             dataCiteAlternateIdentifier.setAlternateIdentifierType(alternateIdentifierType);
@@ -352,14 +400,20 @@ public class CedarInstanceParser {
         return dataCiteAlternateIdentifiers;
     }
 
-    private static List<DataCiteRelatedIdentifier> parseRelatedIdentifier(List<RelatedIdentifier> relatedIdentifierList){
+    private static List<DataCiteRelatedIdentifier> parseRelatedIdentifier(List<RelatedIdentifier> relatedIdentifierList) throws DataCiteInstanceValidationException {
         List<DataCiteRelatedIdentifier> dataCiteRelatedIdentifiers = new ArrayList<>();
 
         for (RelatedIdentifier r : relatedIdentifierList) {
             DataCiteRelatedIdentifier dataCiteRelatedIdentifier = new DataCiteRelatedIdentifier();
             String relatedIdentifier = r.getRelatedIdentifier().toString();
             String relatedIdentifierType = r.getRelatedIdentifierType().toString();
+            if (relatedIdentifierType == null || relatedIdentifierType.equals("")){
+                throw new DataCiteInstanceValidationException("If 'Related Identifiers' is used, 'Related Identifier Type' is mandatory.");
+            }
             String relationType = r.getRelationType().toString();
+            if (relationType == null || relationType.equals("")){
+                throw new DataCiteInstanceValidationException("If 'Related Identifiers' is used, 'Relation Type' is mandatory.");
+            }
             String relatedMetaDataScheme = r.getRelatedMetadataScheme().toString();
             String schemeURI = r.getSchemeURi().toString();
             String schemeType = r.getSchemeType().toString();
@@ -421,18 +475,18 @@ public class CedarInstanceParser {
         return dataCiteRightsList;
     }
 
-    private static List<DataCiteDescription> parseDescriptionValue(List<Description> descriptionList){
+    private static List<DataCiteDescription> parseDescriptionValue(List<Description> descriptionList) throws DataCiteInstanceValidationException {
         List<DataCiteDescription> dataCiteDescriptions = new ArrayList<>();
 
         for(Description d : descriptionList) {
             DataCiteDescription dataCiteDescription = new DataCiteDescription();
             String description = d.getDescription().toString();
             String descriptionType = d.getDescriptionType().toString();
-//            String lang = d.getLanguage().toString();
-
+            if (descriptionType == null || descriptionType.equals("")){
+                throw new DataCiteInstanceValidationException("If 'Descriptions' is used, 'Description Type' is mandatory.");
+            }
             dataCiteDescription.setDescription(description);
             dataCiteDescription.setDescriptionType(descriptionType);
-//            dataCiteDescription.setLang(lang);
 
             dataCiteDescriptions.add(dataCiteDescription);
         }
@@ -528,12 +582,15 @@ public class CedarInstanceParser {
         return dataCiteGeoLocations;
     }
 
-    private static List<DataCiteFundingReference> parseFundingReference(List<FundingReference> fundingReferenceList){
+    private static List<DataCiteFundingReference> parseFundingReference(List<FundingReference> fundingReferenceList) throws DataCiteInstanceValidationException {
         List<DataCiteFundingReference> dataCiteFundingReferences = new ArrayList<>();
 
         for(FundingReference f : fundingReferenceList) {
             DataCiteFundingReference dataCiteFundingReference = new DataCiteFundingReference();
             String funderName = f.getFunderName().toString();
+            if (funderName == null || funderName.equals("")){
+                throw new DataCiteInstanceValidationException("If 'Funding References' is used, 'Funder Name' is mandatory.");
+            }
             String funderIdentifier = f.getFunderIdentifier().toString();
             String funderIdentifierType = f.getFunderIdentifierType().toString();
             String funderIdentifierSchemeURI = f.getSchemeURI().toString();
@@ -555,13 +612,19 @@ public class CedarInstanceParser {
         return dataCiteFundingReferences;
     }
 
-    private static List<DataCiteRelatedItem> parseRelatedItemValue(List<RelatedItem> relatedItemList){
+    private static List<DataCiteRelatedItem> parseRelatedItemValue(List<RelatedItem> relatedItemList) throws DataCiteInstanceValidationException {
         List<DataCiteRelatedItem> dataCiteRelatedItems = new ArrayList<>();
 
         for(RelatedItem r: relatedItemList){
             DataCiteRelatedItem dataCiteRelatedItem = new DataCiteRelatedItem();
             String relatedItemType = r.getRelatedItemType().toString();
+            if (relatedItemType == null || relatedItemType.equals("")){
+                throw new DataCiteInstanceValidationException("If 'Related Items' is used, 'Related Item Type' is mandatory");
+            }
             String relationType = r.getRelationType().toString();
+            if (relationType == null || relationType.equals("")){
+                throw new DataCiteInstanceValidationException("If 'Related Items' is used, 'Relation Type' is mandatory");
+            }
             String volume = r.getVolume().toString();
             String issue = r.getIssue().toString();
             String firstPage = r.getFirstPage().toString();
@@ -606,12 +669,14 @@ public class CedarInstanceParser {
 
             //parse creators values
             if (r.getCreators() != null && !r.getCreators().isEmpty() && !CheckEmptyList.emptyRelatedItemCreatorList(r.getCreators())){
-                dataCiteRelatedItem.setCreators(parseCreatorValue(r.getCreators()));
+                dataCiteRelatedItem.setCreators(parseCreatorValue(r.getCreators(), "RelatedItems"));
             }
 
             // parse titles values
             if (r.getTitles() != null && !r.getTitles().isEmpty() && !CheckEmptyList.emptyRelatedItemTitleList(r.getTitles())){
-                dataCiteRelatedItem.setTitles(parseTitleValue(r.getTitles()));
+                dataCiteRelatedItem.setTitles(parseTitleValue(r.getTitles(), "RelatedItems"));
+            } else {
+                throw new DataCiteInstanceValidationException("If 'Related Items' is used, 'Title' is mandatory.");
             }
 
             //parse contributors values
@@ -622,10 +687,16 @@ public class CedarInstanceParser {
                     DataCiteRelatedItemContributor dataCiteRelatedItemContributor = new DataCiteRelatedItemContributor();
                     // Retrieve values from CEDAR class
                     String name = c.getContributorName().toString();
+                    if (name == null || name.equals("")){
+                        throw new DataCiteInstanceValidationException("If 'Contributors' of 'Related Items' is used, 'Contributor Name' is mandatory");
+                    }
                     String nameType = c.getNameType().toString();
                     String givenName = c.getGivenName().toString();
                     String familyName = c.getFamilyName().toString();
                     String contributorType = c.getContributorType().toString();
+                    if (contributorType == null || contributorType.equals("")){
+                        throw new DataCiteInstanceValidationException("If 'Contributors' of 'Related Items' is used, 'Contributor Type' is mandatory");
+                    }
 
                     dataCiteRelatedItemContributor.setName(name);
                     dataCiteRelatedItemContributor.setNameType(nameType);
