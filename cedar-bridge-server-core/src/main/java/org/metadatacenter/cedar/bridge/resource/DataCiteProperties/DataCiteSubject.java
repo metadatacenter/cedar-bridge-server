@@ -1,17 +1,19 @@
 package org.metadatacenter.cedar.bridge.resource.DataCiteProperties;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteSubject {
+    @JsonProperty("subject")
     private String subject;
-
+    @JsonProperty("schemeUri")
     private String schemeUri;
-
+    @JsonProperty("subjectScheme")
     private String subjectScheme;
-
+    @JsonProperty("classificationCode")
     private String classificationCode;
-
+    @JsonProperty("valueUri")
     private String valueUri;
 
     public String getValueUri() {

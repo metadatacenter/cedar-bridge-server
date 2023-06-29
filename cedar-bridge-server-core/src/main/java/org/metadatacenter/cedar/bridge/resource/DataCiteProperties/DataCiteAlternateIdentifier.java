@@ -1,11 +1,13 @@
 package org.metadatacenter.cedar.bridge.resource.DataCiteProperties;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteAlternateIdentifier {
+    @JsonProperty("alternateIdentifier")
     private String alternateIdentifier;
-
+    @JsonProperty("alternateIdentifierType")
     private String alternateIdentifierType;
 
     public String getAlternateIdentifier() {

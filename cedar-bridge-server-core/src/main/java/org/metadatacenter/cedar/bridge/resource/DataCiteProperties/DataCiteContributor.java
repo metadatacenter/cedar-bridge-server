@@ -1,23 +1,25 @@
 package org.metadatacenter.cedar.bridge.resource.DataCiteProperties;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteContributor {
+    @JsonProperty("name")
     private String name;
-
+    @JsonProperty("nameType")
     private String nameType;
-
+    @JsonProperty("givenName")
     private String givenName;
-
+    @JsonProperty("familyName")
     private String familyName;
-
+    @JsonProperty("affiliation")
     private List<DataCiteAffiliation> affiliations;
-
+    @JsonProperty("contributorType")
     private String contributorType;
-
+    @JsonProperty("nameIdentifiers")
     private List<DataCiteNameIdentifier> nameIdentifiers;
 
     public String getName() {

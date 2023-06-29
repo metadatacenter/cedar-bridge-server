@@ -4,9 +4,15 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Contributor {
+    @JsonProperty("@context")
+    private Map<String, String> context;
+    @JsonProperty("@id")
+    private String id;
+
     @JsonProperty("contributorName")
     private ValueFormat contributorName;
 
@@ -19,7 +25,7 @@ public class Contributor {
     @JsonProperty("familyName")
     private ValueFormat familyName;
 
-    @JsonProperty("affiliationElement")
+    @JsonProperty("Affiliation")
     private List<Affiliation> affiliations;
 
     @JsonProperty("nameIdentifier")
@@ -82,6 +88,22 @@ public class Contributor {
 
     public void setContributorType(IdFormat contributorType) {
         this.contributorType = contributorType;
+    }
+
+    public Map<String, String> getContext() {
+        return context;
+    }
+
+    public void setContext(Map<String, String> context) {
+        this.context = context;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }
 

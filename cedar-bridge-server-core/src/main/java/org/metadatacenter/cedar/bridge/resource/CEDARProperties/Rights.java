@@ -4,13 +4,19 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
+import java.util.Map;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Rights {
+    @JsonProperty("@context")
+    private Map<String, String> context;
+    @JsonProperty("@id")
+    private String id;
     @JsonProperty("Rights")
     private ValueFormat rights;
 
     @JsonProperty("rightsURI")
-    private IdFormat rightsURI;
+    private SchemeURI rightsURI;
 
     @JsonProperty("rightsIdentifier")
     private ValueFormat rightsIdentifier;
@@ -19,7 +25,7 @@ public class Rights {
     private ValueFormat rightsIdentifierScheme;
 
     @JsonProperty("schemeURI")
-    private IdFormat schemeURI;
+    private SchemeURI schemeURI;
 
     public ValueFormat getRights() {
         return rights;
@@ -29,11 +35,11 @@ public class Rights {
         this.rights = rights;
     }
 
-    public IdFormat getRightsURI() {
+    public SchemeURI getRightsURI() {
         return rightsURI;
     }
 
-    public void setRightsURI(IdFormat rightsURI) {
+    public void setRightsURI(SchemeURI rightsURI) {
         this.rightsURI = rightsURI;
     }
 
@@ -53,11 +59,27 @@ public class Rights {
         this.rightsIdentifierScheme = rightsIdentifierScheme;
     }
 
-    public IdFormat getSchemeURI() {
+    public SchemeURI getSchemeURI() {
         return schemeURI;
     }
 
-    public void setSchemeURI(IdFormat schemeURI) {
+    public void setSchemeURI(SchemeURI schemeURI) {
         this.schemeURI = schemeURI;
+    }
+
+    public Map<String, String> getContext() {
+        return context;
+    }
+
+    public void setContext(Map<String, String> context) {
+        this.context = context;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

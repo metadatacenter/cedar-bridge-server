@@ -1,105 +1,101 @@
 package org.metadatacenter.cedar.bridge.resource.CEDARProperties;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
+import java.util.Map;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CEDARDataCiteInstance {
-//    @JsonIgnore
-//    @JsonProperty("@context")
-//    private String context;
-//
-//    @JsonIgnore
-//    @JsonProperty("@id")
-//    private String id;
-//
-//    @JsonIgnore
-//    @JsonProperty("schema:isBasedOn")
-//    private String schemaIsBasedOn;
-//
-//    @JsonIgnore
-//    @JsonProperty("schema:name")
-//    private String schemaName;
-//
-//    @JsonIgnore
-//    @JsonProperty("schema:description")
-//    private String schemaDescription;
-//
-//    @JsonIgnore
-//    @JsonProperty("pav:createdOn")
-//    private String pavCreatedOn;
-//
-//    @JsonIgnore
-//    @JsonProperty("pav:createdBy")
-//    private String pavCreatedBy;
-//
-//    @JsonIgnore
-//    @JsonProperty("pav:lastUpdatedOn")
-//    private String pavLastUpdatedOn;
-//
-//    @JsonIgnore
-//    @JsonProperty("oslc:modifiedBy")
-//    private String oslcModifiedBy;
+
+    @JsonProperty("@context")
+    private Context context;
+
+    @JsonProperty("@id")
+    private String id;
+
+    @JsonProperty("schema:isBasedOn")
+    private String schemaIsBasedOn;
+
+    @JsonProperty("schema:name")
+    private String schemaName;
+
+    @JsonProperty("schema:description")
+    private String schemaDescription;
+
+    @JsonProperty("pav:createdOn")
+    private String pavCreatedOn;
+
+    @JsonProperty("pav:createdBy")
+    private String pavCreatedBy;
+
+    @JsonProperty("pav:lastUpdatedOn")
+    private String pavLastUpdatedOn;
+
+    @JsonProperty("oslc:modifiedBy")
+    private String oslcModifiedBy;
 
     @JsonProperty("prefix")
     private ValueFormat prefix;
 
-    @JsonProperty("CreatorElement")
-    private CreatorElement creatorElement;
+    @JsonProperty("creator")
+    private List<Creator> creators;
 
-    @JsonProperty("TitleElement")
-    private TitleElement titleElement;
+    @JsonProperty("title")
+    private List<Title> titles;;
 
-    @JsonProperty("PublisherElement")
-    private PublisherElement publisherElement;
+    @JsonProperty("publisher")
+    private Publisher publisher;
 
-    @JsonProperty("PublicationYearElement")
-    private PublicationYearElement publicationYearElement;
+    @JsonProperty("publicationYear")
+    private PublicationYear publicationYear;
 
-    @JsonProperty("SubjectElement")
-    private SubjectElement subjectElement;
+    @JsonProperty("resourceType")
+    private ValueFormat resourceType;
 
-    @JsonProperty("ResourceTypeElement")
-    private ResourceTypeElement resourceTypeElement;
+    @JsonProperty("subject")
+    private List<Subject> subjects;
 
-    @JsonProperty("ContributorElement")
-    private ContributorElement contributorElement;
+    @JsonProperty("contributor")
+    private List<Contributor> contributors;
 
-    @JsonProperty("DateElement")
-    private DateElement dateElement;
+    @JsonProperty("dateElement")
+    private List<Date> dates;
 
-    @JsonProperty("Language")
-    private ValueFormat language;
+    @JsonProperty("language")
+    private IdFormat language;
 
-    @JsonProperty("AlternateIdentifierElement")
-    private AlternateIdentifierElement alternateIdentifierElement;
+    @JsonProperty("alternateIdentifierElement")
+    private List<AlternateIdentifier> alternateIdentifiers;
 
-    @JsonProperty("RelatedIdentifierElement")
-    private RelatedIdentifierElement relatedIdentifierElement;
+    @JsonProperty("relatedIdentifierElement")
+    private List<RelatedIdentifier> relatedIdentifiers;
 
-    @JsonProperty("SizeElement")
-    private SizeElement sizeElement;
+    @JsonProperty("size")
+    private List<ValueFormat> sizes;
 
-    @JsonProperty("FormatElement")
-    private FormatElement formatElement;
+    @JsonProperty("format")
+    private List<ValueFormat> formats;
 
-    @JsonProperty("Version")
+    @JsonProperty("version")
     private ValueFormat version;
 
-    @JsonProperty("RightsElement")
-    private RightsElement rightsElement;
+    @JsonProperty("rightsElement")
+    private List<Rights> rightsList;
 
-    @JsonProperty("DescriptionElement")
-    private DescriptionElement descriptionElement;
+    @JsonProperty("descriptionElement")
+    private List<Description> descriptions;
 
-    @JsonProperty("GeoLocationElement")
-    private GeoLocationElement geoLocationElement;
+    @JsonProperty("geoLocation")
+    private List<GeoLocation> geoLocations;
 
-    @JsonProperty("FundingReferenceElement")
-    private FundingReferenceElement fundingReferenceElement;
+    @JsonProperty("fundingReference")
+    private List<FundingReference> fundingReferences;
 
-    @JsonProperty("RelatedItemElement")
-    private RelatedItemElement relatedItemElement;
+    @JsonProperty("relatedItem")
+    private List<RelatedItem> relatedItems;
 
     public CEDARDataCiteInstance() {
 
@@ -113,108 +109,108 @@ public class CEDARDataCiteInstance {
         this.prefix = prefix;
     }
 
-    public CreatorElement getCreatorElement() {
-        return creatorElement;
+    public List<Creator> getCreators() {
+        return creators;
     }
 
-    public void setCreatorElement(CreatorElement creatorElement) {
-        this.creatorElement = creatorElement;
+    public void setCreators(List<Creator> creators) {
+        this.creators = creators;
     }
 
-    public TitleElement getTitleElement() {
-        return titleElement;
+    public List<Title> getTitles() {
+        return titles;
     }
 
-    public void setTitleElement(TitleElement titleElement) {
-        this.titleElement = titleElement;
+    public void setTitles(List<Title> titles) {
+        this.titles = titles;
     }
 
-    public PublisherElement getPublisherElement() {
-        return publisherElement;
+    public Publisher getPublisher() {
+        return publisher;
     }
 
-    public void setPublisherElement(PublisherElement publisherElement) {
-        this.publisherElement = publisherElement;
+    public void setPublisher(Publisher publisher) {
+        this.publisher = publisher;
     }
 
-    public PublicationYearElement getPublicationYearElement() {
-        return publicationYearElement;
+    public PublicationYear getPublicationYear() {
+        return publicationYear;
     }
 
-    public void setPublicationYearElement(PublicationYearElement publicationYearElement) {
-        this.publicationYearElement = publicationYearElement;
+    public void setPublicationYear(PublicationYear publicationYear) {
+        this.publicationYear = publicationYear;
     }
 
-    public SubjectElement getSubjectElement() {
-        return subjectElement;
+    public List<Subject> getSubjects() {
+        return subjects;
     }
 
-    public void setSubjectElement(SubjectElement subjectElement) {
-        this.subjectElement = subjectElement;
+    public void setSubjects(List<Subject> subjects) {
+        this.subjects = subjects;
     }
 
-    public ResourceTypeElement getResourceTypeElement() {
-        return resourceTypeElement;
+    public ValueFormat getResourceType() {
+        return resourceType;
     }
 
-    public void setResourceTypeElement(ResourceTypeElement resourceTypeElement) {
-        this.resourceTypeElement = resourceTypeElement;
+    public void setResourceType(ValueFormat resourceType) {
+        this.resourceType = resourceType;
     }
 
-    public ContributorElement getContributorElement() {
-        return contributorElement;
+    public List<Contributor> getContributors() {
+        return contributors;
     }
 
-    public void setContributorElement(ContributorElement contributorElement) {
-        this.contributorElement = contributorElement;
+    public void setContributors(List<Contributor> contributors) {
+        this.contributors = contributors;
     }
 
-    public DateElement getDateElement() {
-        return dateElement;
+    public List<Date> getDates() {
+        return dates;
     }
 
-    public void setDateElement(DateElement dateElement) {
-        this.dateElement = dateElement;
+    public void setDates(List<Date> dates) {
+        this.dates = dates;
     }
 
-    public ValueFormat getLanguage() {
+    public IdFormat getLanguage() {
         return language;
     }
 
-    public void setLanguage(ValueFormat language) {
+    public void setLanguage(IdFormat language) {
         this.language = language;
     }
 
-    public AlternateIdentifierElement getAlternateIdentifierElement() {
-        return alternateIdentifierElement;
+    public List<AlternateIdentifier> getAlternateIdentifiers() {
+        return alternateIdentifiers;
     }
 
-    public void setAlternateIdentifierElement(AlternateIdentifierElement alternateIdentifierElement) {
-        this.alternateIdentifierElement = alternateIdentifierElement;
+    public void setAlternateIdentifiers(List<AlternateIdentifier> alternateIdentifiers) {
+        this.alternateIdentifiers = alternateIdentifiers;
     }
 
-    public RelatedIdentifierElement getRelatedIdentifierElement() {
-        return relatedIdentifierElement;
+    public List<RelatedIdentifier> getRelatedIdentifiers() {
+        return relatedIdentifiers;
     }
 
-    public void setRelatedIdentifierElement(RelatedIdentifierElement relatedIdentifierElement) {
-        this.relatedIdentifierElement = relatedIdentifierElement;
+    public void setRelatedIdentifiers(List<RelatedIdentifier> relatedIdentifiers) {
+        this.relatedIdentifiers = relatedIdentifiers;
     }
 
-    public SizeElement getSizeElement() {
-        return sizeElement;
+    public List<ValueFormat> getSizes() {
+        return sizes;
     }
 
-    public void setSizeElement(SizeElement sizeElement) {
-        this.sizeElement = sizeElement;
+    public void setSizes(List<ValueFormat> sizes) {
+        this.sizes = sizes;
     }
 
-    public FormatElement getFormatElement() {
-        return formatElement;
+    public List<ValueFormat> getFormats() {
+        return formats;
     }
 
-    public void setFormatElement(FormatElement formatElement) {
-        this.formatElement = formatElement;
+    public void setFormats(List<ValueFormat> formats) {
+        this.formats = formats;
     }
 
     public ValueFormat getVersion() {
@@ -225,43 +221,115 @@ public class CEDARDataCiteInstance {
         this.version = version;
     }
 
-    public RightsElement getRightsElement() {
-        return rightsElement;
+    public List<Rights> getRightsList() {
+        return rightsList;
     }
 
-    public void setRightsElement(RightsElement rightsElement) {
-        this.rightsElement = rightsElement;
+    public void setRightsList(List<Rights> rightsList) {
+        this.rightsList = rightsList;
     }
 
-    public GeoLocationElement getGeoLocationElement() {
-        return geoLocationElement;
+    public List<GeoLocation> getGeoLocations() {
+        return geoLocations;
     }
 
-    public void setGeoLocationElement(GeoLocationElement geoLocationElement) {
-        this.geoLocationElement = geoLocationElement;
+    public void setGeoLocations(List<GeoLocation> geoLocations) {
+        this.geoLocations = geoLocations;
     }
 
-    public FundingReferenceElement getFundingReferenceElement() {
-        return fundingReferenceElement;
+    public List<FundingReference> getFundingReferences() {
+        return fundingReferences;
     }
 
-    public void setFundingReferenceElement(FundingReferenceElement fundingReferenceElement) {
-        this.fundingReferenceElement = fundingReferenceElement;
+    public void setFundingReferences(List<FundingReference> fundingReferences) {
+        this.fundingReferences = fundingReferences;
     }
 
-    public RelatedItemElement getRelatedItemElement() {
-        return relatedItemElement;
+    public List<RelatedItem> getRelatedItems() {
+        return relatedItems;
     }
 
-    public void setRelatedItemElement(RelatedItemElement relatedItemElement) {
-        this.relatedItemElement = relatedItemElement;
+    public void setRelatedItems(List<RelatedItem> relatedItems) {
+        this.relatedItems = relatedItems;
     }
 
-    public DescriptionElement getDescriptionElement() {
-        return descriptionElement;
+    public List<Description> getDescriptions() {
+        return descriptions;
     }
 
-    public void setDescriptionElement(DescriptionElement descriptionElement) {
-        this.descriptionElement = descriptionElement;
+    public void setDescriptions(List<Description> descriptions) {
+        this.descriptions = descriptions;
+    }
+
+    public Context getContext() {
+        return context;
+    }
+
+    public void setContext(Context context) {
+        this.context = context;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getSchemaIsBasedOn() {
+        return schemaIsBasedOn;
+    }
+
+    public void setSchemaIsBasedOn(String schemaIsBasedOn) {
+        this.schemaIsBasedOn = schemaIsBasedOn;
+    }
+
+    public String getSchemaName() {
+        return schemaName;
+    }
+
+    public void setSchemaName(String schemaName) {
+        this.schemaName = schemaName;
+    }
+
+    public String getSchemaDescription() {
+        return schemaDescription;
+    }
+
+    public void setSchemaDescription(String schemaDescription) {
+        this.schemaDescription = schemaDescription;
+    }
+
+    public String getPavCreatedOn() {
+        return pavCreatedOn;
+    }
+
+    public void setPavCreatedOn(String pavCreatedOn) {
+        this.pavCreatedOn = pavCreatedOn;
+    }
+
+    public String getPavCreatedBy() {
+        return pavCreatedBy;
+    }
+
+    public void setPavCreatedBy(String pavCreatedBy) {
+        this.pavCreatedBy = pavCreatedBy;
+    }
+
+    public String getPavLastUpdatedOn() {
+        return pavLastUpdatedOn;
+    }
+
+    public void setPavLastUpdatedOn(String pavLastUpdatedOn) {
+        this.pavLastUpdatedOn = pavLastUpdatedOn;
+    }
+
+    public String getOslcModifiedBy() {
+        return oslcModifiedBy;
+    }
+
+    public void setOslcModifiedBy(String oslcModifiedBy) {
+        this.oslcModifiedBy = oslcModifiedBy;
     }
 }

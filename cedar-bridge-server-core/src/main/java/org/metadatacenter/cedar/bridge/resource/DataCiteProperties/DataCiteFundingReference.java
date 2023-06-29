@@ -1,15 +1,23 @@
 package org.metadatacenter.cedar.bridge.resource.DataCiteProperties;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteFundingReference {
+    @JsonProperty("awardUri")
     private String awardUri;
+    @JsonProperty("awardTitle")
     private String awardTitle;
+    @JsonProperty("funderName")
     private String funderName;
+    @JsonProperty("awardNumber")
     private String awardNumber;
+    @JsonProperty("funderIdentifier")
     private String funderIdentifier;
+    @JsonProperty("funderIdentifierType")
     private String funderIdentifierType;
+    @JsonProperty("schemeUri")
     private String schemeUri;
 
     public String getAwardUri() {

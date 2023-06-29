@@ -1,11 +1,15 @@
 package org.metadatacenter.cedar.bridge.resource.DataCiteProperties;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteTitle {
+    @JsonProperty("title")
     private String title;
+    @JsonProperty("titleType")
     private String titleType;
+    @JsonProperty("lang")
     private String lang;
 
     public String getTitle() {

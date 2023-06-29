@@ -1,11 +1,13 @@
 package org.metadatacenter.cedar.bridge.resource.DataCiteProperties;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteNumber {
+    @JsonProperty("number")
     private String number;
-
+    @JsonProperty("numberType")
     private String numberType;
 
     public String getNumber() {

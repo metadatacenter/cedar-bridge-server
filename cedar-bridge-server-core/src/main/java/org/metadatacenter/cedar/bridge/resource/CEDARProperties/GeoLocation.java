@@ -4,12 +4,16 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GeoLocation {
+    @JsonProperty("@context")
+    private Map<String, String> context;
+    @JsonProperty("@id")
+    private String id;
     @JsonProperty("geoLocationPlace")
     private ValueFormat geoLocationPlace;
-
 
     @JsonProperty("Geo Location Point")
     private Point geoLocationPoint;
@@ -17,8 +21,8 @@ public class GeoLocation {
     @JsonProperty("Geo Location Box")
     private GeoLocationBox geoLocationBox;
 
-    @JsonProperty("geoLocationPolygen")
-    private List<GeoLocationPolygen> geoLocationPolygenList;
+    @JsonProperty("geoLocationPolygon")
+    private List<GeoLocationPolygon> geoLocationPolygonList;
 
     public ValueFormat getGeoLocationPlace() {
         return geoLocationPlace;
@@ -44,11 +48,27 @@ public class GeoLocation {
         this.geoLocationBox = geoLocationBox;
     }
 
-    public List<GeoLocationPolygen> getGeoLocationPolygenList() {
-        return geoLocationPolygenList;
+    public List<GeoLocationPolygon> getGeoLocationPolygonList() {
+        return geoLocationPolygonList;
     }
 
-    public void setGeoLocationPolygenList(List<GeoLocationPolygen> geoLocationPolygenList) {
-        this.geoLocationPolygenList = geoLocationPolygenList;
+    public void setGeoLocationPolygonList(List<GeoLocationPolygon> geoLocationPolygonList) {
+        this.geoLocationPolygonList = geoLocationPolygonList;
+    }
+
+    public Map<String, String> getContext() {
+        return context;
+    }
+
+    public void setContext(Map<String, String> context) {
+        this.context = context;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

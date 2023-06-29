@@ -1,37 +1,42 @@
 package org.metadatacenter.cedar.bridge.resource.DataCiteProperties;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteRelatedItem {
+    @JsonProperty("relatedItemType")
     private String relatedItemType;
-
+    @JsonProperty("relationType")
     private String relationType;
-
+    @JsonProperty("volume")
     private String volume;
-
+    @JsonProperty("issue")
     private String issue;
-
+    @JsonProperty("firstPage")
     private String firstPage;
-
+    @JsonProperty("lastPage")
     private String lastPage;
-
-    private String PublicationYear;
-
-    private String Publisher;
-
-    private String Edition;
-
+    @JsonProperty("publicationYear")
+    private Integer publicationYear;
+    @JsonProperty("publisher")
+    private String publisher;
+    @JsonProperty("edition")
+    private String edition;
+    @JsonProperty("relatedItemIdentifier")
     private DataCiteRelatedItemIdentifier relatedItemIdentifier;
-
+    @JsonProperty("creators")
     private List<DataCiteCreator> creators;
-
+    @JsonProperty("titles")
     private List<DataCiteTitle> titles;
-
-    private DataCiteNumber number;
-
+    @JsonProperty("number")
+    private String number;
+    @JsonProperty("numberType")
+    private String numberType;
+    @JsonProperty("contributors")
     private List<DataCiteRelatedItemContributor> contributors;
 
     public String getRelatedItemType() {
@@ -82,28 +87,28 @@ public class DataCiteRelatedItem {
         this.lastPage = lastPage;
     }
 
-    public String getPublicationYear() {
-        return PublicationYear;
+    public Integer getPublicationYear() {
+        return publicationYear;
     }
 
-    public void setPublicationYear(String publicationYear) {
-        PublicationYear = publicationYear;
+    public void setPublicationYear(Integer publicationYear) {
+        this.publicationYear = publicationYear;
     }
 
     public String getPublisher() {
-        return Publisher;
+        return publisher;
     }
 
     public void setPublisher(String publisher) {
-        Publisher = publisher;
+        this.publisher = publisher;
     }
 
     public String getEdition() {
-        return Edition;
+        return edition;
     }
 
     public void setEdition(String edition) {
-        Edition = edition;
+        this.edition = edition;
     }
 
     public DataCiteRelatedItemIdentifier getRelatedItemIdentifier() {
@@ -130,12 +135,20 @@ public class DataCiteRelatedItem {
         this.titles = titles;
     }
 
-    public DataCiteNumber getNumber() {
+    public String getNumber() {
         return number;
     }
 
-    public void setNumber(DataCiteNumber number) {
+    public void setNumber(String number) {
         this.number = number;
+    }
+
+    public String getNumberType() {
+        return numberType;
+    }
+
+    public void setNumberType(String numberType) {
+        this.numberType = numberType;
     }
 
     public List<DataCiteRelatedItemContributor> getContributors() {

@@ -5,15 +5,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+import java.util.Map;
 
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Creator {
-    @JsonIgnore
     @JsonProperty("@context")
-    private String context;
+    private Map<String, String> context;
 
-    @JsonIgnore
     @JsonProperty("@id")
     private String id;
 
@@ -29,7 +28,7 @@ public class Creator {
     @JsonProperty("familyName")
     private ValueFormat familyName;
 
-    @JsonProperty("affiliationElement")
+    @JsonProperty("Affiliation")
     private List<Affiliation> affiliations;
 
     @JsonProperty("nameIdentifier")
@@ -81,5 +80,21 @@ public class Creator {
 
     public void setNameIdentifiers(List<NameIdentifier> nameIdentifiers) {
         this.nameIdentifiers = nameIdentifiers;
+    }
+
+    public Map<String, String> getContext() {
+        return context;
+    }
+
+    public void setContext(Map<String, String> context) {
+        this.context = context;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

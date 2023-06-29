@@ -2,53 +2,57 @@ package org.metadatacenter.cedar.bridge.resource.DataCiteProperties;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Attributes {
+    @JsonProperty("prefix")
     private String prefix;
-
+    @JsonProperty("event")
     private String event;
-
+    @JsonProperty("url")
     private String url;
-
+    @JsonProperty("schemaVersion")
     private String schemaVersion;
-
     @JsonProperty("creators")
     private List<DataCiteCreator> creators;
+    @JsonProperty("titles")
     private List<DataCiteTitle> titles;
+    @JsonProperty("publisher")
     private String publisher;
+    @JsonProperty("publicationYear")
     private int publicationYear;
-
+    @JsonProperty("subjects")
     private List<DataCiteSubject> subjects;
-
+    @JsonProperty("contributors")
     private List<DataCiteContributor> contributors;
-
+    @JsonProperty("dates")
     private List<DataCiteDate> dates;
-
+    @JsonProperty("alternateIdentifiers")
     private List<DataCiteAlternateIdentifier> alternateIdentifiers;
-
+    @JsonProperty("language")
     private String language;
-
+    @JsonProperty("types")
     private DataCiteType types;
-
+    @JsonProperty("relatedIdentifiers")
     private List<DataCiteRelatedIdentifier> relatedIdentifiers;
-
+    @JsonProperty("sizes")
     private List<String> sizes;
-
+    @JsonProperty("formats")
     private List<String> formats;
-
+    @JsonProperty("version")
     private String version;
-
+    @JsonProperty("rightsList")
     private List<DataCiteRights> rightsList;
-
+    @JsonProperty("descriptions")
     private List<DataCiteDescription> descriptions;
-
+    @JsonProperty("geoLocations")
     private List<DataCiteGeoLocation> geoLocations;
-
+    @JsonProperty("fundingReferences")
     private List<DataCiteFundingReference> fundingReferences;
-
+    @JsonProperty("relatedItems")
     private List<DataCiteRelatedItem> relatedItems;
 
     public Attributes() {

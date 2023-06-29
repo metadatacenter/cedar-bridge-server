@@ -7,14 +7,17 @@ import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteCreator {
-
+    @JsonProperty("name")
     private String name;
+    @JsonProperty("nameType")
     private String nameType;
+    @JsonProperty("givenName")
     private String givenName;
+    @JsonProperty("familyName")
     private String familyName;
-
+    @JsonProperty("affiliation")
     private List<DataCiteAffiliation> dataCiteAffiliations;
-
+    @JsonProperty("nameIdentifiers")
     private List<DataCiteNameIdentifier> dataCiteNameIdentifiers;
 
     public DataCiteCreator() {
@@ -67,4 +70,6 @@ public class DataCiteCreator {
     public void setNameIdentifiers(List<DataCiteNameIdentifier> dataCiteNameIdentifiers) {
         this.dataCiteNameIdentifiers = dataCiteNameIdentifiers;
     }
+
+
 }

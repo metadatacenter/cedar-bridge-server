@@ -4,8 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
+import java.util.Map;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RelatedIdentifier {
+    @JsonProperty("@context")
+    private Map<String, String> context;
+    @JsonProperty("@id")
+    private String id;
     @JsonProperty("RelatedIdentifier")
     private ValueFormat relatedIdentifier;
 
@@ -19,7 +25,7 @@ public class RelatedIdentifier {
     private ValueFormat relatedMetadataScheme;
 
     @JsonProperty("schemeURI")
-    private IdFormat schemeURi;
+    private SchemeURI schemeURi;
 
     @JsonProperty("schemeType")
     private ValueFormat schemeType;
@@ -59,11 +65,11 @@ public class RelatedIdentifier {
         this.relatedMetadataScheme = relatedMetadataScheme;
     }
 
-    public IdFormat getSchemeURi() {
+    public SchemeURI getSchemeURi() {
         return schemeURi;
     }
 
-    public void setSchemeURi(IdFormat schemeURi) {
+    public void setSchemeURi(SchemeURI schemeURi) {
         this.schemeURi = schemeURi;
     }
 
@@ -81,5 +87,21 @@ public class RelatedIdentifier {
 
     public void setResourceTypeGeneral(IdFormat resourceTypeGeneral) {
         this.resourceTypeGeneral = resourceTypeGeneral;
+    }
+
+    public Map<String, String> getContext() {
+        return context;
+    }
+
+    public void setContext(Map<String, String> context) {
+        this.context = context;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

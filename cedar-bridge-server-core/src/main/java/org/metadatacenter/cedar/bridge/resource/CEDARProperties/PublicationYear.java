@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class PublicationYear {
     @JsonProperty("@value")
     private String value;
+
     @JsonProperty("@type")
     private String type;
 
