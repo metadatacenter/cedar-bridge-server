@@ -11,6 +11,7 @@ import org.apache.commons.codec.CharEncoding;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
+import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.bridge.resource.CEDARProperties.CEDARDataCiteInstance;
 import org.metadatacenter.cedar.bridge.resource.CedarInstanceParser;
 import org.metadatacenter.cedar.bridge.resource.DataCiteInstanceValidationException;
@@ -19,14 +20,20 @@ import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.DataCiteSchem
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.constant.HttpConstants;
+import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarException;
+import org.metadatacenter.exception.CedarPermissionException;
 import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.id.CedarArtifactId;
 import org.metadatacenter.id.CedarFQResourceId;
 import org.metadatacenter.id.CedarTemplateId;
+import org.metadatacenter.model.BiboStatus;
 import org.metadatacenter.model.CedarResourceType;
+import org.metadatacenter.model.folderserver.basic.FolderServerArtifact;
 import org.metadatacenter.model.request.ResourceType;
 import org.metadatacenter.rest.context.CedarRequestContext;
+import org.metadatacenter.server.FolderServiceSession;
+import org.metadatacenter.server.ResourcePermissionServiceSession;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.server.service.TemplateInstanceService;
 import org.metadatacenter.server.service.TemplateService;
@@ -46,6 +53,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 import static org.metadatacenter.constant.CedarQueryParameters.QP_SOURCE_ARTIFACT_ID;
@@ -131,17 +139,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
     c.must(c.user()).have(CedarPermission.TEMPLATE_READ);
 
     Map<String, Object> response = new HashMap<>();
-    // TODO: perform the steps below
-    // check if user has write permission to the source artifact
-    // check if the source artifact is open
-    // check if the source artifact is published (version) - if it is a template
-    // later: check if the source artifact is published - if it is an instance
-    // later: check if there is an already started DOI metadata instance. If yes, load it as well
-    // If there are errors, send error response
-    // If there are no errors, send:
-    // - the DOI metadata template
-    // - the source artifact
-    // - later: the already started DOI metadata instance
 
     String dataCiteTemplateIdS = cedarConfig.getBridgeConfig().getDataCite().getTemplateId();
     CedarTemplateId dataCiteTemplateId = CedarTemplateId.build(dataCiteTemplateIdS);
@@ -154,6 +151,55 @@ public class DataCiteResource extends CedarMicroserviceResource {
     String url2 = microserviceUrlUtil.getArtifact().getArtifactTypeWithId(sourceArtifactResourceId.getType(),
         sourceArtifactIdTyped);
     JsonNode sourceArtifactProxyJson = ProxyUtil.proxyGetBodyAsJsonNode(url2, c);
+
+    // check if user has write permission to the source artifact
+    ResourcePermissionServiceSession permissionSession = CedarDataServices.getResourcePermissionServiceSession(c);
+    boolean hasWriteAccess = permissionSession.userHasWriteAccessToResource(sourceArtifactIdTyped);
+    if (!hasWriteAccess) {
+      return CedarResponse
+          .unauthorized()
+          .errorKey(CedarErrorKey.NO_WRITE_ACCESS_TO_ARTIFACT)
+          .errorMessage("You do not have write access to the artifact")
+          .parameter("resourceId", sourceArtifactIdTyped)
+          .build();
+    }
+
+    // check if the source artifact is open
+    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+    FolderServerArtifact folderServerResource = folderSession.findArtifactById(sourceArtifactIdTyped);
+    if (folderServerResource == null) {
+      return CedarResponse
+          .notFound()
+          .errorMessage("The source artifact is not found")
+          .id(sourceArtifactIdTyped)
+          .build();
+    } else if (!(folderServerResource.isOpen() || folderSession.isArtifactOpenImplicitly(sourceArtifactIdTyped))){
+        return CedarResponse
+            .badRequest()
+            .errorMessage("Please make the " + sourceArtifactResourceId.getType().getValue().toLowerCase() + " open to create a DOI")
+            .build();
+      }
+
+    // check if the source artifact is published (version) - if it is a template
+    // "bibo:status": "bibo:published"
+    // "pav:version": "0.0.1"
+    if (sourceArtifactResourceId.getType() == CedarResourceType.TEMPLATE){
+      if (!Objects.equals(sourceArtifactProxyJson.get("bibo:status").asText(), BiboStatus.PUBLISHED.getValue())){
+        return CedarResponse
+            .badRequest()
+            .errorMessage("Please make the template publish to create a DOI")
+            .build();
+      }
+    }
+
+    //TODO:
+    // later: check if the source artifact is published - if it is an instance
+    // later: check if there is an already started DOI metadata instance. If yes, load it as well
+    // If there are errors, send error response
+    // If there are no errors, send:
+    // - the DOI metadata template
+    // - the source artifact
+    // - later: the already started DOI metadata instance
 
     response.put("sourceArtifactType", sourceArtifactResourceId.getType().getValue());
     response.put("sourceArtifact", sourceArtifactProxyJson);
@@ -168,7 +214,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
   @Produces(MediaType.APPLICATION_JSON)
   @Timed
   @Path("/create-doi")
-  public Response createDOI(JsonNode dataCiteInstance) throws CedarException, IOException, InterruptedException {
+  public Response createDOI(@QueryParam(QP_SOURCE_ARTIFACT_ID) String sourceArtifactId, JsonNode dataCiteInstance) throws CedarException, IOException, InterruptedException {
     CedarRequestContext c = buildRequestContext();
 
 //    c.must(c.user()).be(LoggedIn);
@@ -195,7 +241,15 @@ public class DataCiteResource extends CedarMicroserviceResource {
         // Get DOI request json
         String jsonData = "";
         if (dataCiteInstance != null && !dataCiteInstance.isEmpty()) {
-          jsonData = getRequestJson(dataCiteInstance);
+          try {
+            jsonData = getRequestJson(dataCiteInstance, sourceArtifactId);
+          } catch (Exception e){
+            return CedarResponse
+                .badRequest()
+                .errorMessage(e.getMessage())
+                .errorKey(CedarErrorKey.INVALID_INPUT)
+                .build();
+          }
         }
         // Send HTTP request and get response
         HttpResponse<String> httResponse = httpDataCitePostCall(endpointUrl, basicAuth, jsonData);
@@ -221,13 +275,21 @@ public class DataCiteResource extends CedarMicroserviceResource {
           return Response.status(statusCode).entity(jsonResource).build();
         }
       } catch (Exception e) {
-        return CedarResponse.internalServerError().errorMessage(e.getMessage()).exception(e).build();
+        return CedarResponse
+            .internalServerError()
+            .errorMessage(e.getMessage())
+            .exception(e)
+            .build();
       }
     } else {
       response.put("request", dataCiteInstance);
 //      response.put("validationResult", validationResult);
 //      response.put("validationResult", null);
-      return CedarResponse.badRequest().errorMessage("Validation Error").entity(response).build();
+      return CedarResponse
+          .badRequest()
+          .errorMessage("Validation Error")
+          .entity(response)
+          .build();
     }
   }
 
@@ -300,7 +362,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
    *
    * @return DataCite requested JSON scheme
    */
-  private static String getRequestJson(JsonNode metadata) throws DataCiteInstanceValidationException {
+  private static String getRequestJson(JsonNode metadata, String sourceArtifactId) {
     ObjectMapper mapper = new ObjectMapper();
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
     mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -315,14 +377,18 @@ public class DataCiteResource extends CedarMicroserviceResource {
       System.out.println("Json Converted to DataCite Instance: " + cedarInstanceString);
 
       // Pass the value from dataCiteInstance to dataCiteRequest
-      CedarInstanceParser.parseCEDARInstance(cedarInstance, dataCiteSchema);
+      try {
+        CedarInstanceParser.parseCEDARInstance(cedarInstance, dataCiteSchema, sourceArtifactId);
+      } catch (DataCiteInstanceValidationException e){
+        throw new DataCiteInstanceValidationException(e.getMessage());
+      }
 
       //Serialize DataCiteRequest Class to json
       String requestJsonString = mapper.writeValueAsString(dataCiteSchema);
       System.out.println("Json Sent to DataCite: " + requestJsonString);
       return requestJsonString;
 
-    } catch (IOException e) {
+    } catch (IOException | DataCiteInstanceValidationException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
     }
@@ -335,10 +401,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
    * @param basicAuth   Authentication at heater
    * @param jsonData    JSON used to call API
    * @return Http POST Response
-   * @throws IOException
-   * @throws InterruptedException
    */
-  private static HttpResponse<String> httpDataCitePostCall(String endPointUrl, String basicAuth, String jsonData) throws IOException, InterruptedException {
+  private static HttpResponse<String> httpDataCitePostCall(String endPointUrl, String basicAuth, String jsonData){
     try {
       URI uri = URI.create(endPointUrl);
 
@@ -366,7 +430,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
   /**
    * This function get JSON file of a CEDAR template
    */
-  private JsonNode getCEDARTemplate(CedarRequestContext c, String templateId) throws IOException, InterruptedException {
+  private JsonNode getCEDARTemplate(CedarRequestContext c, String templateId) {
     try {
       CedarTemplateId cedarTemplateId = CedarTemplateId.build(templateId);
       String artifactServerUrl = microserviceUrlUtil.getArtifact().getArtifactTypeWithId(CedarResourceType.TEMPLATE,

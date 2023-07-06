@@ -3,13 +3,18 @@ package org.metadatacenter.cedar.bridge.resource;
 import org.metadatacenter.cedar.bridge.resource.CEDARProperties.*;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
 import org.metadatacenter.exception.CedarException;
+import org.metadatacenter.id.CedarArtifactId;
+import org.metadatacenter.id.CedarFQResourceId;
+import org.metadatacenter.model.CedarResourceType;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CedarInstanceParser {
-    public static void parseCEDARInstance(CEDARDataCiteInstance cedarDataCiteInstance, DataCiteSchema dataCiteSchema) throws DataCiteInstanceValidationException{
+    public static void parseCEDARInstance(CEDARDataCiteInstance cedarDataCiteInstance, DataCiteSchema dataCiteSchema, String sourceArtifactId) throws DataCiteInstanceValidationException{
         Data data = new Data();
         Attributes attributes = new Attributes();
 
@@ -29,8 +34,16 @@ public class CedarInstanceParser {
         attributes.setEvent("publish");
 
         // Set url and schemeVersion
-        //TODO: URL should be the openview url of the artifact!
-        attributes.setUrl("https://schema.datacite.org/meta/kernel-4.0/index.html");
+        // https://openview.metadatacenter.org/templates/  or  https://openview.metadatacenter.org/template-instances/
+        CedarResourceType cedarResourceType = CedarFQResourceId.build(sourceArtifactId).getType();
+        String encodedSourceArtifactId = URLEncoder.encode(sourceArtifactId, StandardCharsets.UTF_8);
+        switch (cedarResourceType){
+            case TEMPLATE:
+                attributes.setUrl("https://openview.metadatacenter.org/templates/" + encodedSourceArtifactId);
+            case INSTANCE:
+                attributes.setUrl("https://openview.metadatacenter.org/template-instances/" + encodedSourceArtifactId);
+        }
+
         attributes.setSchemaVersion("http://datacite.org/schema/kernel-4");
 
         // Pass creator values from CEDAR class to DataCite class
