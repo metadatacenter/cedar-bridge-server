@@ -251,7 +251,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
                 .build();
           }
         }
-        // Send HTTP request and get response
+        // Send HTTP request to DataCite and get response
         HttpResponse<String> httResponse = httpDataCitePostCall(endpointUrl, basicAuth, jsonData);
 
         int statusCode = httResponse.statusCode();
@@ -268,11 +268,17 @@ public class DataCiteResource extends CedarMicroserviceResource {
           response.put("doiId", id);
           response.put("doiName", doiName);
           response.put("dataCiteResponse", dataCiteResponse);
-          return CedarResponse.created(uri).entity(response).build();
+          return CedarResponse
+              .created(uri)
+              .entity(response)
+              .build();
         } else {
           String jsonResponse = httResponse.body();
           JsonNode jsonResource = JsonMapper.MAPPER.readTree(jsonResponse);
-          return Response.status(statusCode).entity(jsonResource).build();
+          return Response
+              .status(statusCode)
+              .entity(jsonResource)
+              .build();
         }
       } catch (Exception e) {
         return CedarResponse

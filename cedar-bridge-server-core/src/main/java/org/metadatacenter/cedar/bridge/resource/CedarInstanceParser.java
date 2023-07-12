@@ -88,11 +88,7 @@ public class CedarInstanceParser {
         }
 
         // Pass resourceType values
-        if (cedarDataCiteInstance.getResourceType() == null || cedarDataCiteInstance.getResourceType().getValue() == null || cedarDataCiteInstance.getResourceType().getValue().equals("")){
-            throw new DataCiteInstanceValidationException("The 'Resource Type' is required, please select your source artifact type'");
-        } else{
-            attributes.setTypes(parseTypeValue(cedarDataCiteInstance.getResourceType()));
-        }
+        attributes.setTypes(parseTypeValue(cedarResourceType.getValue()));
 
         //Pass contributors values
         List<Contributor> contributorList = cedarDataCiteInstance.getContributors();
@@ -316,15 +312,12 @@ public class CedarInstanceParser {
         return dataCiteSubjects;
     }
 
-    private static DataCiteType parseTypeValue(ValueFormat resourceType) {
+    private static DataCiteType parseTypeValue(String resourceType) {
         DataCiteType dataCiteType = new DataCiteType();
-        String type = resourceType.getValue();
 //        String resourceTypeGeneral = resourceTypeElement.getResourceTypeGeneral().toString();
         String resourceTypeGeneral = "Other";
-        if (type != null){
-            dataCiteType.setResourceType(type);
-        }
         dataCiteType.setResourceTypeGeneral(resourceTypeGeneral);
+        dataCiteType.setResourceType(resourceType);
         return dataCiteType;
     }
 
