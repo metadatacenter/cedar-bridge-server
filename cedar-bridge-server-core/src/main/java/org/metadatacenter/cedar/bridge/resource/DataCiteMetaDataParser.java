@@ -178,7 +178,6 @@ public class DataCiteMetaDataParser {
 
         if (dataCiteCreators != null && !dataCiteCreators.isEmpty()){
             for (DataCiteCreator c : dataCiteCreators) {
-                System.out.println("this is one creator instance");
                 Creator creator = new Creator();
                 // retrieve values from DataCiteScheme
                 ValueFormat name = new ValueFormat(), givenName = new ValueFormat(), familyName = new ValueFormat();

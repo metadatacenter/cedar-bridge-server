@@ -39,15 +39,7 @@ public class CedarInstanceParser {
         }
 
         // Set url and schemeVersion
-        // https://openview.metadatacenter.org/templates/  or  https://openview.metadatacenter.org/template-instances/
-        CedarResourceType cedarResourceType = CedarFQResourceId.build(sourceArtifactId).getType();
-        String encodedSourceArtifactId = URLEncoder.encode(sourceArtifactId, StandardCharsets.UTF_8);
-        switch (cedarResourceType){
-            case TEMPLATE:
-                attributes.setUrl("https://openview.metadatacenter.org/templates/" + encodedSourceArtifactId);
-            case INSTANCE:
-                attributes.setUrl("https://openview.metadatacenter.org/template-instances/" + encodedSourceArtifactId);
-        }
+        attributes.setUrl(CheckOpenViewUrl.getOpenViewUrl(sourceArtifactId));
 
         attributes.setSchemaVersion(CedarInstanceParser.dataCiteSchema);
 
@@ -94,6 +86,7 @@ public class CedarInstanceParser {
         }
 
         // Pass resourceType values
+        CedarResourceType cedarResourceType = CedarFQResourceId.build(sourceArtifactId).getType();
         attributes.setTypes(parseTypeValue(cedarResourceType.getValue()));
 
         //Pass contributors values
