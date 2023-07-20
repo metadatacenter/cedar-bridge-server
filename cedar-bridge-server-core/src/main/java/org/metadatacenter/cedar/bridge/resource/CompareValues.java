@@ -27,7 +27,7 @@ public class CompareValues {
       DataCiteSchema cedarConvertedDataCiteSchema = new DataCiteSchema();
 
       // Pass the value from cedarDataCiteInstance to dataCiteRequest
-      CedarInstanceParser.parseCEDARInstance(cedarInstance, cedarConvertedDataCiteSchema, null);
+      CedarInstanceParser.parseCEDARInstance(cedarInstance, cedarConvertedDataCiteSchema, null, "publish");
 
       String cedarConvertedDataCiteSchemaString = mapper.writeValueAsString(cedarConvertedDataCiteSchema);
 //      System.out.println("Cedar Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);

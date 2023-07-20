@@ -2,8 +2,6 @@ package org.metadatacenter.cedar.bridge.resource;
 
 import org.metadatacenter.cedar.bridge.resource.CEDARProperties.*;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
-import org.metadatacenter.exception.CedarException;
-import org.metadatacenter.id.CedarArtifactId;
 import org.metadatacenter.id.CedarFQResourceId;
 import org.metadatacenter.model.CedarResourceType;
 
@@ -14,9 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CedarInstanceParser {
-    public static void parseCEDARInstance(CEDARDataCiteInstance cedarDataCiteInstance, DataCiteSchema dataCiteSchema, String sourceArtifactId) throws DataCiteInstanceValidationException{
+    private static final String PUBLISH = "publish";
+    private static final String DRAFT = "draft";
+    private static final String dataCiteSchema = "http://datacite.org/schema/kernel-4";
+    public static void parseCEDARInstance(CEDARDataCiteInstance cedarDataCiteInstance, DataCiteSchema dataCiteSchema, String sourceArtifactId, String state) throws DataCiteInstanceValidationException{
         Data data = new Data();
         Attributes attributes = new Attributes();
+        ArrayList<String> missedProperties = new ArrayList<>();
 
         // Set type to "dois"
         data.setType("dois");
@@ -31,26 +33,22 @@ public class CedarInstanceParser {
         }
 
         // set event value
-        attributes.setEvent("publish");
-
-        // Set url and schemeVersion
-        // https://openview.metadatacenter.org/templates/  or  https://openview.metadatacenter.org/template-instances/
-        CedarResourceType cedarResourceType = CedarFQResourceId.build(sourceArtifactId).getType();
-        String encodedSourceArtifactId = URLEncoder.encode(sourceArtifactId, StandardCharsets.UTF_8);
-        switch (cedarResourceType){
-            case TEMPLATE:
-                attributes.setUrl("https://openview.metadatacenter.org/templates/" + encodedSourceArtifactId);
-            case INSTANCE:
-                attributes.setUrl("https://openview.metadatacenter.org/template-instances/" + encodedSourceArtifactId);
+        switch (state){
+            case PUBLISH: attributes.setEvent(PUBLISH);
+            case DRAFT: attributes.setEvent(DRAFT);
         }
 
-        attributes.setSchemaVersion("http://datacite.org/schema/kernel-4");
+        // Set url and schemeVersion
+        attributes.setUrl(CheckOpenViewUrl.getOpenViewUrl(sourceArtifactId));
+
+        attributes.setSchemaVersion(CedarInstanceParser.dataCiteSchema);
 
         // Pass creator values from CEDAR class to DataCite class
         List<Creator> creatorList = cedarDataCiteInstance.getCreators();
         if (!creatorList.isEmpty()) {
             attributes.setCreators(parseCreatorValue(creatorList, "Creators"));
         } else{
+//            missedProperties.add();
             throw new DataCiteInstanceValidationException("The 'Creators' is required, please provide 'Creators' information");
         }
 
@@ -88,6 +86,7 @@ public class CedarInstanceParser {
         }
 
         // Pass resourceType values
+        CedarResourceType cedarResourceType = CedarFQResourceId.build(sourceArtifactId).getType();
         attributes.setTypes(parseTypeValue(cedarResourceType.getValue()));
 
         //Pass contributors values
