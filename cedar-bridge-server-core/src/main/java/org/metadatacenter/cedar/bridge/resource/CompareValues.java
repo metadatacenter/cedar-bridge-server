@@ -9,8 +9,6 @@ import org.metadatacenter.cedar.bridge.resource.CEDARProperties.CEDARDataCiteIns
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
 
 
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
 public class CompareValues {
@@ -27,7 +25,7 @@ public class CompareValues {
       DataCiteSchema cedarConvertedDataCiteSchema = new DataCiteSchema();
 
       // Pass the value from cedarDataCiteInstance to dataCiteRequest
-      CedarInstanceParser.parseCEDARInstance(cedarInstance, cedarConvertedDataCiteSchema, null, "publish");
+      CedarInstanceParser.parseCedarInstance(cedarInstance, cedarConvertedDataCiteSchema, null, "publish");
 
       String cedarConvertedDataCiteSchemaString = mapper.writeValueAsString(cedarConvertedDataCiteSchema);
 //      System.out.println("Cedar Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);

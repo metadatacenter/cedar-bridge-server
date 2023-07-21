@@ -2,7 +2,6 @@ package org.metadatacenter.cedar.bridge.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -25,9 +24,7 @@ import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarException;
-import org.metadatacenter.exception.CedarPermissionException;
 import org.metadatacenter.exception.CedarProcessingException;
-import org.metadatacenter.exception.security.CedarAccessException;
 import org.metadatacenter.id.CedarArtifactId;
 import org.metadatacenter.id.CedarFQResourceId;
 import org.metadatacenter.id.CedarTemplateId;
@@ -36,7 +33,6 @@ import org.metadatacenter.model.CedarResourceType;
 import org.metadatacenter.model.folderserver.basic.FolderServerArtifact;
 import org.metadatacenter.model.request.ResourceType;
 import org.metadatacenter.rest.context.CedarRequestContext;
-import org.metadatacenter.rest.exception.CedarAssertionException;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.ResourcePermissionServiceSession;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
@@ -51,7 +47,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -470,7 +465,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
       // Pass the value from dataCiteInstance to dataCiteRequest
       try {
-        CedarInstanceParser.parseCEDARInstance(cedarInstance, dataCiteSchema, sourceArtifactId, state);
+        CedarInstanceParser.parseCedarInstance(cedarInstance, dataCiteSchema, sourceArtifactId, state);
       } catch (DataCiteInstanceValidationException e){
         throw new DataCiteInstanceValidationException(e.getMessage());
       }
