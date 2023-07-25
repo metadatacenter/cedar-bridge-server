@@ -47,8 +47,8 @@ public class Context {
   private String publisher;
   @JsonProperty("publicationYear")
   private String publicationYear;
-  @JsonProperty("resourceType")
-  private String resourceType;
+//  @JsonProperty("resourceType")
+//  private String resourceType;
   @JsonProperty("subject")
   private String subject;
   @JsonProperty("contributor")
@@ -247,13 +247,13 @@ public class Context {
     this.publicationYear = publicationYear;
   }
 
-  public String getResourceType() {
-    return resourceType;
-  }
-
-  public void setResourceType(String resourceType) {
-    this.resourceType = resourceType;
-  }
+//  public String getResourceType() {
+//    return resourceType;
+//  }
+//
+//  public void setResourceType(String resourceType) {
+//    this.resourceType = resourceType;
+//  }
 
   public String getSubject() {
     return subject;

@@ -45,6 +45,7 @@ import org.metadatacenter.util.json.JsonMapper;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -218,7 +219,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
         JsonNode draftDoi = attributesNode.get("doi");
         ObjectMapper mapper = new ObjectMapper();
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+//        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         Attributes existingDoiMetadata = mapper.treeToValue(attributesNode, Attributes.class);
         String existingDoiMetadataString = mapper.writeValueAsString(existingDoiMetadata);
         System.out.println("existingDoiMetadata converted to Data Cite Schema Json: " + existingDoiMetadataString);
@@ -226,10 +227,25 @@ public class DataCiteResource extends CedarMicroserviceResource {
         // Pass the value from dataCiteResponse to cedarDataCiteInstance
         CEDARDataCiteInstance cedarExistingDoiMetadata = new CEDARDataCiteInstance();
         DataCiteMetaDataParser.parseDataCiteSchema(existingDoiMetadata, cedarExistingDoiMetadata);
-        response.put("existingDataCiteMetadata", cedarExistingDoiMetadata);
+//        response.put("existingDataCiteMetadata", cedarExistingDoiMetadata);
         response.put("draftDoi", draftDoi);
 
-        //Serialize DataCiteRequest Class to json
+
+        //Give the cedar-generated json-ld instead
+        String filePath = "/Users/ycao77/CEDAR/cedar-bridge-server/cedar-bridge-server-core/src/main/java/org/metadatacenter/cedar/bridge/resource/JSONFiles/EmbeddableEditorInstanceTest.json";
+        try {
+          // Create an ObjectMapper instance
+          ObjectMapper objectMapper = new ObjectMapper();
+
+          // Read the JSON file and convert it to a JSON object
+          File file = new File(filePath);
+          Object jsonObject = objectMapper.readValue(file, Object.class);
+          response.put("existingDataCiteMetadata",jsonObject);
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+
+
         String cedarDataCiteInstanceString = mapper.writeValueAsString(cedarExistingDoiMetadata);
         System.out.println("Converted Cedar DataCite Instance JSON-LD: " + cedarDataCiteInstanceString);
       }
@@ -273,6 +289,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
         try {
           jsonData = getRequestJson(dataCiteInstance, sourceArtifactId, state);
         } catch (Exception e) {
+          e.printStackTrace();
           return CedarResponse
               .badRequest()
               .errorMessage(e.getMessage())
@@ -467,6 +484,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       try {
         CedarInstanceParser.parseCedarInstance(cedarInstance, dataCiteSchema, sourceArtifactId, state);
       } catch (DataCiteInstanceValidationException e){
+        e.printStackTrace();
         throw new DataCiteInstanceValidationException(e.getMessage());
       }
 

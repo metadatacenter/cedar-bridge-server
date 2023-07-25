@@ -12,17 +12,17 @@ public class Date {
     @JsonProperty("@id")
     private String id;
     @JsonProperty("date")
-    private ValueFormat date;
+    private ValueAndTypeFormat date;
     @JsonProperty("dateType")
     private IdFormat dateType;
     @JsonProperty("dateInformation")
     private ValueFormat dateInformation;
 
-    public ValueFormat getDate() {
+    public ValueAndTypeFormat getDate() {
         return date;
     }
 
-    public void setDate(ValueFormat date) {
+    public void setDate(ValueAndTypeFormat date) {
         this.date = date;
     }
 

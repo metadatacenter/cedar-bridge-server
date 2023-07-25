@@ -52,8 +52,8 @@ public class CEDARDataCiteInstance {
     @JsonProperty("publicationYear")
     private PublicationYear publicationYear;
 
-    @JsonProperty("resourceType")
-    private ValueFormat resourceType;
+//    @JsonProperty("resourceType")
+//    private ValueFormat resourceType;
 
     @JsonProperty("subject")
     private List<Subject> subjects;
@@ -149,13 +149,13 @@ public class CEDARDataCiteInstance {
         this.subjects = subjects;
     }
 
-    public ValueFormat getResourceType() {
-        return resourceType;
-    }
-
-    public void setResourceType(ValueFormat resourceType) {
-        this.resourceType = resourceType;
-    }
+//    public ValueFormat getResourceType() {
+//        return resourceType;
+//    }
+//
+//    public void setResourceType(ValueFormat resourceType) {
+//        this.resourceType = resourceType;
+//    }
 
     public List<Contributor> getContributors() {
         return contributors;

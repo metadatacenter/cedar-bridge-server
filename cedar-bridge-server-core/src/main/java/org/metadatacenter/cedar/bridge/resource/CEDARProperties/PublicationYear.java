@@ -30,6 +30,10 @@ public class PublicationYear {
 
     @Override
     public String toString() {
-        return value == null ? null : value.substring(0, 4);
+        if (value == null || value.isEmpty()) {
+            return null;
+        } else {
+            return value.substring(0, Math.min(4, value.length()));
+        }
     }
 }

@@ -1,5 +1,6 @@
 package org.metadatacenter.cedar.bridge.resource;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import org.metadatacenter.cedar.bridge.resource.CEDARProperties.*;
 import org.metadatacenter.cedar.bridge.resource.CEDARProperties.Date;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
@@ -11,7 +12,7 @@ public class DataCiteMetaDataParser {
     private static final String DATACITE_ID_URL = "http://purl.org/datacite/v4.4/";
     private static final String PERSOANL_ID_URL = "http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Persoanl";
     private static final String ORGANIZATIONAL_ID_URL = "http://www.w3.org/2006/vcard/ns#Organizational";
-    private static final String LANG_ID_URL = "https://www.omg.org/spec/LCC/Languages/LaISO639-1-LanguageCodes/az";
+    private static final String LANG_ID_URL = "https://www.omg.org/spec/LCC/Languages/LaISO639-1-LanguageCodes/";
     private static final String DATE_TYPE = "xsd:date";
     private static final String DECIMAL_TYPE = "xsd:decimal";
 
@@ -33,7 +34,7 @@ public class DataCiteMetaDataParser {
         cedarInstance.setPublicationYear(parsePublicationYearValue(dataCiteAttributes.getPublicationYear()));
 
         //pass resourceType value
-        cedarInstance.setResourceType(parseResourceTypeValue(dataCiteAttributes.getTypes()));
+//        cedarInstance.setResourceType(parseResourceTypeValue(dataCiteAttributes.getTypes()));
 
         //pass subject values
         cedarInstance.setSubjects(parseSubjectValue(dataCiteAttributes.getSubjects()));
@@ -45,9 +46,7 @@ public class DataCiteMetaDataParser {
         cedarInstance.setDates(parseDateValue(dataCiteAttributes.getDates()));
 
         //pass lang value
-        if (dataCiteAttributes.getLanguage() != null){
-            cedarInstance.setLanguage(parseLangValue(dataCiteAttributes.getLanguage()));
-        }
+        cedarInstance.setLanguage(parseLangValue(dataCiteAttributes.getLanguage()));
 
         //pass alternateIdentifier value
         cedarInstance.setAlternateIdentifiers(parseAlternateIdentifierValue(dataCiteAttributes.getAlternateIdentifiers()));
@@ -62,9 +61,7 @@ public class DataCiteMetaDataParser {
         cedarInstance.setFormats(parseFormatValue(dataCiteAttributes.getFormats()));
 
         //pass version value
-        if (dataCiteAttributes.getVersion() != null){
-            cedarInstance.setVersion(parseVersionValue(dataCiteAttributes.getVersion()));
-        }
+        cedarInstance.setVersion(parseVersionValue(dataCiteAttributes.getVersion()));
 
         //pass rights value
         cedarInstance.setRightsList(parseRightsValue(dataCiteAttributes.getRightsList()));
@@ -84,12 +81,20 @@ public class DataCiteMetaDataParser {
         cedarInstance.setContext(setContext());
 
         //TODO: update template id with the lastest one
-        cedarInstance.setSchemaIsBasedOn("https://repo.metadatacenter.org/templates/b786f6cc-d812-44e3-99b5-b1dd59fd12ea");
+        cedarInstance.setSchemaIsBasedOn("https://repo.metadatacenter.orgx/templates/a08cb3aa-f8fa-40fd-8d27-bcc3b4368436");
+        cedarInstance.setSchemaName("DataCite V4.4 without OpenViewUrl field metadata");
+        cedarInstance.setSchemaDescription("");
+        cedarInstance.setPavCreatedOn("2023-07-24T15:46:11-07:00");
+        cedarInstance.setPavCreatedBy("https://metadatacenter.org/users/0e97ec85-77a9-434c-8549-33f9eae22608");
+        cedarInstance.setPavLastUpdatedOn("2023-07-24T21:51:40-07:00");
+        cedarInstance.setOslcModifiedBy("https://metadatacenter.org/users/0e97ec85-77a9-434c-8549-33f9eae22608");
+        cedarInstance.setId("https://repo.metadatacenter.orgx/template-instances/54797d84-cd30-4287-9751-d5cf81775db2");
     }
 
     private static ValueFormat parsePrefixValue(String dataCitePrefix){
         ValueFormat prefix = new ValueFormat();
-        prefix.setValue(dataCitePrefix);
+//        prefix.setValue(dataCitePrefix);
+        prefix.setValue("10.82658");
         return prefix;
     }
 
@@ -202,14 +207,10 @@ public class DataCiteMetaDataParser {
                 creator.setFamilyName(familyName);
 
                 //set affiliation list values
-                if (c.getAffiliations() != null && !c.getAffiliations().isEmpty()) {
-                    creator.setAffiliations(parseAffiliationValue(c.getAffiliations(), "Creator"));
-                }
+                creator.setAffiliations(parseAffiliationValue(c.getAffiliations(), "Creator"));
 
                 //set nameIdentifier list values
-                if (c.getNameIdentifiers() != null && !c.getNameIdentifiers().isEmpty()) {
-                    creator.setNameIdentifiers(parseNameIdentifierValue(c.getNameIdentifiers(), "Creator"));
-                }
+                creator.setNameIdentifiers(parseNameIdentifierValue(c.getNameIdentifiers(), "Creator"));
 
                 //set @context and @id
                 Map<String, String> context = new HashMap<>();
@@ -353,14 +354,10 @@ public class DataCiteMetaDataParser {
                 contributor.setContributorType(contributorType);
 
                 //set affiliation list values
-                if (c.getAffiliations() != null && !c.getAffiliations().isEmpty()) {
-                    contributor.setAffiliations(parseAffiliationValue(c.getAffiliations(), "Contributor"));
-                }
+                contributor.setAffiliations(parseAffiliationValue(c.getAffiliations(), "Contributor"));
 
                 //set nameIdentifier list values
-                if (c.getNameIdentifiers() != null && !c.getAffiliations().isEmpty()) {
-                    contributor.setNameIdentifiers(parseNameIdentifierValue(c.getNameIdentifiers(), "Contributor"));
-                }
+                contributor.setNameIdentifiers(parseNameIdentifierValue(c.getNameIdentifiers(), "Contributor"));
 
                 //set @context and @id
                 Map<String, String> context = new HashMap<>();
@@ -386,15 +383,17 @@ public class DataCiteMetaDataParser {
         if (dataCiteDates!=null && !dataCiteDates.isEmpty()){
             for (DataCiteDate d : dataCiteDates) {
                 Date cedarDate = new Date();
-                ValueFormat date = new ValueFormat(), dateInformation = new ValueFormat();
+                ValueAndTypeFormat date = new ValueAndTypeFormat();
+                ValueFormat dateInformation = new ValueFormat();
                 IdFormat dateType = new IdFormat();
 
                 date.setValue(d.getDate());
                 date.setType(DATE_TYPE);
                 dateInformation.setValue(d.getDateInformation());
-                dateType.setLabel(d.getDateType());
-                dateType.setId(DATACITE_ID_URL + d.getDateType());
-
+                if(d.getDateType()!=null){
+                    dateType.setLabel(d.getDateType());
+                    dateType.setId(DATACITE_ID_URL + d.getDateType());
+                }
                 cedarDate.setDate(date);
                 cedarDate.setDateInformation(dateInformation);
                 cedarDate.setDateType(dateType);
@@ -415,8 +414,10 @@ public class DataCiteMetaDataParser {
 
     private static IdFormat parseLangValue(String dataCiteLang){
         IdFormat lang = new IdFormat();
-        lang.setId(LANG_ID_URL);
-        lang.setLabel(dataCiteLang);
+        if (dataCiteLang!= null){
+            lang.setId(LANG_ID_URL + dataCiteLang);
+            lang.setLabel(dataCiteLang);
+        }
         return lang;
     }
 
@@ -457,13 +458,19 @@ public class DataCiteMetaDataParser {
                 SchemeURI schemeUri = new SchemeURI();
 
                 identifier.setValue(r.getRelatedIdentifier());
-                identifierType.setLabel(r.getRelatedIdentifierType());
-                identifierType.setId(DATACITE_ID_URL + r.getRelatedIdentifierType());
+                if(r.getRelatedIdentifierType()!=null){
+                    identifierType.setLabel(r.getRelatedIdentifierType());
+                    identifierType.setId(DATACITE_ID_URL + r.getRelatedIdentifierType());
+                }
                 relatedMetadataScheme.setValue(r.getRelatedMetadataScheme());
-                relationType.setLabel(r.getRelationType());
-                relationType.setId(DATACITE_ID_URL + r.getRelationType());
-                resourceTypeGeneral.setLabel(r.getResourceTypeGeneral());
-                resourceTypeGeneral.setId(DATACITE_ID_URL + r.getResourceTypeGeneral());
+                if(r.getRelationType()!=null){
+                    relationType.setLabel(r.getRelationType());
+                    relationType.setId(DATACITE_ID_URL + r.getRelationType());
+                }
+                if(r.getResourceTypeGeneral()!=null){
+                    resourceTypeGeneral.setLabel(r.getResourceTypeGeneral());
+                    resourceTypeGeneral.setId(DATACITE_ID_URL + r.getResourceTypeGeneral());
+                }
                 schemeType.setValue(r.getSchemeType());
                 schemeUri.setId(r.getSchemeUri());
 
@@ -573,8 +580,10 @@ public class DataCiteMetaDataParser {
                 IdFormat descriptionType = new IdFormat();
 
                 descriptionField.setValue(d.getDescription());
-                descriptionType.setLabel(d.getDescriptionType());
-                descriptionType.setId(DATACITE_ID_URL + d.getDescriptionType());
+                if (d.getDescriptionType()!=null){
+                    descriptionType.setLabel(d.getDescriptionType());
+                    descriptionType.setId(DATACITE_ID_URL + d.getDescriptionType());
+                }
 
                 description.setDescription(descriptionField);
                 description.setDescriptionType(descriptionType);
@@ -692,10 +701,17 @@ public class DataCiteMetaDataParser {
                 if (funderIdentifierTypeValue != null){
                     funderIdentifierType.setLabel(funderIdentifierTypeValue);
                     switch (funderIdentifierTypeValue) {
-                        case "GRID" -> funderIdentifierType.setId("https://www.grid.ac/");
-                        case "ISNI" -> funderIdentifierType.setId("http://id.loc.gov/ontologies/bibframe/Isni");
-                        case "ROR" -> funderIdentifierType.setId("http://purl.obolibrary.org/obo/BE_ROR");
-                        case "Other" -> funderIdentifierType.setId("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17649");
+                        case "GRID":
+                            funderIdentifierType.setId("https://www.grid.ac/");
+                            break;
+                        case "ISNI":
+                            funderIdentifierType.setId("http://id.loc.gov/ontologies/bibframe/Isni");
+                            break;
+                        case "ROR":
+                            funderIdentifierType.setId("http://purl.obolibrary.org/obo/BE_ROR");
+                            break;
+                        case "Other": funderIdentifierType.setId("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17649");
+                            break;
                     }
                 }
 
@@ -824,9 +840,10 @@ public class DataCiteMetaDataParser {
                 IdFormat titleType = new IdFormat();
 
                 titleName.setValue(t.getTitle());
-                titleType.setLabel(t.getTitleType());
-                titleType.setId(DATACITE_ID_URL + t.getTitleType());
-
+                if(t.getTitleType()!=null){
+                    titleType.setLabel(t.getTitleType());
+                    titleType.setId(DATACITE_ID_URL + t.getTitleType());
+                }
                 title.setTitleName(titleName);
                 title.setTitleType(titleType);
 
@@ -913,12 +930,18 @@ public class DataCiteMetaDataParser {
                     publicationYear.setType("xsd:date");
                 }
 
-                relatedItemType.setLabel(r.getRelatedItemType());
-                relatedItemType.setId(DATACITE_ID_URL + r.getRelatedItemType());
-                relationType.setLabel(r.getRelationType());
-                relationType.setId(DATACITE_ID_URL + r.getRelationType());
-                identifierType.setLabel(r.getRelatedItemIdentifier().getRelatedItemIdentifierType());
-                identifierType.setId(DATACITE_ID_URL + r.getRelatedItemIdentifier().getRelatedItemIdentifierType());
+                if(r.getRelatedItemType()!=null){
+                    relatedItemType.setLabel(r.getRelatedItemType());
+                    relatedItemType.setId(DATACITE_ID_URL + r.getRelatedItemType());
+                }
+                if(r.getRelationType()!=null){
+                    relationType.setLabel(r.getRelationType());
+                    relationType.setId(DATACITE_ID_URL + r.getRelationType());
+                }
+                if(r.getRelatedItemIdentifier().getRelatedItemIdentifierType()!=null){
+                    identifierType.setLabel(r.getRelatedItemIdentifier().getRelatedItemIdentifierType());
+                    identifierType.setId(DATACITE_ID_URL + r.getRelatedItemIdentifier().getRelatedItemIdentifierType());
+                }
                 volume.setValue(r.getVolume());
                 issue.setValue(r.getIssue());
                 firstPage.setValue(r.getFirstPage());
@@ -934,10 +957,18 @@ public class DataCiteMetaDataParser {
                 if (givenNumberType != null){
                     numberType.setLabel(givenNumberType);
                     switch (givenNumberType) {
-                        case "Report" -> numberType.setId("http://purl.bioontology.org/ontology/SNOMEDCT/229059009");
-                        case "Article" -> numberType.setId("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C47902");
-                        case "Chapter" -> numberType.setId("http://purl.org/ontology/bibo/Chapter");
-                        case "Others" -> numberType.setId("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17649");
+                        case "Report":
+                            numberType.setId("http://purl.bioontology.org/ontology/SNOMEDCT/229059009");
+                            break;
+                        case "Article":
+                            numberType.setId("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C47902");
+                            break;
+                        case "Chapter":
+                            numberType.setId("http://purl.org/ontology/bibo/Chapter");
+                            break;
+                        case "Others":
+                            numberType.setId("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17649");
+                            break;
                     }
                 }
 
@@ -957,15 +988,9 @@ public class DataCiteMetaDataParser {
                 relatedItem.setSchemeType(schemeType);
                 relatedItem.setSchemeURi(schemeUri);
                 relatedItem.setPublicationYear(publicationYear);
-                if (r.getCreators()!=null){
-                    relatedItem.setCreators(parseRelatedItemCreatorValue(r.getCreators()));
-                }
-                if (r.getContributors()!=null){
-                    relatedItem.setContributors(parserRelatedItemContributorValue(r.getContributors()));
-                }
-                if (r.getTitles()!=null){
-                    relatedItem.setTitles(parseRelatedItemTitleValue(r.getTitles()));
-                }
+                relatedItem.setCreators(parseRelatedItemCreatorValue(r.getCreators()));
+                relatedItem.setContributors(parserRelatedItemContributorValue(r.getContributors()));
+                relatedItem.setTitles(parseRelatedItemTitleValue(r.getTitles()));
 
                 Map<String, String> context = new HashMap<>();
                 context.put("Contributor", "https://schema.metadatacenter.org/properties/b5c80c42-6fb3-40c6-b995-2f40eb3a2e5f");
@@ -1029,6 +1054,7 @@ public class DataCiteMetaDataParser {
 
         context.setLabel(label);
         context.setIsBasedOn(isBasedOn);
+        context.setName(name);
         context.setDescription(description);
         context.setDerivedFrom(derivedFrom);
         context.setCreatedOn(createdOn);
@@ -1040,9 +1066,9 @@ public class DataCiteMetaDataParser {
         context.setPrefix("https://schema.metadatacenter.org/properties/c5c19810-b058-48cf-b0ae-de2e9f82a95e");
         context.setCreator("https://schema.metadatacenter.org/properties/fcbe7f27-e429-4204-9e02-c743fe13fa01");
         context.setTitle("https://schema.metadatacenter.org/properties/88556557-7e94-4738-8fe7-1a8bd0f5ad0a");
-        context.setPublisher("https://schema.metadatacenter.org/properties/e500dc8f-cd0f-4404-a684-5ed9dace2f19");
+        context.setPublisher("https://schema.metadatacenter.org/properties/0bc8215e-6b07-42c0-9613-9209f5393b08");
         context.setPublicationYear("https://schema.metadatacenter.org/properties/7fe11cba-9053-42b6-aa8e-3ed25e951600");
-        context.setResourceType("https://schema.metadatacenter.org/properties/20792991-6163-40fd-8352-5d9b6d24ff26");
+//        context.setResourceType("https://schema.metadatacenter.org/properties/20792991-6163-40fd-8352-5d9b6d24ff26");
         context.setSubject("https://schema.metadatacenter.org/properties/6c9e03ad-9629-424e-a894-0b47f6e64a0f");
         context.setContributor("https://schema.metadatacenter.org/properties/f422fff1-11c0-4533-8e7f-2fb0dbaea367");
         context.setDateElement("https://schema.metadatacenter.org/properties/fd947c0a-9d99-4a72-ae9c-84e09ac64f14");
@@ -1056,7 +1082,7 @@ public class DataCiteMetaDataParser {
         context.setDescriptionElement("https://schema.metadatacenter.org/properties/793c5f5b-db52-448b-a867-f6e12411acfe");
         context.setGeoLocation("https://schema.metadatacenter.org/properties/7052fcee-8170-40f1-a4c3-f88a6da60148");
         context.setFundingReference("https://schema.metadatacenter.org/properties/e12e7d4a-332b-4d2c-9bd4-028e5edb5abe");
-        context.setRelatedItem("https://schema.metadatacenter.org/properties/4ce52aa8-ae0b-44a1-86ea-a461bd8d2449");
+        context.setRelatedItem("https://schema.metadatacenter.org/properties/938f153e-6500-440d-8817-19066408dfff");
 
         return context;
     }

@@ -108,7 +108,12 @@ public class CedarInstanceParser {
         }
 
         //Pass Language value
-        attributes.setLanguage(cedarDataCiteInstance.getLanguage().toString());
+        if(cedarDataCiteInstance.getLanguage() != null) {
+            attributes.setLanguage(cedarDataCiteInstance.getLanguage().toString());
+        } else {
+            attributes.setLanguage(null);
+        }
+
 
         //Pass alternateIdentifier values
         List<AlternateIdentifier> alternateIdentifierList = cedarDataCiteInstance.getAlternateIdentifiers();
@@ -135,7 +140,11 @@ public class CedarInstanceParser {
         }
 
         //Pass version value
-        attributes.setVersion(cedarDataCiteInstance.getVersion().toString());
+        if (cedarDataCiteInstance.getVersion() != null){
+            attributes.setVersion(cedarDataCiteInstance.getVersion().toString());
+        } else{
+            attributes.setVersion(null);
+        }
 
         //Pass rights values
         List<Rights> rightsList = cedarDataCiteInstance.getRightsList();
