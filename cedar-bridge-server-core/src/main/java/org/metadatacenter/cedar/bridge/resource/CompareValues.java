@@ -12,7 +12,7 @@ import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
 import java.util.*;
 
 public class CompareValues {
-  public static boolean compareResponseWithGivenMetadata(JsonNode givenMetadata, JsonNode responseMetadata) throws JsonProcessingException, DataCiteInstanceValidationException{
+  public static boolean compareResponseWithGivenMetadata(JsonNode givenMetadata, JsonNode responseMetadata, String sourceArtifactId) throws JsonProcessingException, DataCiteInstanceValidationException{
     ObjectMapper mapper = new ObjectMapper();
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
     mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -25,7 +25,7 @@ public class CompareValues {
       DataCiteSchema cedarConvertedDataCiteSchema = new DataCiteSchema();
 
       // Pass the value from cedarDataCiteInstance to dataCiteRequest
-      CedarInstanceParser.parseCedarInstance(cedarInstance, cedarConvertedDataCiteSchema, null, "publish");
+      CedarInstanceParser.parseCedarInstance(cedarInstance, cedarConvertedDataCiteSchema, sourceArtifactId, "draft");
 
       String cedarConvertedDataCiteSchemaString = mapper.writeValueAsString(cedarConvertedDataCiteSchema);
 //      System.out.println("Cedar Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);

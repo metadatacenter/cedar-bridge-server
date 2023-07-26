@@ -109,6 +109,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
       // Create HTTP httpRequest with JSON body and basic authentication
       HttpRequest httpRequest = HttpRequest.newBuilder(uri)
+          .header("Authorization", "Basic " + basicAuth)
           .GET()
           .build();
 
@@ -227,23 +228,23 @@ public class DataCiteResource extends CedarMicroserviceResource {
         // Pass the value from dataCiteResponse to cedarDataCiteInstance
         CEDARDataCiteInstance cedarExistingDoiMetadata = new CEDARDataCiteInstance();
         DataCiteMetaDataParser.parseDataCiteSchema(existingDoiMetadata, cedarExistingDoiMetadata);
-//        response.put("existingDataCiteMetadata", cedarExistingDoiMetadata);
+        response.put("existingDataCiteMetadata", cedarExistingDoiMetadata);
         response.put("draftDoi", draftDoi);
 
 
-        //Give the cedar-generated json-ld instead
-        String filePath = "/Users/ycao77/CEDAR/cedar-bridge-server/cedar-bridge-server-core/src/main/java/org/metadatacenter/cedar/bridge/resource/JSONFiles/EmbeddableEditorInstanceTest.json";
-        try {
-          // Create an ObjectMapper instance
-          ObjectMapper objectMapper = new ObjectMapper();
-
-          // Read the JSON file and convert it to a JSON object
-          File file = new File(filePath);
-          Object jsonObject = objectMapper.readValue(file, Object.class);
-          response.put("existingDataCiteMetadata",jsonObject);
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
+//        //Give the cedar-generated json-ld instead
+//        String filePath = "/Users/ycao77/CEDAR/cedar-bridge-server/cedar-bridge-server-core/src/main/java/org/metadatacenter/cedar/bridge/resource/JSONFiles/EmbeddableEditorInstanceTest.json";
+//        try {
+//          // Create an ObjectMapper instance
+//          ObjectMapper objectMapper = new ObjectMapper();
+//
+//          // Read the JSON file and convert it to a JSON object
+//          File file = new File(filePath);
+//          Object jsonObject = objectMapper.readValue(file, Object.class);
+//          response.put("existingDataCiteMetadata",jsonObject);
+//        } catch (IOException e) {
+//          e.printStackTrace();
+//        }
 
 
         String cedarDataCiteInstanceString = mapper.writeValueAsString(cedarExistingDoiMetadata);
