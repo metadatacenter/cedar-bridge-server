@@ -56,7 +56,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
     // Compare the given DataCite instance with the response metadata
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -71,7 +71,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -86,7 +86,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -101,7 +101,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -116,7 +116,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -131,7 +131,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -146,7 +146,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -161,7 +161,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -176,7 +176,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -191,7 +191,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -206,7 +206,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -221,7 +221,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -236,7 +236,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -251,7 +251,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -266,7 +266,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -281,7 +281,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -296,7 +296,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -311,7 +311,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -326,7 +326,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -341,7 +341,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -356,7 +356,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
   }
 
   @Test
@@ -520,7 +520,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
     // Compare the given DataCite instance with the response metadata
     JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, "draft"));
 
     // Retrieve the given DataCite instance after update from the file
     JsonNode givenMetadataAfterUpdate = getFileContentAsJson("DraftDoiSimpleMetadataAfterUpdate");
@@ -537,8 +537,123 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
     // Compare the updated DataCite instance with the response metadata
     JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, "draft"));
   }
+
+  @Test
+  public void draftDoiSaveAndUpdateRichMetadataTest() throws IOException, DataCiteInstanceValidationException {
+    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/d10cbe47-f2d9-4272-b6ee-a3dbfbaf4f2e";
+    // Retrieve the given DataCite instance before update from the file
+    JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiRichMetadataBeforeUpdate");
+
+    // Create a draft DOI using the given DataCite instance
+    Response draftDoiBeforeUpdateResponse = saveAndUpdateDoi(givenMetadataBeforeUpdate, sourceArtifactId);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
+    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Compare the given DataCite instance with the response metadata
+    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, "draft"));
+
+    // Retrieve the given DataCite instance after update from the file
+    JsonNode givenMetadataAfterUpdate = getFileContentAsJson("DraftDoiRichMetadataAfterUpdate");
+
+    // Update the draft DOI metadata
+    Response draftDoiAfterUpdateResponse = saveAndUpdateDoi(givenMetadataAfterUpdate, sourceArtifactId);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, draftDoiAfterUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Retrieve DOI from the response and using the DOI to retrieve the updated metadata
+    Response getDoiMetadataAfterUpdate = getDoiMetadata(draftDoiAfterUpdateResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataAfterUpdate.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataAfterUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Compare the updated DataCite instance with the response metadata
+    JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, "draft"));
+  }
+
+  @Test
+  public void draftDoiSaveAndPublishSimpleMetadataTest() throws IOException, DataCiteInstanceValidationException {
+    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/8ef18aeb-9da9-47e7-9358-00d4f66514a8";
+    // Retrieve the given DataCite instance before update from the file
+    JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiSimpleMetadataBeforeUpdate");
+
+    // Create a draft DOI using the given DataCite instance
+    Response draftDoiBeforeUpdateResponse = saveAndUpdateDoi(givenMetadataBeforeUpdate, sourceArtifactId);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
+    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Compare the given DataCite instance with the response metadata
+    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, "draft"));
+
+    // Retrieve the given DataCite instance after update from the file
+    JsonNode givenMetadataAfterUpdate = getFileContentAsJson("DraftDoiSimpleMetadataAfterUpdate");
+
+    // Publish the updated draft DOI metadata
+    Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, draftDoiAfterUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Retrieve DOI from the response and using the DOI to retrieve the updated metadata
+    Response getDoiMetadataAfterUpdate = getDoiMetadata(draftDoiAfterUpdateResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataAfterUpdate.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataAfterUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Compare the updated DataCite instance with the response metadata
+    JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, "publish"));
+  }
+
+  @Test
+  public void draftDoiSaveAndPublishRichMetadataTest() throws IOException, DataCiteInstanceValidationException {
+    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/a04f7f60-eff0-4f53-bfad-3b1be2098c80";
+    // Retrieve the given DataCite instance before update from the file
+    JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiRichMetadataBeforeUpdate");
+
+    // Create a draft DOI using the given DataCite instance
+    Response draftDoiBeforeUpdateResponse = saveAndUpdateDoi(givenMetadataBeforeUpdate, sourceArtifactId);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
+    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Compare the given DataCite instance with the response metadata
+    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, "draft"));
+
+    // Retrieve the given DataCite instance after update from the file
+    JsonNode givenMetadataAfterUpdate = getFileContentAsJson("DraftDoiRichMetadataForPublish");
+
+    // Publish the updated draft DOI metadata
+    Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, draftDoiAfterUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Retrieve DOI from the response and using the DOI to retrieve the updated metadata
+    Response getDoiMetadataAfterUpdate = getDoiMetadata(draftDoiAfterUpdateResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataAfterUpdate.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataAfterUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Compare the updated DataCite instance with the response metadata
+    JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, "publish"));
+  }
+
 
 
   private Response createDoi(JsonNode givenMetadata, String sourceArtifactId) throws IOException {

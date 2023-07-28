@@ -1,6 +1,6 @@
 package org.metadatacenter.cedar.bridge.resource;
 
-import org.metadatacenter.cedar.bridge.resource.CEDARProperties.*;
+import org.metadatacenter.cedar.bridge.resource.CedarProperties.*;
 
 import java.util.List;
 
@@ -120,11 +120,11 @@ public class CheckEmptyList {
         && (relatedItemList.get(0).getPublisher().toString()==null || relatedItemList.get(0).getPublisher().toString().equals(""))
         && (relatedItemList.get(0).getEdition().toString()==null || relatedItemList.get(0).getEdition().toString().equals(""))
         && (emptyRelatedItemCreatorList(relatedItemList.get(0).getCreators()) || relatedItemList.get(0).getCreators().isEmpty())
-        && (emptyRelatedItemTitleList(relatedItemList.get(0).getTitles()) || relatedItemList.get(0).getTitles().isEmpty())
+        && (emptyTitleList(relatedItemList.get(0).getTitles()) || relatedItemList.get(0).getTitles().isEmpty())
         && (emptyRelatedItemContributorList(relatedItemList.get(0).getContributors()) || relatedItemList.get(0).getContributors().isEmpty());
   }
 
-  public static boolean emptyRelatedItemTitleList(List<Title> titleList){
+  public static boolean emptyTitleList(List<Title> titleList){
     return titleList.size()==1
         && (titleList.get(0).getTitleName().toString()==null || titleList.get(0).getTitleName().toString().equals(""))
         && (titleList.get(0).getTitleType().toString()==null || titleList.get(0).getTitleType().toString().equals(""));
@@ -146,4 +146,11 @@ public class CheckEmptyList {
         && (contributorList.get(0).getFamilyName().toString() == null || contributorList.get(0).getFamilyName().toString().equals(""))
         && (contributorList.get(0).getContributorType().toString() == null || contributorList.get(0).getContributorType().toString().equals(""));
   }
+
+  public static boolean emptyCreatorList(List<Creator> creatorList){
+    return emptyRelatedItemCreatorList(creatorList)
+        && (creatorList.get(0).getAffiliations().isEmpty() || emptyAffiliationList(creatorList.get(0).getAffiliations()))
+        && (creatorList.get(0).getNameIdentifiers().isEmpty() || emptyNameIdentifierList(creatorList.get(0).getNameIdentifiers()));
+  }
+
 }

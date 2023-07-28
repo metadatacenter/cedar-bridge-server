@@ -5,18 +5,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import org.metadatacenter.cedar.bridge.resource.CEDARProperties.CEDARDataCiteInstance;
+import org.metadatacenter.cedar.bridge.resource.CedarProperties.CEDARDataCiteInstance;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
 
 
 import java.util.*;
 
 public class CompareValues {
-  public static boolean compareResponseWithGivenMetadata(JsonNode givenMetadata, JsonNode responseMetadata, String sourceArtifactId) throws JsonProcessingException, DataCiteInstanceValidationException{
+  public static boolean compareResponseWithGivenMetadata(JsonNode givenMetadata, JsonNode responseMetadata, String sourceArtifactId, String state) throws JsonProcessingException, DataCiteInstanceValidationException{
     ObjectMapper mapper = new ObjectMapper();
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
-    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+//    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+//    mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
 
     try {
       //Deserialize givenMetadata to CedarDataCiteInstance Class
@@ -25,16 +25,16 @@ public class CompareValues {
       DataCiteSchema cedarConvertedDataCiteSchema = new DataCiteSchema();
 
       // Pass the value from cedarDataCiteInstance to dataCiteRequest
-      CedarInstanceParser.parseCedarInstance(cedarInstance, cedarConvertedDataCiteSchema, sourceArtifactId, "draft");
+      CedarInstanceParser.parseCedarInstance(cedarInstance, cedarConvertedDataCiteSchema, sourceArtifactId, state);
 
       String cedarConvertedDataCiteSchemaString = mapper.writeValueAsString(cedarConvertedDataCiteSchema);
-//      System.out.println("Cedar Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);
+      System.out.println("Cedar Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);
 
       //Deserialize responseMetadata to DtaCiteSchema Class
       String responseMetadaString = responseMetadata.toString();
       DataCiteSchema responseDataCiteSchema = mapper.readValue(responseMetadaString, DataCiteSchema.class);
       String responseConvertedDataCiteSchemaString = mapper.writeValueAsString(responseDataCiteSchema);
-//      System.out.println("DataCite response converted Schema: " + responseConvertedDataCiteSchemaString);
+      System.out.println("DataCite response converted Schema: " + responseConvertedDataCiteSchemaString);
 
 
       //Compare cedarConvertedDataCiteSchema vs responseDataCiteSchema
@@ -68,6 +68,7 @@ public class CompareValues {
       throw new RuntimeException(e);
     }
   }
+
 
   private static boolean compareAffiliations(List<DataCiteAffiliation> givenAffiliations, List<DataCiteAffiliation> responseAffiliations){
     System.out.println("----------------Comparing affiliations");
