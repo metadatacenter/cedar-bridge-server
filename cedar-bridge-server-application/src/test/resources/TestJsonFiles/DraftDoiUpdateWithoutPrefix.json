@@ -1,0 +1,140 @@
+{
+  "@context": {
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "pav": "http://purl.org/pav/",
+    "schema": "http://schema.org/",
+    "oslc": "http://open-services.net/ns/core#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "rdfs:label": {
+      "@type": "xsd:string"
+    },
+    "schema:isBasedOn": {
+      "@type": "@id"
+    },
+    "schema:name": {
+      "@type": "xsd:string"
+    },
+    "schema:description": {
+      "@type": "xsd:string"
+    },
+    "pav:derivedFrom": {
+      "@type": "@id"
+    },
+    "pav:createdOn": {
+      "@type": "xsd:dateTime"
+    },
+    "pav:createdBy": {
+      "@type": "@id"
+    },
+    "pav:lastUpdatedOn": {
+      "@type": "xsd:dateTime"
+    },
+    "oslc:modifiedBy": {
+      "@type": "@id"
+    },
+    "skos:notation": {
+      "@type": "xsd:string"
+    },
+    "prefix": "https://schema.metadatacenter.org/properties/c5c19810-b058-48cf-b0ae-de2e9f82a95e",
+    "creator": "https://schema.metadatacenter.org/properties/fcbe7f27-e429-4204-9e02-c743fe13fa01",
+    "title": "https://schema.metadatacenter.org/properties/88556557-7e94-4738-8fe7-1a8bd0f5ad0a",
+    "publicationYear": "https://schema.metadatacenter.org/properties/7fe11cba-9053-42b6-aa8e-3ed25e951600",
+    "subject": "https://schema.metadatacenter.org/properties/6c9e03ad-9629-424e-a894-0b47f6e64a0f",
+    "contributor": "https://schema.metadatacenter.org/properties/f422fff1-11c0-4533-8e7f-2fb0dbaea367",
+    "dateElement": "https://schema.metadatacenter.org/properties/fd947c0a-9d99-4a72-ae9c-84e09ac64f14",
+    "language": "https://schema.metadatacenter.org/properties/3399c7e8-80cd-4c75-973e-afaec9bf78f8",
+    "alternateIdentifierElement": "https://schema.metadatacenter.org/properties/2e854cb7-4846-4848-9ab1-be35e96a1a35",
+    "relatedIdentifierElement": "https://schema.metadatacenter.org/properties/51774857-8b6a-4577-890c-eca0f3670eb0",
+    "size": "https://schema.metadatacenter.org/properties/618f3be1-ad89-4032-b803-2ef24a3ff31b",
+    "format": "https://schema.metadatacenter.org/properties/dfeb2217-9a0e-4aff-b429-3c03e61774df",
+    "version": "https://schema.metadatacenter.org/properties/4354b3d4-9c46-4ad8-a9c3-09c3e5bd6adc",
+    "rightsElement": "https://schema.metadatacenter.org/properties/bbdae27a-aacb-4934-8c6b-0251cf8d4191",
+    "descriptionElement": "https://schema.metadatacenter.org/properties/793c5f5b-db52-448b-a867-f6e12411acfe",
+    "geoLocation": "https://schema.metadatacenter.org/properties/7052fcee-8170-40f1-a4c3-f88a6da60148",
+    "fundingReference": "https://schema.metadatacenter.org/properties/e12e7d4a-332b-4d2c-9bd4-028e5edb5abe",
+    "relatedItem": "https://schema.metadatacenter.org/properties/938f153e-6500-440d-8817-19066408dfff",
+    "publisher": "https://schema.metadatacenter.org/properties/0bc8215e-6b07-42c0-9613-9209f5393b08"
+  },
+  "prefix": {
+    "@value": ""
+  },
+  "creator": [
+    {
+      "@context": {
+        "creatorName": "https://schema.metadatacenter.org/properties/8acde937-9aac-4830-901d-18827533d9ee",
+        "givenName": "https://schema.metadatacenter.org/properties/6f29b11a-2c3e-4ebd-92f5-8b6ca863c484",
+        "familyName": "https://schema.metadatacenter.org/properties/8a8c322b-7f15-4a7a-b687-ad969e71defe",
+        "nameIdentifier": "https://schema.metadatacenter.org/properties/bc333322-2f4d-4b63-9acf-7c4a8ceddebb",
+        "nameType": "https://schema.metadatacenter.org/properties/c5257a64-69a4-4262-93ff-b7624fd00900",
+        "Affiliation": "https://schema.metadatacenter.org/properties/49e75d91-60ca-40c5-837a-959c7e6891d3"
+      },
+      "creatorName": {
+        "@value": "Yan Cao"
+      },
+      "givenName": {
+        "@value": "Yan"
+      },
+      "familyName": {
+        "@value": "Cao"
+      },
+      "nameIdentifier": [],
+      "nameType": {},
+      "Affiliation": [],
+      "@id": "https://repo.metadatacenter.org/template-element-instances/86de4cf5-20f2-450f-b7e6-b135ca267874"
+    }
+  ],
+  "title": [
+    {
+      "@context": {
+        "titleType": "https://schema.metadatacenter.org/properties/9b5eb75f-3355-4ddb-903d-c716f4816b12",
+        "titleName": "https://schema.metadatacenter.org/properties/24c6ed0a-277b-4b1e-8278-b2b1c64a8a27"
+      },
+      "titleType": {},
+      "titleName": {
+        "@value": "Update Draft DOI Without Prefix"
+      },
+      "@id": "https://repo.metadatacenter.org/template-element-instances/ac7fac5b-cb87-4c58-b087-8092623cc9de"
+    }
+  ],
+  "publicationYear": {
+    "@value": "2023-01-01",
+    "@type": "xsd:date"
+  },
+  "subject": [],
+  "contributor": [],
+  "dateElement": [],
+  "language": {},
+  "alternateIdentifierElement": [],
+  "relatedIdentifierElement": [],
+  "size": [
+    {
+      "@value": null
+    }
+  ],
+  "format": [
+    {
+      "@value": null
+    }
+  ],
+  "version": {
+    "@value": null
+  },
+  "rightsElement": [],
+  "descriptionElement": [],
+  "geoLocation": [],
+  "fundingReference": [],
+  "relatedItem": [],
+  "publisher": {
+    "@value": "CEDAR"
+  },
+  "schema:isBasedOn": "https://repo.metadatacenter.org/templates/248efeb2-fc24-4f9f-9b21-07954cb53276",
+  "schema:name": "DataCite V4.4 without OpenViewUrl field metadata",
+  "schema:description": "",
+  "pav:createdOn": "2023-07-27T11:23:10-07:00",
+  "pav:createdBy": "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44",
+  "pav:lastUpdatedOn": "2023-07-31T11:21:08-07:00",
+  "oslc:modifiedBy": "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44",
+  "pav:derivedFrom": "https://repo.metadatacenter.org/template-instances/62cb610a-d87c-44f2-8537-9d5ad25dd210",
+  "@id": "https://repo.metadatacenter.org/template-instances/267d3f73-c8ec-4e8d-8f02-5979b997d53c"
+}
