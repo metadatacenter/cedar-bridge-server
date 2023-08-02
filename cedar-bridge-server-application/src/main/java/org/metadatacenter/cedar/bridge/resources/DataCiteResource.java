@@ -25,6 +25,7 @@ import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.exception.CedarProcessingException;
+import org.metadatacenter.http.CedarResponseStatus;
 import org.metadatacenter.id.CedarArtifactId;
 import org.metadatacenter.id.CedarFQResourceId;
 import org.metadatacenter.id.CedarTemplateId;
@@ -52,10 +53,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
@@ -273,9 +271,16 @@ public class DataCiteResource extends CedarMicroserviceResource {
           jsonData = getRequestJson(dataCiteInstance, sourceArtifactId, state);
         } catch (Exception e) {
           e.printStackTrace();
+          String errorMessage = e.getMessage();
+          if (errorMessage != null) {
+            String[] errorMessageParts = errorMessage.split(":");
+            if (errorMessageParts.length > 1) {
+              errorMessage = String.join(":", Arrays.copyOfRange(errorMessageParts, 1, errorMessageParts.length)).trim();
+            }
+          }
           return CedarResponse
               .badRequest()
-              .errorMessage(e.getMessage())
+              .errorMessage(errorMessage)
               .errorKey(CedarErrorKey.INVALID_INPUT)
               .build();
         }
@@ -315,6 +320,23 @@ public class DataCiteResource extends CedarMicroserviceResource {
             return CedarResponse
                 .created(uri)
                 .entity(response)
+                .build();
+          } //If the status code is 422, return what DataCite returns
+          else if (statusCode == CedarResponseStatus.UNPROCESSABLE_ENTITY.getStatusCode()) {
+            JsonNode jsonResource = JsonMapper.MAPPER.readTree(jsonResponse);
+            JsonNode errorsNode = jsonResource.get("errors");
+            StringBuilder errorMessageBuilder = new StringBuilder();
+            for(JsonNode errorNode: errorsNode){
+              JsonNode titleNode = errorNode.get("title");
+              if (titleNode != null && titleNode.isTextual()) {
+                String title = titleNode.asText();
+                errorMessageBuilder.append(title).append("\n");
+              }
+            }
+            return CedarResponse
+                .badRequest()
+                .errorMessage(errorMessageBuilder.toString().trim())
+                .errorKey(CedarErrorKey.INVALID_INPUT)
                 .build();
           } else {
             //DOI is not created or updated successfully, return what DataCite returns
