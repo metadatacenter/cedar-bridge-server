@@ -2,6 +2,7 @@ package org.metadatacenter.cedar.bridge.resource;
 
 import org.metadatacenter.cedar.bridge.resource.CedarProperties.*;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
+import org.metadatacenter.cedar.bridge.resource.CheckValueRange;
 import org.metadatacenter.id.CedarFQResourceId;
 import org.metadatacenter.model.CedarResourceType;
 
@@ -529,11 +530,13 @@ public class CedarInstanceParser {
         return dataCiteDescriptions;
     }
 
-    private static List<DataCiteGeoLocation> parseGeoLocationValue(List<GeoLocation> geoLocationList){
+    private static List<DataCiteGeoLocation> parseGeoLocationValue(List<GeoLocation> geoLocationList) throws DataCiteInstanceValidationException {
         List<DataCiteGeoLocation> dataCiteGeoLocations = new ArrayList<>();
 
         for(GeoLocation g : geoLocationList){
             DataCiteGeoLocation dataCiteGeoLocation = new DataCiteGeoLocation();
+            ArrayList<String> outOfBoundLongitude = new ArrayList<>();
+            ArrayList<String> outOfBoundLatitude = new ArrayList<>();
             // parse geoLocationPlace
             String geoLocationPlace = g.getGeoLocationPlace().toString();
             dataCiteGeoLocation.setGeoLocationPlace(geoLocationPlace);
@@ -542,8 +545,16 @@ public class CedarInstanceParser {
             Float pointLongitude = g.getGeoLocationPoint().getPointLongitude().getValue();
             Float pointLatitude = g.getGeoLocationPoint().getPointLatitude().getValue();
             if (pointLongitude != null || pointLatitude != null){
-                point.setPointLongitude(pointLongitude);
-                point.setPointLatitude(pointLatitude);
+                if(CheckValueRange.longitudeOutOfBound(pointLongitude)){
+                    outOfBoundLongitude.add("Point Longitude");
+                }else{
+                    point.setPointLongitude(pointLongitude);
+                }
+                if(CheckValueRange.latitudeOutOfBound(pointLatitude)){
+                    outOfBoundLatitude.add("Point Latitude");
+                }else{
+                    point.setPointLatitude(pointLatitude);
+                }
                 dataCiteGeoLocation.setGeoLocationPoint(point);
             }
 
@@ -555,11 +566,38 @@ public class CedarInstanceParser {
             Float northBoundLatitude = g.getGeoLocationBox().getNorthBoundLatitude().getValue();
 
             if (eastBoundLongitude != null || westBoundLongitude != null || southBoundLatitude != null || northBoundLatitude != null){
-                dataCiteGeoLocationBox.setEastBoundLongitude(eastBoundLongitude);
-                dataCiteGeoLocationBox.setWestBoundLongitude(westBoundLongitude);
-                dataCiteGeoLocationBox.setSouthBoundLatitude(southBoundLatitude);
-                dataCiteGeoLocationBox.setNorthBoundLatitude(northBoundLatitude);
+                if(CheckValueRange.longitudeOutOfBound(eastBoundLongitude)){
+                    outOfBoundLongitude.add("East Bound Longitude");
+                }else{
+                    dataCiteGeoLocationBox.setEastBoundLongitude(eastBoundLongitude);
+                }
+                if(CheckValueRange.longitudeOutOfBound(westBoundLongitude)){
+                    outOfBoundLongitude.add("West Bound Longitude");
+                }else{
+                    dataCiteGeoLocationBox.setWestBoundLongitude(westBoundLongitude);
+                }
+                if(CheckValueRange.latitudeOutOfBound(southBoundLatitude)){
+                    outOfBoundLatitude.add("South Bound Latitude");
+                }else{
+                    dataCiteGeoLocationBox.setSouthBoundLatitude(southBoundLatitude);
+                }
+                if(CheckValueRange.latitudeOutOfBound(northBoundLatitude)){
+                    outOfBoundLatitude.add("North Bound Latitude");
+                }else{
+                    dataCiteGeoLocationBox.setNorthBoundLatitude(northBoundLatitude);
+                }
                 dataCiteGeoLocation.setGeoLocationBox(dataCiteGeoLocationBox);
+            }
+
+            if(!outOfBoundLatitude.isEmpty() || !outOfBoundLongitude.isEmpty()){
+                String errorMessage = "";
+                if(!outOfBoundLongitude.isEmpty()){
+                    errorMessage = String.join(", ", outOfBoundLongitude) + " should be in the range of [-180, 180].\n";
+                }
+                if(!outOfBoundLatitude.isEmpty()){
+                    errorMessage += " " + String.join(", ", outOfBoundLatitude) + " should be in the range of [-90, 90].";
+                }
+                throw new DataCiteInstanceValidationException(errorMessage);
             }
 
 //            //parse value in geoLocationPolygons
