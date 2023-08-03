@@ -78,28 +78,29 @@
       "familyName": {
         "@value": "Poter"
       },
-      "nameIdentifier": [],
+      "nameIdentifier": [
+        {
+          "@context": {
+            "nameIdentifier": "https://schema.metadatacenter.org/properties/55e405b4-08e3-429e-ac3e-a86778a0f56c",
+            "nameIdentifierScheme": "https://schema.metadatacenter.org/properties/ba910380-8046-4298-94bb-27a7f76d54a4",
+            "nameIdentifierSchemeURI": "https://schema.metadatacenter.org/properties/be196b75-6ccf-4791-8532-25e6aa6d8bc5"
+          },
+          "nameIdentifier": {
+            "@value": "creator name Identifier2"
+          },
+          "nameIdentifierScheme": {
+            "@value": "creator name identifier scheme2"
+          },
+          "nameIdentifierSchemeURI": {
+            "@id": "http://name_identifier_scheme_uri2"
+          }
+        }
+      ],
       "nameType": {
         "@id": "http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal",
         "rdfs:label": "Personal"
       },
       "Affiliation": [
-        {
-          "@context": {
-            "affiliationIdentifier": "https://schema.metadatacenter.org/properties/1c405b8f-a36a-4b35-a7e5-52ad7828f5a4",
-            "affiliationIdentifierScheme": "https://schema.metadatacenter.org/properties/ac3137bc-0bd2-4e50-ad4e-6592bf71e681",
-            "affiliationIdentifierSchemeURI": "https://schema.metadatacenter.org/properties/3b1e62d4-f1b6-4874-b36e-d7740a7f7b05"
-          },
-          "affiliationIdentifier": {
-            "@value": "Creator Affiliation Identifier 1"
-          },
-          "affiliationIdentifierScheme": {
-            "@value": "affiliation identifier scheme 1"
-          },
-          "affiliationIdentifierSchemeURI": {
-            "@id": ""
-          }
-        },
         {
           "@context": {
             "affiliationIdentifier": "https://schema.metadatacenter.org/properties/1c405b8f-a36a-4b35-a7e5-52ad7828f5a4",
@@ -113,7 +114,7 @@
             "@value": "affiliation identifier scheme 2"
           },
           "affiliationIdentifierSchemeURI": {
-            "@id": ""
+            "@id": "http://affiliation_identifier_scheme_uri2"
           }
         }
       ],
@@ -147,10 +148,10 @@
         "classificationCode": "https://schema.metadatacenter.org/properties/f9115bda-17ee-4073-b66b-886a256bc944"
       },
       "subjectName": {
-        "@value": "subject1"
+        "@value": "subject2"
       },
       "subjectScheme": {
-        "@value": "scheme 1"
+        "@value": "scheme 2"
       },
       "subjectSchemeURI": {
         "@id": "http://subject_scheme_uri"
@@ -161,7 +162,7 @@
       "classificationCode": {
         "@value": "classification code"
       },
-      "@id": "https://repo.metadatacenter.org/template-element-instances/984d03b2-2aec-4da4-8b4d-93ecc3034f90"
+      "@id": "https://repo.metadatacenter.org/template-element-instances/2432bf9c-d5ad-43d6-b57f-6de4d08951f7"
     }
   ],
   "contributor": [
@@ -287,38 +288,19 @@
         "@value": null
       },
       "dateType": {
-        "@id": "http://purl.org/datacite/v4.4/Collected",
-        "rdfs:label": "Collected"
+        "@id": "http://purl.org/datacite/v4.4/Created",
+        "rdfs:label": "Created"
       },
       "date": {
-        "@value": "2023-06-26",
+        "@value": "2023-06-12",
         "@type": "xsd:date"
       },
-      "@id": "https://repo.metadatacenter.org/template-element-instances/2d34102c-edce-43f7-a945-54b673e0afe3"
-    },
-    {
-      "@context": {
-        "dateInformation": "https://schema.metadatacenter.org/properties/ba5937f5-4b85-4770-be1c-5c62df8bb6c7",
-        "dateType": "https://schema.metadatacenter.org/properties/77e6d4be-3c5f-4076-8517-46ad4759d315",
-        "date": "https://schema.metadatacenter.org/properties/85eb2413-48da-4dd9-904b-a828cd5d2b4d"
-      },
-      "dateInformation": {
-        "@value": null
-      },
-      "dateType": {
-        "@id": "http://purl.org/datacite/v4.4/Issued",
-        "rdfs:label": "Issued"
-      },
-      "date": {
-        "@value": "2023-08-01",
-        "@type": "xsd:date"
-      },
-      "@id": "https://repo.metadatacenter.org/template-element-instances/d92187ea-19f7-4577-abab-f016a6b68b98"
+      "@id": "https://repo.metadatacenter.org/template-element-instances/dfc2b22c-d646-45f9-b5af-040489e4ad4b"
     }
   ],
   "language": {
-    "@id": "https://www.omg.org/spec/LCC/Languages/LaISO639-1-LanguageCodes/bm",
-    "rdfs:label": "bm"
+    "@id": "https://www.omg.org/spec/LCC/Languages/LaISO639-1-LanguageCodes/ar",
+    "rdfs:label": "ar"
   },
   "alternateIdentifierElement": [
     {
@@ -327,12 +309,12 @@
         "alternateIdentifierType": "https://schema.metadatacenter.org/properties/47a48fd6-97a2-4198-8c06-b9b96608db7e"
       },
       "alternateIdentifier": {
-        "@value": "alternate identifier 1"
+        "@value": "alternate identifier 2"
       },
       "alternateIdentifierType": {
-        "@value": "alternate identifier type 1"
+        "@value": "alternate identifier type 2"
       },
-      "@id": "https://repo.metadatacenter.org/template-element-instances/84d61ed2-a29a-4f44-9783-ade6f0690f01"
+      "@id": "https://repo.metadatacenter.org/template-element-instances/f5becc8b-d80d-4706-91c8-10b9f31b6068"
     }
   ],
   "relatedIdentifierElement": [
@@ -386,7 +368,33 @@
   "version": {
     "@value": "1.0.0"
   },
-  "rightsElement": [],
+  "rightsElement": [
+    {
+      "@context": {
+        "Rights": "https://schema.metadatacenter.org/properties/135e5f01-f29a-43fa-b598-7a3c8f3bcaff",
+        "rightsURI": "https://schema.metadatacenter.org/properties/3e8de9e1-2649-42e2-95c5-717247d0060e",
+        "rightsIdentifier": "https://schema.metadatacenter.org/properties/d4acc73e-f030-4902-9ec8-3cf166040679",
+        "rightsIdentifierScheme": "https://schema.metadatacenter.org/properties/f1195818-b92e-4916-a5c8-f326b0a546f0",
+        "schemeURI": "https://schema.metadatacenter.org/properties/9b429a92-5dc3-4ff3-995c-24deaabc9c15"
+      },
+      "Rights": {
+        "@value": "Rights2"
+      },
+      "rightsURI": {
+        "@id": "http://rights_uri2"
+      },
+      "rightsIdentifier": {
+        "@value": "rights identifier2"
+      },
+      "rightsIdentifierScheme": {
+        "@value": "rights identifier scheme 2"
+      },
+      "schemeURI": {
+        "@id": "http://rights_identifier_scheme_uri2"
+      },
+      "@id": "https://repo.metadatacenter.org/template-element-instances/56d8c2c8-3679-4552-a489-36da76664a12"
+    }
+  ],
   "descriptionElement": [
     {
       "@context": {
@@ -394,13 +402,13 @@
         "descriptionType": "https://schema.metadatacenter.org/properties/ba34a97c-9400-4e79-9581-b9218651231d"
       },
       "Description": {
-        "@value": "description 1"
+        "@value": "description 2"
       },
       "descriptionType": {
-        "@id": "http://purl.org/datacite/v4.4/Abstract",
-        "rdfs:label": "Abstract"
+        "@id": "http://purl.org/datacite/v4.4/TableOfContents",
+        "rdfs:label": "TableOfContents"
       },
-      "@id": "https://repo.metadatacenter.org/template-element-instances/d0809726-ca6e-4bd2-b99c-7690a09ed93d"
+      "@id": "https://repo.metadatacenter.org/template-element-instances/ba7155bb-3c3d-42d0-a702-47ba6279305e"
     }
   ],
   "geoLocation": [
@@ -490,40 +498,6 @@
         "@id": "http://funder_identifier_scheme_uri"
       },
       "@id": "https://repo.metadatacenter.org/template-element-instances/048093d9-c58d-464d-acdb-e04df0b2f35b"
-    },
-    {
-      "@context": {
-        "funderName": "https://schema.metadatacenter.org/properties/18666fcd-6f8e-4886-90f7-153d1193985c",
-        "awardTitle": "https://schema.metadatacenter.org/properties/9afc27b4-407a-4079-98c5-e7669f012d69",
-        "funderIdentifier": "https://schema.metadatacenter.org/properties/67927c8d-4572-4ba5-b5da-0c1d89f77c7c",
-        "funderIdentifierType": "https://schema.metadatacenter.org/properties/a666abd0-8f05-43d7-9aea-dab007d4454a",
-        "awardNumber": "https://schema.metadatacenter.org/properties/3aa01f27-0495-43e9-9bf4-b89c8ce8ea32",
-        "awardURI": "https://schema.metadatacenter.org/properties/30a02941-ea11-433d-b145-c1694997e152",
-        "schemeURI": "https://schema.metadatacenter.org/properties/b6061a0d-d09c-46ad-a9da-813034ce6b9f"
-      },
-      "funderName": {
-        "@value": "funder name 2"
-      },
-      "awardTitle": {
-        "@value": "award title2"
-      },
-      "funderIdentifier": {
-        "@value": "funder identifier"
-      },
-      "funderIdentifierType": {
-        "@id": "https://www.grid.ac/",
-        "rdfs:label": "GRID"
-      },
-      "awardNumber": {
-        "@value": "award number"
-      },
-      "awardURI": {
-        "@id": "http://award_uri2"
-      },
-      "schemeURI": {
-        "@id": "http://funder_identifier_scheme_uri2"
-      },
-      "@id": "https://repo.metadatacenter.org/template-element-instances/eed8b2fa-938c-4a52-8a60-7e1e66497fdd"
     }
   ],
   "relatedItem": [
@@ -674,11 +648,11 @@
     "@value": "CEDAR"
   },
   "schema:isBasedOn": "https://repo.metadatacenter.org/templates/248efeb2-fc24-4f9f-9b21-07954cb53276",
-  "schema:name": "DataCite V4.4 without OpenViewUrl field metadata",
+  "schema:name": "Draft DOI Save and Update Test2",
   "schema:description": "",
   "pav:createdOn": "2023-07-27T11:19:19-07:00",
   "pav:createdBy": "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44",
-  "pav:lastUpdatedOn": "2023-08-01T15:29:33-07:00",
+  "pav:lastUpdatedOn": "2023-08-03T14:38:39-07:00",
   "oslc:modifiedBy": "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44",
   "pav:derivedFrom": "https://repo.metadatacenter.org/template-instances/62cb610a-d87c-44f2-8537-9d5ad25dd210",
   "@id": "https://repo.metadatacenter.org/template-instances/ce03c656-7eb2-42a5-b45d-bd987bb66af4"

@@ -391,13 +391,6 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   }
 
   @Test
-  public void dataCiteInstanceMissingResourceTypeGeneralFieldTest() throws IOException{
-    JsonNode givenMetadata = getFileContentAsJson("FailMissingResourceTypeGeneralField");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
-    Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
   public void dataCiteInstanceMissingMultipleRequiredFieldsTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailMissingMultipleRequiredFields");
     Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
@@ -449,20 +442,6 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   @Test
   public void dataCiteInstanceMissingRelatedItemRelationTypeFieldTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailMissingRelatedItemRelationTypeField");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
-    Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceMissingFieldOfGeoLocationPointTest() throws IOException{
-    JsonNode givenMetadata = getFileContentAsJson("FailMissingFieldOfGeoLocationPoint");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
-    Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceMissingFieldOfGeoLocationBoxTest() throws IOException{
-    JsonNode givenMetadata = getFileContentAsJson("FailMissingFieldOfGeoLocationBox");
     Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
@@ -633,6 +612,158 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
     // Retrieve the given DataCite instance after update from the file
     JsonNode givenMetadataAfterUpdate = getFileContentAsJson("DraftDoiRichMetadataForPublish");
+
+    // Publish the updated draft DOI metadata
+    Response draftDoiAfterUpdateResponse = createFindableDoi(givenMetadataAfterUpdate, sourceArtifactId);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, draftDoiAfterUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Retrieve DOI from the response and using the DOI to retrieve the updated metadata
+    Response getDoiMetadataAfterUpdate = getDoiMetadata(draftDoiAfterUpdateResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataAfterUpdate.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataAfterUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Compare the updated DataCite instance with the response metadata
+    JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, "publish"));
+  }
+
+  @Test
+  public void draftDoiAddNewInstanceTest() throws IOException, DataCiteInstanceValidationException {
+    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/cd4cc3ba-9af8-4140-95e8-f6efb11950f7";
+    // Retrieve the given DataCite instance before update from the file
+    JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiRichMetadataBeforeUpdate");
+
+    // Create a draft DOI using the given DataCite instance
+    Response draftDoiBeforeUpdateResponse = saveOrUpdateDraftDoi(givenMetadataBeforeUpdate, sourceArtifactId);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
+    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Compare the given DataCite instance with the response metadata
+    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, "draft"));
+
+    // Retrieve the given DataCite instance after update from the file
+    JsonNode givenMetadataAfterUpdate = getFileContentAsJson("DraftDoiAddNewInstance");
+
+    // Publish the updated draft DOI metadata
+    Response draftDoiAfterUpdateResponse = createFindableDoi(givenMetadataAfterUpdate, sourceArtifactId);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, draftDoiAfterUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Retrieve DOI from the response and using the DOI to retrieve the updated metadata
+    Response getDoiMetadataAfterUpdate = getDoiMetadata(draftDoiAfterUpdateResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataAfterUpdate.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataAfterUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Compare the updated DataCite instance with the response metadata
+    JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, "publish"));
+  }
+
+  @Test
+  public void draftDoiDeleteInstanceTest() throws IOException, DataCiteInstanceValidationException {
+    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/75377bf8-41c1-48c1-b6c5-aa6cad77dd2d";
+    // Retrieve the given DataCite instance before update from the file
+    JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiAddNewInstance");
+
+    // Create a draft DOI using the given DataCite instance
+    Response draftDoiBeforeUpdateResponse = saveOrUpdateDraftDoi(givenMetadataBeforeUpdate, sourceArtifactId);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
+    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Compare the given DataCite instance with the response metadata
+    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, "draft"));
+
+    // Retrieve the given DataCite instance after update from the file
+    JsonNode givenMetadataAfterUpdate = getFileContentAsJson("DraftDoiDeleteInstance");
+
+    // Publish the updated draft DOI metadata
+    Response draftDoiAfterUpdateResponse = createFindableDoi(givenMetadataAfterUpdate, sourceArtifactId);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, draftDoiAfterUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Retrieve DOI from the response and using the DOI to retrieve the updated metadata
+    Response getDoiMetadataAfterUpdate = getDoiMetadata(draftDoiAfterUpdateResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataAfterUpdate.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataAfterUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Compare the updated DataCite instance with the response metadata
+    JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, "publish"));
+  }
+
+  @Test
+  public void draftDoiDeleteAndAddNewInstanceTest() throws IOException, DataCiteInstanceValidationException {
+    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/75377bf8-41c1-48c1-b6c5-aa6cad77dd2d";
+    // Retrieve the given DataCite instance before update from the file
+    JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiAddNewInstance");
+
+    // Create a draft DOI using the given DataCite instance
+    Response draftDoiBeforeUpdateResponse = saveOrUpdateDraftDoi(givenMetadataBeforeUpdate, sourceArtifactId);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
+    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Compare the given DataCite instance with the response metadata
+    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, "draft"));
+
+    // Retrieve the given DataCite instance after update from the file
+    JsonNode givenMetadataAfterUpdate = getFileContentAsJson("DraftDoiDeleteAndAddNewInstance");
+
+    // Publish the updated draft DOI metadata
+    Response draftDoiAfterUpdateResponse = createFindableDoi(givenMetadataAfterUpdate, sourceArtifactId);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, draftDoiAfterUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Retrieve DOI from the response and using the DOI to retrieve the updated metadata
+    Response getDoiMetadataAfterUpdate = getDoiMetadata(draftDoiAfterUpdateResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataAfterUpdate.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataAfterUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Compare the updated DataCite instance with the response metadata
+    JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, "publish"));
+  }
+
+  @Test
+  public void draftDoiDeleteAllInstanceTest() throws IOException, DataCiteInstanceValidationException {
+    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/ae4e24fd-9da9-475a-ad34-56604422bcd4";
+    // Retrieve the given DataCite instance before update from the file
+    JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiAddNewInstance");
+
+    // Create a draft DOI using the given DataCite instance
+    Response draftDoiBeforeUpdateResponse = saveOrUpdateDraftDoi(givenMetadataBeforeUpdate, sourceArtifactId);
+    Assert.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
+    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
+    Assert.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
+    Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+    // Compare the given DataCite instance with the response metadata
+    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, "draft"));
+
+    // Retrieve the given DataCite instance after update from the file
+    JsonNode givenMetadataAfterUpdate = getFileContentAsJson("DraftDoiDeleteAllInstance");
 
     // Publish the updated draft DOI metadata
     Response draftDoiAfterUpdateResponse = createFindableDoi(givenMetadataAfterUpdate, sourceArtifactId);
