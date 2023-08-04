@@ -324,6 +324,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
           } //If the status code is 422, return what DataCite returns
           else if (statusCode == CedarResponseStatus.UNPROCESSABLE_ENTITY.getStatusCode()) {
             JsonNode jsonResource = JsonMapper.MAPPER.readTree(jsonResponse);
+            JsonNode source = jsonResource.get("source");
             JsonNode errorsNode = jsonResource.get("errors");
             StringBuilder errorMessageBuilder = new StringBuilder();
             for(JsonNode errorNode: errorsNode){
