@@ -542,8 +542,12 @@ public class CedarInstanceParser {
             dataCiteGeoLocation.setGeoLocationPlace(geoLocationPlace);
             // parse geoLocationPoint
             DataCiteGeoLocationPoint point = new DataCiteGeoLocationPoint();
-            Float pointLongitude = g.getGeoLocationPoint().getPointLongitude().getValue();
-            Float pointLatitude = g.getGeoLocationPoint().getPointLatitude().getValue();
+            Float pointLongitude = null,
+                pointLatitude = null;
+            if(g.getGeoLocationPoint()!= null){
+                pointLongitude = g.getGeoLocationPoint().getPointLongitude().getValue();
+                pointLatitude = g.getGeoLocationPoint().getPointLatitude().getValue();
+            }
             if (pointLongitude != null || pointLatitude != null){
                 if(CheckValueRange.longitudeOutOfBound(pointLongitude)){
                     outOfBoundLongitude.add("Point Longitude");
@@ -560,11 +564,16 @@ public class CedarInstanceParser {
 
             // parse value in geoLocationBox
             DataCiteGeoLocationBox dataCiteGeoLocationBox = new DataCiteGeoLocationBox();
-            Float eastBoundLongitude = g.getGeoLocationBox().getEastBoundLongitude().getValue();
-            Float westBoundLongitude = g.getGeoLocationBox().getWestBoundLongitude().getValue();
-            Float southBoundLatitude = g.getGeoLocationBox().getSouthBoundLatitude().getValue();
-            Float northBoundLatitude = g.getGeoLocationBox().getNorthBoundLatitude().getValue();
-
+            Float eastBoundLongitude = null,
+                westBoundLongitude = null,
+                southBoundLatitude = null,
+                northBoundLatitude = null;
+            if(g.getGeoLocationBox()!=null){
+                eastBoundLongitude = g.getGeoLocationBox().getEastBoundLongitude().getValue();
+                westBoundLongitude = g.getGeoLocationBox().getWestBoundLongitude().getValue();
+                southBoundLatitude = g.getGeoLocationBox().getSouthBoundLatitude().getValue();
+                northBoundLatitude = g.getGeoLocationBox().getNorthBoundLatitude().getValue();
+            }
             if (eastBoundLongitude != null || westBoundLongitude != null || southBoundLatitude != null || northBoundLatitude != null){
                 if(CheckValueRange.longitudeOutOfBound(eastBoundLongitude)){
                     outOfBoundLongitude.add("East Bound Longitude");
