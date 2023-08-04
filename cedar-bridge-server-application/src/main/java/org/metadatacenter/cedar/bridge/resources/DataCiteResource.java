@@ -324,14 +324,22 @@ public class DataCiteResource extends CedarMicroserviceResource {
           } //If the status code is 422, return what DataCite returns
           else if (statusCode == CedarResponseStatus.UNPROCESSABLE_ENTITY.getStatusCode()) {
             JsonNode jsonResource = JsonMapper.MAPPER.readTree(jsonResponse);
-            JsonNode source = jsonResource.get("source");
             JsonNode errorsNode = jsonResource.get("errors");
             StringBuilder errorMessageBuilder = new StringBuilder();
             for(JsonNode errorNode: errorsNode){
+              JsonNode sourceNode = errorNode.get("source");
+              if (sourceNode != null && sourceNode.isTextual()) {
+                String source = sourceNode.asText();
+                errorMessageBuilder.append(source).append(": ");
+              }
               JsonNode titleNode = errorNode.get("title");
               if (titleNode != null && titleNode.isTextual()) {
                 String title = titleNode.asText();
-                errorMessageBuilder.append(title).append("\n");
+                String[] titleParts = title.split(":");
+                if (titleParts.length > 1) {
+                  String titleMessage = String.join(":", Arrays.copyOfRange(titleParts, 1, titleParts.length)).trim();
+                  errorMessageBuilder.append(titleMessage).append("\n");
+                }
               }
             }
             return CedarResponse
