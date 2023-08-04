@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 {
@@ -38,10 +39,11 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   @Test
   public void dataCiteInstanceRichDataTest() throws IOException, DataCiteInstanceValidationException {
     // Retrieve the given DataCite instance from the file
-    JsonNode givenMetadata = getFileContentAsJson("SuccessRichData");
+    JsonNode givenMetadata = getFileContentAsJson("DraftDoiAddNewInstance");
 
     // Create a DOI using the given DataCite instance
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -52,13 +54,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
     // Compare the given DataCite instance with the response metadata
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceSimplyDataTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredOnly");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    JsonNode givenMetadata = getFileContentAsJson("DraftDoiSimpleMetadataAfterUpdate");
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -67,13 +71,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceAllRequiredDataTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessAllPropertiesUnderRequiredElement");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -82,13 +88,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusSubjectTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusSubject");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -97,13 +105,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusContributorTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusContributor");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -112,13 +122,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusDateTest() throws IOException,DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusDate");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -127,13 +139,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusLangTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusLang");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -142,13 +156,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusAlternateIdentifierTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusAlternateIdentifier");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -157,13 +173,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusRelatedIdentifierTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusRelatedIdentifier");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -172,13 +190,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusAffiliationTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusAffiliation");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -187,13 +207,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusSizeFormatVersionTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusSizeFormatVersion");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -202,13 +224,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusRightsTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusRights");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -217,13 +241,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusDescriptionTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusDescription");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -232,13 +258,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusFundingRefTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusFundingRef");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -247,13 +275,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusGeoLocTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusGeoLoc");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -262,13 +292,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusRelatedItemTest() throws IOException, DataCiteInstanceValidationException {
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusRelatedItem");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -277,13 +309,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusRandomTest_1() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusRandom1");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -292,13 +326,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusRandomTest_2() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusRandom2");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -307,13 +343,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusRandomTest_3() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusRandom3");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -322,13 +360,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusEmptyStringTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusEmptyString");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -337,13 +377,15 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceRequiredPlusAllElementExpandedTest() throws IOException, DataCiteInstanceValidationException{
     JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredPlusAllElementExpanded");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
     Assert.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -352,111 +394,126 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
     JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, dummySourceArtifactId, "publish"));
+    Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, "publish"));
   }
 
   @Test
   public void dataCiteInstanceEmptyJsonTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailEmptyJson");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
   public void dataCiteInstanceMissingAllFieldsTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailMissingAllFields");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
   public void dataCiteInstanceMissingPrefixFieldTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailMissingPrefixField");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
   public void dataCiteInstanceMissingPublisherFieldTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailMissingPublisherField");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
   public void dataCiteInstanceMissingPublicationYearFieldTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailMissingPublicationYearField");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
   public void dataCiteInstanceMissingMultipleRequiredFieldsTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailMissingMultipleRequiredFields");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
   public void dataCiteInstanceMissingContributorNameFieldTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailMissingContributorNameField");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
   public void dataCiteInstanceMissingContributorTypeFieldTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailMissingContributorTypeField");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
   public void dataCiteInstanceMissingRelatedIdentifierTypeFieldTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailMissingRelatedIdentifierTypeField");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
   public void dataCiteInstanceMissingRelationTypeFieldTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailMissingRelationTypeField");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
   public void dataCiteInstanceMissingFunderNameFieldTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailMissingFunderNameField");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
   public void dataCiteInstanceMissingRelatedItemTypeFieldTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailMissingRelatedItemTypeField");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
   public void dataCiteInstanceMissingRelatedItemRelationTypeFieldTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailMissingRelatedItemRelationTypeField");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
   public void dataCiteInstanceIncorrectNameTypeInputTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailIncorrectNameTypeInput");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
   public void dataCiteInstanceGeoLocationBoxOutOfRangeValueTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailGeoLocationBoxOutOfRangeValue");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
@@ -472,13 +529,14 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   @Test
   public void garbageDataCiteInstanceJsonTest() throws IOException{
     JsonNode givenMetadata = getFileContentAsJson("FailGarbageJson");
-    Response createDoiResponse = createFindableDoi(givenMetadata, dummySourceArtifactId);
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
+    Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
   public void draftDoiSaveAndUpdateSimpleMetadataTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/2b8a85d5-86a9-49e2-b7fc-4348cf468a28";
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
     JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiSimpleMetadataBeforeUpdate");
 
@@ -516,7 +574,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void draftDoiSaveAndUpdateRichMetadataTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/d10cbe47-f2d9-4272-b6ee-a3dbfbaf4f2e";
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
     JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiRichMetadataBeforeUpdate");
 
@@ -554,7 +612,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void draftDoiSaveAndPublishSimpleMetadataTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/8ef18aeb-9da9-47e7-9358-00d4f66514a8";
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
     JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiSimpleMetadataBeforeUpdate");
 
@@ -592,7 +650,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void draftDoiSaveAndPublishRichMetadataTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/a04f7f60-eff0-4f53-bfad-3b1be2098c80";
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
     JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiRichMetadataBeforeUpdate");
 
@@ -630,7 +688,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void draftDoiAddNewInstanceTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/cd4cc3ba-9af8-4140-95e8-f6efb11950f7";
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
     JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiRichMetadataBeforeUpdate");
 
@@ -668,7 +726,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void draftDoiDeleteInstanceTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/75377bf8-41c1-48c1-b6c5-aa6cad77dd2d";
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
     JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiAddNewInstance");
 
@@ -706,7 +764,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void draftDoiDeleteAndAddNewInstanceTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/75377bf8-41c1-48c1-b6c5-aa6cad77dd2d";
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
     JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiAddNewInstance");
 
@@ -744,7 +802,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void draftDoiDeleteAllInstanceTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/ae4e24fd-9da9-475a-ad34-56604422bcd4";
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
     JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiAddNewInstance");
 
@@ -782,7 +840,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void draftDoiSaveWithEmptyDataCiteInstanceTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/865095e9-151a-411d-bc3b-c5f204975375";
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
     JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiEmptyInstance");
 
@@ -793,7 +851,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void draftDoiUpdateWithoutPrefixFieldTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/bfead78e-e825-4025-9b3e-9e02006a93d8";
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
     JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiSimpleMetadataBeforeUpdate");
 
@@ -821,7 +879,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void draftDoiPublishWithoutContributorNameFieldTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = "https://repo.metadatacenter.org/template-instances/f458b25d-4363-42fd-adc7-70f6a7c7bc5c";
+    String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
     JsonNode givenMetadataBeforeUpdate = getFileContentAsJson("DraftDoiRichMetadataBeforeUpdate");
 
