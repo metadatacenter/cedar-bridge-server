@@ -1,11 +1,10 @@
 package org.metadatacenter.cedar.bridge.resource;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import org.metadatacenter.cedar.bridge.resource.CedarProperties.CEDARDataCiteInstance;
+import org.metadatacenter.cedar.bridge.resource.CedarProperties.CedarDataCiteInstance;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
 
 
@@ -21,7 +20,7 @@ public class CompareValues {
     try {
       //Deserialize givenMetadata to CedarDataCiteInstance Class
       String givenMetadataString = givenMetadata.toString();
-      CEDARDataCiteInstance cedarInstance = mapper.readValue(givenMetadataString, CEDARDataCiteInstance.class);
+      CedarDataCiteInstance cedarInstance = mapper.readValue(givenMetadataString, CedarDataCiteInstance.class);
       DataCiteSchema cedarConvertedDataCiteSchema = new DataCiteSchema();
 
       // Pass the value from cedarDataCiteInstance to dataCiteRequest

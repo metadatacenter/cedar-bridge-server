@@ -2,7 +2,6 @@ package org.metadatacenter.cedar.bridge.resource;
 
 import org.metadatacenter.cedar.bridge.resource.CedarProperties.*;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
-import org.metadatacenter.cedar.bridge.resource.CheckValueRange;
 import org.metadatacenter.id.CedarFQResourceId;
 import org.metadatacenter.model.CedarResourceType;
 
@@ -16,7 +15,7 @@ public class CedarInstanceParser {
     private static final String PUBLISH = "publish";
     private static final String DRAFT = "draft";
     private static final String dataCiteSchema = "http://datacite.org/schema/kernel-4";
-    public static void parseCedarInstance(CEDARDataCiteInstance cedarDataCiteInstance, DataCiteSchema dataCiteSchema, String sourceArtifactId, String state) throws DataCiteInstanceValidationException{
+    public static void parseCedarInstance(CedarDataCiteInstance cedarDataCiteInstance, DataCiteSchema dataCiteSchema, String sourceArtifactId, String state) throws DataCiteInstanceValidationException{
         Data data = new Data();
         Attributes attributes = new Attributes();
         HashSet<String> missedProperties = new HashSet<>();
@@ -161,7 +160,7 @@ public class CedarInstanceParser {
         //Pass geoLocation values
         List<GeoLocation> geoLocationList = cedarDataCiteInstance.getGeoLocations();
         if (!CheckEmptyList.emptyGeoLocationList(geoLocationList)){
-            attributes.setGeoLocations(parseGeoLocationValue(geoLocationList));
+            attributes.setGeoLocations(parseGeoLocationValue(geoLocationList, missedProperties));
         }
 
         //Pass fundingReference values
@@ -530,7 +529,7 @@ public class CedarInstanceParser {
         return dataCiteDescriptions;
     }
 
-    private static List<DataCiteGeoLocation> parseGeoLocationValue(List<GeoLocation> geoLocationList) throws DataCiteInstanceValidationException {
+    private static List<DataCiteGeoLocation> parseGeoLocationValue(List<GeoLocation> geoLocationList, HashSet<String> missedProperties) throws DataCiteInstanceValidationException {
         List<DataCiteGeoLocation> dataCiteGeoLocations = new ArrayList<>();
 
         for(GeoLocation g : geoLocationList){
@@ -551,12 +550,16 @@ public class CedarInstanceParser {
             if (pointLongitude != null || pointLatitude != null){
                 if(CheckValueRange.longitudeOutOfBound(pointLongitude)){
                     outOfBoundLongitude.add("Point Longitude");
-                }else{
+                } else if (pointLongitude == null) {
+                    missedProperties.add("Point Longitude under Geographic Locations");
+                } else{
                     point.setPointLongitude(pointLongitude);
                 }
                 if(CheckValueRange.latitudeOutOfBound(pointLatitude)){
                     outOfBoundLatitude.add("Point Latitude");
-                }else{
+                } else if (pointLatitude == null) {
+                    missedProperties.add("Point Latitude under Geographic Locations");
+                } else{
                     point.setPointLatitude(pointLatitude);
                 }
                 dataCiteGeoLocation.setGeoLocationPoint(point);
@@ -577,22 +580,30 @@ public class CedarInstanceParser {
             if (eastBoundLongitude != null || westBoundLongitude != null || southBoundLatitude != null || northBoundLatitude != null){
                 if(CheckValueRange.longitudeOutOfBound(eastBoundLongitude)){
                     outOfBoundLongitude.add("East Bound Longitude");
-                }else{
+                } else if (eastBoundLongitude == null) {
+                    missedProperties.add("East Bound Longitude under Geographic Locations");
+                } else{
                     dataCiteGeoLocationBox.setEastBoundLongitude(eastBoundLongitude);
                 }
                 if(CheckValueRange.longitudeOutOfBound(westBoundLongitude)){
                     outOfBoundLongitude.add("West Bound Longitude");
-                }else{
+                } else if (westBoundLongitude == null) {
+                    missedProperties.add("West Bound Longitude under Geographic Locations");
+                } else{
                     dataCiteGeoLocationBox.setWestBoundLongitude(westBoundLongitude);
                 }
                 if(CheckValueRange.latitudeOutOfBound(southBoundLatitude)){
                     outOfBoundLatitude.add("South Bound Latitude");
-                }else{
+                } else if (southBoundLatitude == null) {
+                    missedProperties.add("South Bound Latitude under Geographic Locations");
+                } else{
                     dataCiteGeoLocationBox.setSouthBoundLatitude(southBoundLatitude);
                 }
                 if(CheckValueRange.latitudeOutOfBound(northBoundLatitude)){
                     outOfBoundLatitude.add("North Bound Latitude");
-                }else{
+                } else if (northBoundLatitude == null) {
+                    missedProperties.add("North Bound Latitude under Geographic Locations");
+                } else{
                     dataCiteGeoLocationBox.setNorthBoundLatitude(northBoundLatitude);
                 }
                 dataCiteGeoLocation.setGeoLocationBox(dataCiteGeoLocationBox);

@@ -15,7 +15,7 @@ public class DataCiteMetadataParser {
     private static final String DATE_TYPE = "xsd:date";
     private static final String DECIMAL_TYPE = "xsd:decimal";
 
-    public static void parseDataCiteSchema(Attributes dataCiteAttributes, CEDARDataCiteInstance cedarInstance) {
+    public static void parseDataCiteSchema(Attributes dataCiteAttributes, CedarDataCiteInstance cedarInstance) {
 //        Attributes dataCiteAttributes = dataCiteSchema.getData().getAttributes();
         //pass prefix value
         cedarInstance.setPrefix(parsePrefixValue(dataCiteAttributes.getPrefix()));

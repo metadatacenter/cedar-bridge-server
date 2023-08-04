@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CEDARDataCiteInstance {
+public class CedarDataCiteInstance {
 
     @JsonProperty("@context")
     private Context context;
@@ -95,7 +95,7 @@ public class CEDARDataCiteInstance {
     @JsonProperty("relatedItem")
     private List<RelatedItem> relatedItems;
 
-    public CEDARDataCiteInstance() {
+    public CedarDataCiteInstance() {
 
     }
 

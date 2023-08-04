@@ -12,7 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
 import org.metadatacenter.bridge.CedarDataServices;
-import org.metadatacenter.cedar.bridge.resource.CedarProperties.CEDARDataCiteInstance;
+import org.metadatacenter.cedar.bridge.resource.CedarProperties.CedarDataCiteInstance;
 import org.metadatacenter.cedar.bridge.resource.CedarInstanceParser;
 import org.metadatacenter.cedar.bridge.resource.CheckOpenViewUrl;
 import org.metadatacenter.cedar.bridge.resource.DataCiteInstanceValidationException;
@@ -54,7 +54,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 import static org.metadatacenter.constant.CedarQueryParameters.QP_SOURCE_ARTIFACT_ID;
@@ -126,7 +125,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       System.out.println("DataCiteResponse converted to Data Cite Schema Json: " + dataCiteResponseString);
 
       // Pass the value from dataCiteResponse to cedarDataCiteInstance
-      CEDARDataCiteInstance cedarDataCiteInstance = new CEDARDataCiteInstance();
+      CedarDataCiteInstance cedarDataCiteInstance = new CedarDataCiteInstance();
       DataCiteMetadataParser.parseDataCiteSchema(dataCiteResponse.getData().getAttributes(), cedarDataCiteInstance);
 
       //Serialize DataCiteRequest Class to json
@@ -223,7 +222,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
         System.out.println("existingDoiMetadata converted to Data Cite Schema Json: " + existingDoiMetadataString);
 
         // Pass the value from dataCiteResponse to cedarDataCiteInstance
-        CEDARDataCiteInstance cedarExistingDoiMetadata = new CEDARDataCiteInstance();
+        CedarDataCiteInstance cedarExistingDoiMetadata = new CedarDataCiteInstance();
         DataCiteMetadataParser.parseDataCiteSchema(existingDoiMetadata, cedarExistingDoiMetadata);
         response.put("existingDataCiteMetadata", cedarExistingDoiMetadata);
         response.put("draftDoi", draftDoi);
@@ -339,6 +338,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
                 if (titleParts.length > 1) {
                   String titleMessage = String.join(":", Arrays.copyOfRange(titleParts, 1, titleParts.length)).trim();
                   errorMessageBuilder.append(titleMessage).append("\n");
+                } else{
+                  errorMessageBuilder.append(title).append("\n");
                 }
               }
             }
@@ -455,7 +456,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     try {
       // Deserialize JSON-LD to CedarDataCiteInstance Class
       String metadataString = metadata.toString();
-      CEDARDataCiteInstance cedarInstance = mapper.readValue(metadataString, CEDARDataCiteInstance.class);
+      CedarDataCiteInstance cedarInstance = mapper.readValue(metadataString, CedarDataCiteInstance.class);
 
       String cedarInstanceString = mapper.writeValueAsString(cedarInstance);
       System.out.println("Json Converted to DataCite Instance: " + cedarInstanceString);
