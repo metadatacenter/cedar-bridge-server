@@ -127,18 +127,10 @@
     }
   ],
   "relatedIdentifierElement": [],
-  "size": [
-    {
-      "@value": "10KB"
-    }
-  ],
-  "format": [
-    {
-      "@value": "format 1"
-    }
-  ],
+  "size": [],
+  "format": [],
   "version": {
-    "@value": "1.0.0"
+    "@value": null
   },
   "rightsElement": [],
   "descriptionElement": [],
