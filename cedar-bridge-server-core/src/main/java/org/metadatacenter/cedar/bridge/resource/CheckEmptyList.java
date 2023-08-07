@@ -153,4 +153,14 @@ public class CheckEmptyList {
         && (creatorList.get(0).getNameIdentifiers().isEmpty() || emptyNameIdentifierList(creatorList.get(0).getNameIdentifiers()));
   }
 
+  public static boolean emptyValueList(List<ValueFormat> valueList){
+    Boolean empty = true;
+    for(ValueFormat v : valueList){
+      if(v.toString()!=null && !v.toString().equals("")){
+        empty = false;
+      }
+    }
+    return empty;
+  }
+
 }

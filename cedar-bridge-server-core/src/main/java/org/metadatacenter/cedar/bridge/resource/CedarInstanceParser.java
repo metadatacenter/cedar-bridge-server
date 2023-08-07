@@ -128,13 +128,13 @@ public class CedarInstanceParser {
 
         //Pass size values
         List<ValueFormat> sizeList = cedarDataCiteInstance.getSizes();
-        if (sizeList.size()>0 && sizeList.get(0).getValue()!=null){
+        if (sizeList.size()>0 && !CheckEmptyList.emptyValueList(sizeList)){
             attributes.setSizes(parseSizeValue(sizeList));
         }
 
         //Pass format values
         List<ValueFormat> formatList = cedarDataCiteInstance.getFormats();
-        if (formatList.size()>0 && formatList.get(0).getValue()!= null){
+        if (formatList.size()>0 && !CheckEmptyList.emptyValueList(formatList)){
             attributes.setFormats(parseFormatValue(formatList));
         }
 
@@ -472,7 +472,7 @@ public class CedarInstanceParser {
     private static List<String> parseSizeValue(List<ValueFormat> sizeList) {
         List<String> dataCiteSizes = new ArrayList<>();
         for (ValueFormat s : sizeList) {
-            String dataCiteSize = s.getValue();
+            String dataCiteSize = s.toString();
             dataCiteSizes.add(dataCiteSize);
         }
         return dataCiteSizes;
@@ -481,7 +481,7 @@ public class CedarInstanceParser {
     private static List<String> parseFormatValue(List<ValueFormat> formatList){
         List<String> dataCiteFormats = new ArrayList<>();
         for (ValueFormat f : formatList) {
-            String dataCiteFormat = f.getValue();
+            String dataCiteFormat = f.toString();
             dataCiteFormats.add(dataCiteFormat);
         }
         return dataCiteFormats;

@@ -9,9 +9,6 @@ public class ValueFormat {
     @JsonProperty("@value")
     private String value;
 
-//    @JsonProperty("@type")
-//    private String type;
-
     public String getValue() {
         return value;
     }
@@ -20,17 +17,13 @@ public class ValueFormat {
         this.value = value;
     }
 
-//    public String getType() {
-//        return type;
-//    }
-//
-//    public void setType(String type) {
-//        this.type = type;
-//    }
-
     @Override
     public String toString() {
-
-        return value == null ? null : value;
+//        return value == null ? null : value;
+        if(value == null || value.equals("")){
+            return null;
+        } else{
+            return value;
+        }
     }
 }
