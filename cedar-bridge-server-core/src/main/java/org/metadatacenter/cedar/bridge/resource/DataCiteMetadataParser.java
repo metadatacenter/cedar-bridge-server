@@ -541,7 +541,7 @@ public class DataCiteMetadataParser {
                 SchemeURI rightsUri = new SchemeURI(), schemeUri = new SchemeURI();
 
                 rightsField.setValue(r.getRights());
-                rightsIdentifier.setValue(r.getRights());
+                rightsIdentifier.setValue(r.getRightsIdentifier());
                 rightsIdentifierScheme.setValue(r.getRightsIdentifierScheme());
                 rightsUri.setId(r.getRightsUri());
                 schemeUri.setId(r.getSchemeUri());
