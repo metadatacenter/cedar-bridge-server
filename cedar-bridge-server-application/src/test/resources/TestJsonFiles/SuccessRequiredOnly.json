@@ -81,7 +81,7 @@
       "nameIdentifier": [],
       "nameType": {},
       "Affiliation": [],
-      "@id": "https://repo.metadatacenter.org/template-element-instances/86de4cf5-20f2-450f-b7e6-b135ca267874"
+      "@id": "https://repo.metadatacenter.org/template-element-instances/e66a4df9-bed9-48ec-86f4-f58ae4d1ffd1"
     }
   ],
   "title": [
@@ -92,9 +92,9 @@
       },
       "titleType": {},
       "titleName": {
-        "@value": "Create a DOI Test Required Only"
+        "@value": "Required properties only"
       },
-      "@id": "https://repo.metadatacenter.org/template-element-instances/ac7fac5b-cb87-4c58-b087-8092623cc9de"
+      "@id": "https://repo.metadatacenter.org/template-element-instances/f571abe8-6965-4fda-9f69-51af56da8411"
     }
   ],
   "publicationYear": {
@@ -128,13 +128,12 @@
   "publisher": {
     "@value": "CEDAR"
   },
-  "schema:isBasedOn": "https://repo.metadatacenter.org/templates/248efeb2-fc24-4f9f-9b21-07954cb53276",
-  "schema:name": "DataCite V4.4 without OpenViewUrl field metadata",
+  "schema:isBasedOn": "https://repo.metadatacenter.org/templates/5b6e0952-8a56-4f97-a35d-7ce784773b57",
+  "schema:name": "Required only",
   "schema:description": "",
-  "pav:createdOn": "2023-07-26T11:48:46-07:00",
+  "pav:createdOn": "2023-08-04T15:06:23-07:00",
   "pav:createdBy": "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44",
-  "pav:lastUpdatedOn": "2023-07-26T12:10:53-07:00",
+  "pav:lastUpdatedOn": "2023-08-04T15:08:12-07:00",
   "oslc:modifiedBy": "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44",
-  "pav:derivedFrom": "https://repo.metadatacenter.org/template-instances/62cb610a-d87c-44f2-8537-9d5ad25dd210",
-  "@id": "https://repo.metadatacenter.org/template-instances/d367d5d3-f152-4ca8-a56e-82af0ac2117f"
+  "@id": "https://repo.metadatacenter.org/template-instances/98fe6951-ea32-4cb1-8b31-ba53a88528dc"
 }

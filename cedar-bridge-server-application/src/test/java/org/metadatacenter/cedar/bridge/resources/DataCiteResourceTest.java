@@ -39,7 +39,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   @Test
   public void dataCiteInstanceRichDataTest() throws IOException, DataCiteInstanceValidationException {
     // Retrieve the given DataCite instance from the file
-    JsonNode givenMetadata = getFileContentAsJson("DraftDoiAddNewInstance");
+    JsonNode givenMetadata = getFileContentAsJson("SuccessRichData");
 
     // Create a DOI using the given DataCite instance
     String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
@@ -59,7 +59,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceSimplyDataTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = getFileContentAsJson("DraftDoiSimpleMetadataAfterUpdate");
+    JsonNode givenMetadata = getFileContentAsJson("SuccessRequiredOnly");
 
     String sourceArtifactId = dummySourceArtifactId + UUID.randomUUID();
     Response createDoiResponse = createFindableDoi(givenMetadata, sourceArtifactId);
