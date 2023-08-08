@@ -14,14 +14,14 @@ public class NameIdentifier {
     @JsonProperty("@id")
     private String id;
 
-    @JsonProperty("nameIdentifier")
+    @JsonProperty("nameIdentifierName")
     private ValueFormat nameIdentifierName;
 
     @JsonProperty("nameIdentifierScheme")
     private ValueFormat nameIdentifierScheme;
 
     @JsonProperty("nameIdentifierSchemeURI")
-    private SchemeURI nameIdentifierSchemeURI;
+    private SchemeUri nameIdentifierSchemeUri;
 
     public ValueFormat getNameIdentifierName() {
         return nameIdentifierName;
@@ -39,12 +39,12 @@ public class NameIdentifier {
         this.nameIdentifierScheme = nameIdentifierScheme;
     }
 
-    public SchemeURI getNameIdentifierSchemeURI() {
-        return nameIdentifierSchemeURI;
+    public SchemeUri getNameIdentifierSchemeURI() {
+        return nameIdentifierSchemeUri;
     }
 
-    public void setNameIdentifierSchemeURI(SchemeURI nameIdentifierSchemeURI) {
-        this.nameIdentifierSchemeURI = nameIdentifierSchemeURI;
+    public void setNameIdentifierSchemeURI(SchemeUri nameIdentifierSchemeUri) {
+        this.nameIdentifierSchemeUri = nameIdentifierSchemeUri;
     }
 
     public Map<String, String> getContext() {

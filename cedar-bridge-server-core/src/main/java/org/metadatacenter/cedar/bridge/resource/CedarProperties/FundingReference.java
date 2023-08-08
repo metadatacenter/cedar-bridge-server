@@ -18,7 +18,7 @@ public class FundingReference {
     private ValueFormat awardNumber;
 
     @JsonProperty("awardURI")
-    private SchemeURI awardURI;
+    private SchemeUri awardURI;
 
     @JsonProperty("awardTitle")
     private ValueFormat awardTitle;
@@ -30,7 +30,7 @@ public class FundingReference {
     private IdFormat funderIdentifierType;
 
     @JsonProperty("schemeURI")
-    private SchemeURI schemeURI;
+    private SchemeUri schemeURI;
 
     public ValueFormat getFunderName() {
         return funderName;
@@ -56,11 +56,11 @@ public class FundingReference {
         this.awardNumber = awardNumber;
     }
 
-    public SchemeURI getAwardURI() {
+    public SchemeUri getAwardURI() {
         return awardURI;
     }
 
-    public void setAwardURI(SchemeURI awardURI) {
+    public void setAwardURI(SchemeUri awardURI) {
         this.awardURI = awardURI;
     }
 
@@ -80,11 +80,11 @@ public class FundingReference {
         this.funderIdentifierType = funderIdentifierType;
     }
 
-    public SchemeURI getSchemeURI() {
+    public SchemeUri getSchemeURI() {
         return schemeURI;
     }
 
-    public void setSchemeURI(SchemeURI schemeURI) {
+    public void setSchemeURI(SchemeUri schemeURI) {
         this.schemeURI = schemeURI;
     }
 

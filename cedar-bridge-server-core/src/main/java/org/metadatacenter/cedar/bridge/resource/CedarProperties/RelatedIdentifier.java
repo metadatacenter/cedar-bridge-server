@@ -24,7 +24,7 @@ public class RelatedIdentifier {
     private ValueFormat relatedMetadataScheme;
 
     @JsonProperty("schemeURI")
-    private SchemeURI schemeURi;
+    private SchemeUri schemeURi;
 
     @JsonProperty("schemeType")
     private ValueFormat schemeType;
@@ -64,11 +64,11 @@ public class RelatedIdentifier {
         this.relatedMetadataScheme = relatedMetadataScheme;
     }
 
-    public SchemeURI getSchemeURi() {
+    public SchemeUri getSchemeURi() {
         return schemeURi;
     }
 
-    public void setSchemeURi(SchemeURI schemeURi) {
+    public void setSchemeURi(SchemeUri schemeURi) {
         this.schemeURi = schemeURi;
     }
 

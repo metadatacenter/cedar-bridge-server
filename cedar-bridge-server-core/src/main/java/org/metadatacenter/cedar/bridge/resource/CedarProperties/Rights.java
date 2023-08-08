@@ -15,7 +15,7 @@ public class Rights {
     private ValueFormat rights;
 
     @JsonProperty("rightsURI")
-    private SchemeURI rightsURI;
+    private SchemeUri rightsURI;
 
     @JsonProperty("rightsIdentifier")
     private ValueFormat rightsIdentifier;
@@ -24,7 +24,7 @@ public class Rights {
     private ValueFormat rightsIdentifierScheme;
 
     @JsonProperty("schemeURI")
-    private SchemeURI schemeURI;
+    private SchemeUri schemeURI;
 
     public ValueFormat getRights() {
         return rights;
@@ -34,11 +34,11 @@ public class Rights {
         this.rights = rights;
     }
 
-    public SchemeURI getRightsURI() {
+    public SchemeUri getRightsURI() {
         return rightsURI;
     }
 
-    public void setRightsURI(SchemeURI rightsURI) {
+    public void setRightsURI(SchemeUri rightsURI) {
         this.rightsURI = rightsURI;
     }
 
@@ -58,11 +58,11 @@ public class Rights {
         this.rightsIdentifierScheme = rightsIdentifierScheme;
     }
 
-    public SchemeURI getSchemeURI() {
+    public SchemeUri getSchemeURI() {
         return schemeURI;
     }
 
-    public void setSchemeURI(SchemeURI schemeURI) {
+    public void setSchemeURI(SchemeUri schemeURI) {
         this.schemeURI = schemeURI;
     }
 

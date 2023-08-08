@@ -20,7 +20,7 @@ public class Affiliation {
     private ValueFormat affiliationIdentifierScheme;
 
     @JsonProperty("affiliationIdentifierSchemeURI")
-    private SchemeURI affiliationIdentifierSchemeURI;
+    private SchemeUri affiliationIdentifierSchemeUri;
 
     public ValueFormat getAffiliationIdentifier() {
         return affiliationIdentifier;
@@ -38,12 +38,12 @@ public class Affiliation {
         this.affiliationIdentifierScheme = affiliationIdentifierScheme;
     }
 
-    public SchemeURI getAffiliationIdentifierSchemeURI() {
-        return affiliationIdentifierSchemeURI;
+    public SchemeUri getAffiliationIdentifierSchemeURI() {
+        return affiliationIdentifierSchemeUri;
     }
 
-    public void setAffiliationIdentifierSchemeURI(SchemeURI affiliationIdentifierSchemeURI) {
-        this.affiliationIdentifierSchemeURI = affiliationIdentifierSchemeURI;
+    public void setAffiliationIdentifierSchemeURI(SchemeUri affiliationIdentifierSchemeUri) {
+        this.affiliationIdentifierSchemeUri = affiliationIdentifierSchemeUri;
     }
 
     public Map<String, String> getContext() {

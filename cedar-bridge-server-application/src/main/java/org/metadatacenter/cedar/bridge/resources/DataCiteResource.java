@@ -459,7 +459,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       CedarDataCiteInstance cedarInstance = mapper.readValue(metadataString, CedarDataCiteInstance.class);
 
       String cedarInstanceString = mapper.writeValueAsString(cedarInstance);
-      System.out.println("Json Converted to DataCite Instance: " + cedarInstanceString);
+      System.out.println("Json Converted to CedarDataCite Instance: " + cedarInstanceString);
 
       // Pass the value from dataCiteInstance to dataCiteRequest
       try {

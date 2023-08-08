@@ -18,7 +18,7 @@ public class FunderIdentifier {
     private IdFormat funderIdentifierType;
 
     @JsonProperty("SchemeURI")
-    private SchemeURI schemeURI;
+    private SchemeUri schemeURI;
 
     public ValueFormat getFunderIdentifier() {
         return funderIdentifier;
@@ -36,11 +36,11 @@ public class FunderIdentifier {
         this.funderIdentifierType = funderIdentifierType;
     }
 
-    public SchemeURI getSchemeURI() {
+    public SchemeUri getSchemeURI() {
         return schemeURI;
     }
 
-    public void setSchemeURI(SchemeURI schemeURI) {
+    public void setSchemeURI(SchemeUri schemeURI) {
         this.schemeURI = schemeURI;
     }
 

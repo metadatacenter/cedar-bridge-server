@@ -105,17 +105,17 @@ public class DataCiteMetadataParser {
                 //initialize corresponding class
                 Affiliation affiliation = new Affiliation();
                 ValueFormat affiliationIdentifier = new ValueFormat(), affiliationIdentifierScheme = new ValueFormat();
-                SchemeURI affiliationIdentifierSchemeURI = new SchemeURI();
+                SchemeUri affiliationIdentifierSchemeUri = new SchemeUri();
 
                 //retrieve values from DataCiteScheme and set it to CEDAR class
                 affiliationIdentifier.setValue(a.getAffiliationIdentifier());
                 affiliationIdentifierScheme.setValue(a.getAffiliationIdentifierScheme());
-                affiliationIdentifierSchemeURI.setId(a.getAffiliationSchemeURI());
+                affiliationIdentifierSchemeUri.setId(a.getAffiliationSchemeURI());
 
                 //set CEDAR Affiliation class value
                 affiliation.setAffiliationIdentifier(affiliationIdentifier);
                 affiliation.setAffiliationIdentifierScheme(affiliationIdentifierScheme);
-                affiliation.setAffiliationIdentifierSchemeURI(affiliationIdentifierSchemeURI);
+                affiliation.setAffiliationIdentifierSchemeURI(affiliationIdentifierSchemeUri);
 
                 //set @context and @id
                 Map<String, String> context = new HashMap<>();
@@ -145,15 +145,15 @@ public class DataCiteMetadataParser {
             for (DataCiteNameIdentifier ni : dataCiteNameIdentifiers) {
                 NameIdentifier nameIdentifier = new NameIdentifier();
                 ValueFormat name = new ValueFormat(), nameIdentifierScheme = new ValueFormat();
-                SchemeURI nameIdentifierSchemeURI = new SchemeURI();
+                SchemeUri nameIdentifierSchemeUri = new SchemeUri();
 
                 name.setValue(ni.getNameIdentifier());
                 nameIdentifierScheme.setValue(ni.getNameIdentifierScheme());
-                nameIdentifierSchemeURI.setId(ni.getSchemeUri());
+                nameIdentifierSchemeUri.setId(ni.getSchemeUri());
 
                 nameIdentifier.setNameIdentifierName(name);
                 nameIdentifier.setNameIdentifierScheme(nameIdentifierScheme);
-                nameIdentifier.setNameIdentifierSchemeURI(nameIdentifierSchemeURI);
+                nameIdentifier.setNameIdentifierSchemeURI(nameIdentifierSchemeUri);
 
                 //set @context and @id
                 Map<String, String> context = new HashMap<>();
@@ -291,7 +291,7 @@ public class DataCiteMetadataParser {
             for (DataCiteSubject s : dataCiteSubjects) {
                 Subject subject = new Subject();
                 ValueFormat subjectName = new ValueFormat(), subjectScheme = new ValueFormat(), classificationCode = new ValueFormat();
-                SchemeURI subjectSchemeUri = new SchemeURI(), valueUri = new SchemeURI();
+                SchemeUri subjectSchemeUri = new SchemeUri(), valueUri = new SchemeUri();
 
                 subjectName.setValue(s.getSubject());
                 subjectScheme.setValue(s.getSubjectScheme());
@@ -454,7 +454,7 @@ public class DataCiteMetadataParser {
                 RelatedIdentifier relatedIdentifier = new RelatedIdentifier();
                 ValueFormat identifier = new ValueFormat(), relatedMetadataScheme = new ValueFormat(), schemeType = new ValueFormat();
                 IdFormat identifierType = new IdFormat(), relationType = new IdFormat(), resourceTypeGeneral = new IdFormat();
-                SchemeURI schemeUri = new SchemeURI();
+                SchemeUri schemeUri = new SchemeUri();
 
                 identifier.setValue(r.getRelatedIdentifier());
                 if(r.getRelatedIdentifierType()!=null){
@@ -538,7 +538,7 @@ public class DataCiteMetadataParser {
             for (DataCiteRights r : dataCiteRights) {
                 Rights rights = new Rights();
                 ValueFormat rightsField = new ValueFormat(), rightsIdentifier = new ValueFormat(), rightsIdentifierScheme = new ValueFormat();
-                SchemeURI rightsUri = new SchemeURI(), schemeUri = new SchemeURI();
+                SchemeUri rightsUri = new SchemeUri(), schemeUri = new SchemeUri();
 
                 rightsField.setValue(r.getRights());
                 rightsIdentifier.setValue(r.getRightsIdentifier());
@@ -685,8 +685,8 @@ public class DataCiteMetadataParser {
                     funderName = new ValueFormat(),
                     awardNumberField = new ValueFormat(),
                     funderIdentifierField = new ValueFormat();
-                SchemeURI awardUri = new SchemeURI(),
-                    funderSchemeUri = new SchemeURI();
+                SchemeUri awardUri = new SchemeUri(),
+                    funderSchemeUri = new SchemeUri();
                 IdFormat funderIdentifierType= new IdFormat();
 
                 awardTitle.setValue(f.getAwardTitle());
@@ -865,7 +865,7 @@ public class DataCiteMetadataParser {
             relatedMetadataScheme = new ValueFormat(),
             schemeType = new ValueFormat();
         IdFormat identifierType = new IdFormat();
-        SchemeURI schemeUri = new SchemeURI();
+        SchemeUri schemeUri = new SchemeUri();
 
         if(dataCiteRelatedItemIdentifier != null){
             identifier.setValue(dataCiteRelatedItemIdentifier.getRelatedItemIdentifier());
@@ -915,7 +915,7 @@ public class DataCiteMetadataParser {
                     identifier = new ValueFormat(),
                     relatedMetadataScheme = new ValueFormat(),
                     schemeType = new ValueFormat();
-                SchemeURI schemeUri = new SchemeURI();
+                SchemeUri schemeUri = new SchemeUri();
 
                 Integer givenYear = r.getPublicationYear();
                 PublicationYear publicationYear = new PublicationYear();

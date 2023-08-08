@@ -21,10 +21,10 @@ public class Subject {
     private ValueFormat subjectScheme;
 
     @JsonProperty("subjectSchemeURI")
-    private SchemeURI subjectSchemeURI;
+    private SchemeUri subjectSchemeUri;
 
     @JsonProperty("valueURI")
-    private SchemeURI valueURI;
+    private SchemeUri valueURI;
 
     @JsonProperty("classificationCode")
     private ValueFormat classificationCode;
@@ -45,19 +45,19 @@ public class Subject {
         this.subjectScheme = subjectScheme;
     }
 
-    public SchemeURI getSubjectSchemeURI() {
-        return subjectSchemeURI;
+    public SchemeUri getSubjectSchemeURI() {
+        return subjectSchemeUri;
     }
 
-    public void setSubjectSchemeURI(SchemeURI subjectSchemeURI) {
-        this.subjectSchemeURI = subjectSchemeURI;
+    public void setSubjectSchemeURI(SchemeUri subjectSchemeUri) {
+        this.subjectSchemeUri = subjectSchemeUri;
     }
 
-    public SchemeURI getValueURI() {
+    public SchemeUri getValueURI() {
         return valueURI;
     }
 
-    public void setValueURI(SchemeURI valueURI) {
+    public void setValueURI(SchemeUri valueURI) {
         this.valueURI = valueURI;
     }
 
