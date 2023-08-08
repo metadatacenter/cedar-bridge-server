@@ -19,7 +19,6 @@ public class ValueFormat {
 
     @Override
     public String toString() {
-//        return value == null ? null : value;
         if(value == null || value.equals("")){
             return null;
         } else{
