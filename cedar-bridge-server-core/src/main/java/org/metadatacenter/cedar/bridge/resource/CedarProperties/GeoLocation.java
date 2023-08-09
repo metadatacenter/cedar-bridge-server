@@ -15,10 +15,10 @@ public class GeoLocation {
     @JsonProperty("geoLocationPlace")
     private ValueFormat geoLocationPlace;
 
-    @JsonProperty("Geo Location Point")
+    @JsonProperty("geoLocationPoint")
     private Point geoLocationPoint;
 
-    @JsonProperty("Geo Location Box")
+    @JsonProperty("geoLocationBox")
     private GeoLocationBox geoLocationBox;
 
     @JsonProperty("geoLocationPolygon")

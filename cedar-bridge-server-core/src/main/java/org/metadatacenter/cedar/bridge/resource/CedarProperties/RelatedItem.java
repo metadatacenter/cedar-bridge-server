@@ -56,10 +56,10 @@ public class RelatedItem {
     @JsonProperty("schemeType")
     private ValueFormat schemeType;
 
-    @JsonProperty("Creator")
+    @JsonProperty("creator")
     private List<Creator> creators;
 
-    @JsonProperty("Title")
+    @JsonProperty("title")
     private List<Title> titles;
 
     @JsonProperty("number")
@@ -68,7 +68,7 @@ public class RelatedItem {
     @JsonProperty("numberType")
     private IdFormat numberType;
 
-    @JsonProperty("Contributor")
+    @JsonProperty("contributor")
     private List<Contributor> contributors;
 
     public IdFormat getRelatedItemType() {

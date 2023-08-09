@@ -11,7 +11,7 @@ public class Rights {
     private Map<String, String> context;
     @JsonProperty("@id")
     private String id;
-    @JsonProperty("Rights")
+    @JsonProperty("rights")
     private ValueFormat rights;
 
     @JsonProperty("rightsURI")

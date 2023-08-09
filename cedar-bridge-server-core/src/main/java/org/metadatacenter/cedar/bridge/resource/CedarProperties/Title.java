@@ -14,7 +14,7 @@ public class Title {
     @JsonProperty("@id")
     private String id;
 
-    @JsonProperty("titleName")
+    @JsonProperty("title")
     private ValueFormat titleName;
 
     @JsonProperty("titleType")

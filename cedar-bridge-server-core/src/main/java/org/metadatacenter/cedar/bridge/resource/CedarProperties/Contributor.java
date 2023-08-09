@@ -25,7 +25,7 @@ public class Contributor {
     @JsonProperty("familyName")
     private ValueFormat familyName;
 
-    @JsonProperty("Affiliation")
+    @JsonProperty("affiliation")
     private List<Affiliation> affiliations;
 
     @JsonProperty("nameIdentifier")

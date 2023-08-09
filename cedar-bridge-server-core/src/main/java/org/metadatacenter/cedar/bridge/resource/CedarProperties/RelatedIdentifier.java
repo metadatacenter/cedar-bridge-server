@@ -11,7 +11,7 @@ public class RelatedIdentifier {
     private Map<String, String> context;
     @JsonProperty("@id")
     private String id;
-    @JsonProperty("RelatedIdentifier")
+    @JsonProperty("relatedIdentifier")
     private ValueFormat relatedIdentifier;
 
     @JsonProperty("relatedIdentifierType")

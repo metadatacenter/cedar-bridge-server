@@ -13,14 +13,25 @@ public class Affiliation {
     @JsonProperty("@id")
     private String id;
 
+    @JsonProperty("name")
+    private ValueFormat affiliationName;
     @JsonProperty("affiliationIdentifier")
     private ValueFormat affiliationIdentifier;
 
     @JsonProperty("affiliationIdentifierScheme")
     private ValueFormat affiliationIdentifierScheme;
 
-    @JsonProperty("affiliationIdentifierSchemeURI")
+//    @JsonProperty("affiliationIdentifierSchemeURI")
+    @JsonProperty("schemeURI")
     private SchemeUri affiliationIdentifierSchemeUri;
+
+    public ValueFormat getAffiliationName() {
+        return affiliationName;
+    }
+
+    public void setAffiliationName(ValueFormat affiliationName) {
+        this.affiliationName = affiliationName;
+    }
 
     public ValueFormat getAffiliationIdentifier() {
         return affiliationIdentifier;

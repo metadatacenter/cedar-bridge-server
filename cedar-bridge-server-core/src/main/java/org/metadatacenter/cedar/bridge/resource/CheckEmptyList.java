@@ -27,6 +27,7 @@ public class CheckEmptyList {
 
   public static boolean emptyAffiliationList(List<Affiliation> affiliationList) {
     return affiliationList.size() == 1
+        && (affiliationList.get(0).getAffiliationName().toString() == null || affiliationList.get(0).getAffiliationName().toString().equals(""))
         && (affiliationList.get(0).getAffiliationIdentifier().toString() == null || affiliationList.get(0).getAffiliationIdentifier().toString().equals(""))
         && (affiliationList.get(0).getAffiliationIdentifierScheme().toString() == null || affiliationList.get(0).getAffiliationIdentifierScheme().toString().equals(""))
         && (affiliationList.get(0).getAffiliationIdentifierSchemeURI().toString() == null || affiliationList.get(0).getAffiliationIdentifierSchemeURI().toString().equals(""));
@@ -34,9 +35,9 @@ public class CheckEmptyList {
 
   public static boolean emptyNameIdentifierList(List<NameIdentifier> nameIdentifierList){
     return nameIdentifierList.size()==1
-        && (nameIdentifierList.get(0).getNameIdentifierName().toString() == null || nameIdentifierList.get(0).getNameIdentifierName().toString().equals(""))
+        && (nameIdentifierList.get(0).getName().toString() == null || nameIdentifierList.get(0).getName().toString().equals(""))
         && (nameIdentifierList.get(0).getNameIdentifierScheme().toString() == null || nameIdentifierList.get(0).getNameIdentifierScheme().toString().equals(""))
-        && (nameIdentifierList.get(0).getNameIdentifierSchemeURI().toString() == null || nameIdentifierList.get(0).getNameIdentifierSchemeURI().toString().equals(""));
+        && (nameIdentifierList.get(0).getSchemeURI().toString() == null || nameIdentifierList.get(0).getSchemeURI().toString().equals(""));
   }
 
   public static boolean emptyDateList(List<Date> dateList){

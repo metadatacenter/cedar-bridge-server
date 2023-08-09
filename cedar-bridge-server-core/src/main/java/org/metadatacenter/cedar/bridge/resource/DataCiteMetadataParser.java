@@ -11,7 +11,7 @@ public class DataCiteMetadataParser {
     private static final String DATACITE_ID_URL = "http://purl.org/datacite/v4.4/";
     private static final String PERSOANL_ID_URL = "http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Persoanl";
     private static final String ORGANIZATIONAL_ID_URL = "http://www.w3.org/2006/vcard/ns#Organizational";
-    private static final String LANG_ID_URL = "https://www.omg.org/spec/LCC/Languages/LaISO639-1-LanguageCodes/";
+//    private static final String LANG_ID_URL = "https://www.omg.org/spec/LCC/Languages/LaISO639-1-LanguageCodes/";
     private static final String DATE_TYPE = "xsd:date";
     private static final String DECIMAL_TYPE = "xsd:decimal";
 
@@ -33,7 +33,7 @@ public class DataCiteMetadataParser {
         cedarInstance.setPublicationYear(parsePublicationYearValue(dataCiteAttributes.getPublicationYear()));
 
         //pass resourceType value
-//        cedarInstance.setResourceType(parseResourceTypeValue(dataCiteAttributes.getTypes()));
+        cedarInstance.setResourceType(parseResourceTypeValue(dataCiteAttributes.getTypes()));
 
         //pass subject values
         cedarInstance.setSubjects(parseSubjectValue(dataCiteAttributes.getSubjects()));
@@ -151,9 +151,9 @@ public class DataCiteMetadataParser {
                 nameIdentifierScheme.setValue(ni.getNameIdentifierScheme());
                 nameIdentifierSchemeUri.setId(ni.getSchemeUri());
 
-                nameIdentifier.setNameIdentifierName(name);
+                nameIdentifier.setName(name);
                 nameIdentifier.setNameIdentifierScheme(nameIdentifierScheme);
-                nameIdentifier.setNameIdentifierSchemeURI(nameIdentifierSchemeUri);
+                nameIdentifier.setSchemeURI(nameIdentifierSchemeUri);
 
                 //set @context and @id
                 Map<String, String> context = new HashMap<>();
@@ -411,11 +411,10 @@ public class DataCiteMetadataParser {
         return dateList;
     }
 
-    private static IdFormat parseLangValue(String dataCiteLang){
-        IdFormat lang = new IdFormat();
+    private static ValueFormat parseLangValue(String dataCiteLang){
+        ValueFormat lang = new ValueFormat();
         if (dataCiteLang!= null){
-            lang.setId(LANG_ID_URL + dataCiteLang);
-            lang.setLabel(dataCiteLang);
+            lang.setValue(dataCiteLang);
         }
         return lang;
     }

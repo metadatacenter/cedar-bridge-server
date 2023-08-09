@@ -38,6 +38,9 @@ public class CedarDataCiteInstance {
     @JsonProperty("prefix")
     private ValueFormat prefix;
 
+    @JsonProperty("url")
+    private ValueFormat url;
+
     @JsonProperty("creator")
     private List<Creator> creators;
 
@@ -50,8 +53,8 @@ public class CedarDataCiteInstance {
     @JsonProperty("publicationYear")
     private PublicationYear publicationYear;
 
-//    @JsonProperty("resourceType")
-//    private ValueFormat resourceType;
+    @JsonProperty("resourceType")
+    private ValueFormat resourceType;
 
     @JsonProperty("subject")
     private List<Subject> subjects;
@@ -59,16 +62,16 @@ public class CedarDataCiteInstance {
     @JsonProperty("contributor")
     private List<Contributor> contributors;
 
-    @JsonProperty("dateElement")
+    @JsonProperty("date")
     private List<Date> dates;
 
     @JsonProperty("language")
-    private IdFormat language;
+    private ValueFormat language;
 
-    @JsonProperty("alternateIdentifierElement")
+    @JsonProperty("alternateIdentifier")
     private List<AlternateIdentifier> alternateIdentifiers;
 
-    @JsonProperty("relatedIdentifierElement")
+    @JsonProperty("relatedIdentifier")
     private List<RelatedIdentifier> relatedIdentifiers;
 
     @JsonProperty("size")
@@ -80,10 +83,10 @@ public class CedarDataCiteInstance {
     @JsonProperty("version")
     private ValueFormat version;
 
-    @JsonProperty("rightsElement")
+    @JsonProperty("rights")
     private List<Rights> rightsList;
 
-    @JsonProperty("descriptionElement")
+    @JsonProperty("description")
     private List<Description> descriptions;
 
     @JsonProperty("geoLocation")
@@ -105,6 +108,14 @@ public class CedarDataCiteInstance {
 
     public void setPrefix(ValueFormat prefix) {
         this.prefix = prefix;
+    }
+
+    public ValueFormat getUrl() {
+        return url;
+    }
+
+    public void setUrl(ValueFormat url) {
+        this.url = url;
     }
 
     public List<Creator> getCreators() {
@@ -147,13 +158,13 @@ public class CedarDataCiteInstance {
         this.subjects = subjects;
     }
 
-//    public ValueFormat getResourceType() {
-//        return resourceType;
-//    }
-//
-//    public void setResourceType(ValueFormat resourceType) {
-//        this.resourceType = resourceType;
-//    }
+    public ValueFormat getResourceType() {
+        return resourceType;
+    }
+
+    public void setResourceType(ValueFormat resourceType) {
+        this.resourceType = resourceType;
+    }
 
     public List<Contributor> getContributors() {
         return contributors;
@@ -171,11 +182,11 @@ public class CedarDataCiteInstance {
         this.dates = dates;
     }
 
-    public IdFormat getLanguage() {
+    public ValueFormat getLanguage() {
         return language;
     }
 
-    public void setLanguage(IdFormat language) {
+    public void setLanguage(ValueFormat language) {
         this.language = language;
     }
 

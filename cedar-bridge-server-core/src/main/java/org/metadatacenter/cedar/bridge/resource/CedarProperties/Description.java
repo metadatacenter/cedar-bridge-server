@@ -11,7 +11,7 @@ public class Description {
     private Map<String, String> context;
     @JsonProperty("@id")
     private String id;
-    @JsonProperty("Description")
+    @JsonProperty("description")
     private ValueFormat description;
     @JsonProperty("descriptionType")
     private IdFormat descriptionType;

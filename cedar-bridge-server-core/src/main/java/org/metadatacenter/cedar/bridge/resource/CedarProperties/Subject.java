@@ -14,13 +14,13 @@ public class Subject {
     @JsonProperty("@id")
     private String id;
 
-    @JsonProperty("subjectName")
+    @JsonProperty("subject")
     private ValueFormat subjectName;
 
     @JsonProperty("subjectScheme")
     private ValueFormat subjectScheme;
 
-    @JsonProperty("subjectSchemeURI")
+    @JsonProperty("schemeURI")
     private SchemeUri subjectSchemeUri;
 
     @JsonProperty("valueURI")

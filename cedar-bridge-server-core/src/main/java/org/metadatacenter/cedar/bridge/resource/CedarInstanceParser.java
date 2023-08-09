@@ -216,12 +216,12 @@ public class CedarInstanceParser {
             for (NameIdentifier n : nameIdentifierList) {
                 DataCiteNameIdentifier dataCiteNameIdentifier = new DataCiteNameIdentifier();
                 // Retrieve values from CEDAR class
-                String nameIdentifierName = n.getNameIdentifierName().toString();
+                String nameIdentifierName = n.getName().toString();
                 String nameIdentifierScheme = n.getNameIdentifierScheme().toString();
                 if (nameIdentifierScheme == null || nameIdentifierScheme.equals("")){
                     missedProperties.add("Name Identifier Scheme under " + element);
                 }
-                String nameIdentifierSchemeUri = n.getNameIdentifierSchemeURI().toString();
+                String nameIdentifierSchemeUri = n.getSchemeURI().toString();
                 // set values to DataCite class
                 dataCiteNameIdentifier.setNameIdentifier(nameIdentifierName);
                 dataCiteNameIdentifier.setNameIdentifierScheme(nameIdentifierScheme);
@@ -343,7 +343,6 @@ public class CedarInstanceParser {
 
     private static DataCiteType parseTypeValue(String resourceType) {
         DataCiteType dataCiteType = new DataCiteType();
-//        String resourceTypeGeneral = resourceTypeElement.getResourceTypeGeneral().toString();
         String resourceTypeGeneral = "Other";
         dataCiteType.setResourceTypeGeneral(resourceTypeGeneral);
         dataCiteType.setResourceType(resourceType);
