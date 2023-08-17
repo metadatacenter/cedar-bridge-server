@@ -4,15 +4,19 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.metadatacenter.cedar.bridge.resource.CedarProperties.CedarDataCiteInstance;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
 
 
 import java.util.*;
 
+import static org.metadatacenter.cedar.bridge.resource.Cedar.*;
+
 public class CompareValues {
   public static boolean compareResponseWithGivenMetadata(JsonNode givenMetadata, JsonNode responseMetadata, String sourceArtifactId, String state) throws JsonProcessingException, DataCiteInstanceValidationException{
     ObjectMapper mapper = new ObjectMapper();
+    mapper.registerModule(new JavaTimeModule());
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
 //    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 //    mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
@@ -20,14 +24,18 @@ public class CompareValues {
     try {
       //Deserialize givenMetadata to CedarDataCiteInstance Class
       String givenMetadataString = givenMetadata.toString();
-      CedarDataCiteInstance cedarInstance = mapper.readValue(givenMetadataString, CedarDataCiteInstance.class);
+//      CedarDataCiteInstance cedarInstance = mapper.readValue(givenMetadataString, CedarDataCiteInstance.class);
       DataCiteSchema cedarConvertedDataCiteSchema = new DataCiteSchema();
 
       // Pass the value from cedarDataCiteInstance to dataCiteRequest
-      CedarInstanceParser.parseCedarInstance(cedarInstance, cedarConvertedDataCiteSchema, sourceArtifactId, state);
+//      CedarInstanceParser.parseCedarInstance(cedarInstance, cedarConvertedDataCiteSchema, sourceArtifactId, state);
+
+      // Deserialize givenMetadata to MetadataInstance Class using Matthew's code
+      MetadataInstance metadataInstance = mapper.readValue(givenMetadataString, MetadataInstance.class);
+      CedarInstanceParserNew.parseCedarInstance(metadataInstance, cedarConvertedDataCiteSchema, sourceArtifactId, state);
 
       String cedarConvertedDataCiteSchemaString = mapper.writeValueAsString(cedarConvertedDataCiteSchema);
-      System.out.println("Cedar Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);
+      System.out.println("Cedar Given Instance Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);
 
       //Deserialize responseMetadata to DtaCiteSchema Class
       String responseMetadaString = responseMetadata.toString();

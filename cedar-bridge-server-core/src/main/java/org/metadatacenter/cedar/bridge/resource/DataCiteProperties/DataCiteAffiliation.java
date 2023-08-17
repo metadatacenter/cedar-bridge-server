@@ -5,12 +5,22 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteAffiliation {
+    @JsonProperty("name")
+    private String name;
     @JsonProperty("affiliationIdentifier")
     private String affiliationIdentifier;
     @JsonProperty("affiliationIdentifierScheme")
     private String affiliationIdentifierScheme;
     @JsonProperty("schemeUri")
     private String affiliationSchemeURI;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 
     public String getAffiliationIdentifier() {
         return affiliationIdentifier;
