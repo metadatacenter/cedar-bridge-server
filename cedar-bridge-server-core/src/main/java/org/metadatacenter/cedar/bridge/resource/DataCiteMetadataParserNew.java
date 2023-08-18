@@ -35,7 +35,6 @@ public class DataCiteMetadataParserNew {
     public static MetadataInstance parseDataCiteSchema(Attributes dataCiteAttributes) {
       var now = Instant.ofEpochSecond(System.currentTimeMillis() / 1000);
 
-      //TODO: set URL
       String url = dataCiteAttributes.getUrl();
 
       //pass creators values
@@ -48,7 +47,6 @@ public class DataCiteMetadataParserNew {
       String publisher = dataCiteAttributes.getPublisher();
 
       //pass publicationYear value
-        //TODO:debug - add @type
       String publicationYear = parsePublicationYearValue(dataCiteAttributes.getPublicationYear());
 
       String resourceType = dataCiteAttributes.getTypes().getResourceType();
@@ -648,7 +646,6 @@ public class DataCiteMetadataParserNew {
             return contributorList;
         }
 
-        //TODO: check if it is still TitleElement2?
         private static List<RelatedItemElement.TitleElement> parseRelatedItemTitleValue (List<DataCiteTitle> dataCiteTitles) {
             List<RelatedItemElement.TitleElement> titleList = new ArrayList<>();
 
@@ -715,7 +712,10 @@ public class DataCiteMetadataParserNew {
                     String issue = r.getIssue();
                     String firstPage = r.getFirstPage();
                     String lastPage = r.getLastPage();
-                    String publicationYear = parsePublicationYearValue(r.getPublicationYear());
+                    String publicationYear = null;
+                    if(r.getPublicationYear() != null){
+                        publicationYear = parsePublicationYearValue(r.getPublicationYear());
+                    }
                     String publisher = r.getPublisher();
                     String edition = r.getEdition();
                     List<RelatedItemElement.TitleElement> titleList = parseRelatedItemTitleValue(r.getTitles());

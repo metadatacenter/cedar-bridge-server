@@ -85,10 +85,13 @@ public class CedarInstanceParserNew {
     String currentYear = String.valueOf(Year.now().getValue());
     if (publicationYear == null){
       missedProperties.add("Publication Year");
-    } else if (!publicationYear.equals(currentYear)){
-      throw new DataCiteInstanceValidationException("The 'Publication Year' should be the current year: " + currentYear);
     } else{
-      attributes.setPublicationYear(parsePublicationYearValue(publicationYear));
+      String givenYear = publicationYear.substring(0,4);
+      if (!givenYear.equals(currentYear)){
+        throw new DataCiteInstanceValidationException("The 'Publication Year' should be the current year: " + currentYear);
+      } else{
+        attributes.setPublicationYear(parsePublicationYearValue(givenYear));
+      }
     }
 
     //Pass subjects values
@@ -100,6 +103,10 @@ public class CedarInstanceParserNew {
     }
 
     // Pass resourceType values
+    String resourceType = MetadataInstance.resourceType().value();
+    if(resourceType == null){
+      missedProperties.add("Resource Type");
+    }
     CedarResourceType cedarResourceType = CedarFQResourceId.build(sourceArtifactId).getType();
     attributes.setTypes(parseTypeValue(cedarResourceType.getValue()));
 
@@ -207,7 +214,8 @@ public class CedarInstanceParserNew {
     data.setAttributes(attributes);
     dataCiteSchema.setData(data);
 
-    if (state.equals(PUBLISH) && !missedProperties.isEmpty()){
+//    if (state.equals(PUBLISH) && !missedProperties.isEmpty()){
+    if (!missedProperties.isEmpty()){
       StringBuilder errorMessage = new StringBuilder("The following fields are required:\n");
       for (String property : missedProperties) {
         errorMessage.append(property).append("\n");
@@ -318,7 +326,7 @@ public class CedarInstanceParserNew {
       dataCiteCreator.setGivenName(givenName);
 
       // Set values to corresponding Affiliation list in dataCiteCreator
-      if(c.affiliation() != null){
+      if(c.affiliation() != null && !c.affiliation().isEmpty()){
         List<CreatorElement.AffiliationElement> affiliationList = c.affiliation().affiliationList();
         if (affiliationList != null && !affiliationList.isEmpty() && !CheckEmptyListNew.emptyAffiliationList(affiliationList)) {
           dataCiteCreator.setAffiliations(parseAffiliationValue(affiliationList, missedProperties));
@@ -326,7 +334,7 @@ public class CedarInstanceParserNew {
       }
 
       // Set values to corresponding Affiliation list in dataCiteCreator
-      if(c.nameIdentifier() != null){
+      if(c.nameIdentifier() != null && !c.nameIdentifier().isEmpty()){
         List<CreatorElement.NameIdentifierElement> nameIdentifierList = c.nameIdentifier().nameIdentifierList();
         if (nameIdentifierList != null && !nameIdentifierList.isEmpty() && !CheckEmptyListNew.emptyNameIdentifierList(nameIdentifierList)) {
           dataCiteCreator.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList, missedProperties));
@@ -374,7 +382,7 @@ public class CedarInstanceParserNew {
   }
 
   private static Integer parsePublicationYearValue(String publicationYear) {
-    return Integer.parseInt(publicationYear);
+    return Integer.parseInt(publicationYear.substring(0,4));
   }
 
   private static List<DataCiteSubject> parseSubjectValue(List<SubjectElement> subjectList) {
@@ -435,7 +443,7 @@ public class CedarInstanceParserNew {
       dataCiteContributor.setFamilyName(familyName);
 
       // Set values to corresponding Affiliation list in dataCiteCreator
-      if(c.affiliation()!=null){
+      if(c.affiliation()!=null && !c.affiliation().isEmpty()){
         List<ContributorElement.AffiliationElement> affiliationList = c.affiliation().affiliationList();
         if (affiliationList != null && !CheckEmptyListNew.emptyAffiliationList(affiliationList)) {
           dataCiteContributor.setAffiliations(parseAffiliationValue(affiliationList, missedProperties));
@@ -443,7 +451,7 @@ public class CedarInstanceParserNew {
       }
 
       // Set values to corresponding nameIdentifierList list in dataCiteCreator
-      if(c.nameIdentifier()!=null){
+      if(c.nameIdentifier()!=null && !c.nameIdentifier().isEmpty()){
         List<ContributorElement.NameIdentifierElement> nameIdentifierList = c.nameIdentifier().nameIdentifierList();
         if (nameIdentifierList != null && !CheckEmptyListNew.emptyNameIdentifierList(nameIdentifierList)) {
           dataCiteContributor.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList, missedProperties));
