@@ -3,7 +3,6 @@ package org.metadatacenter.cedar.bridge.resources;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.*;
 import org.metadatacenter.cedar.bridge.resource.*;
-import org.metadatacenter.cedar.bridge.resource.CedarProperties.CedarDataCiteInstance;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.DataCiteSchema;
