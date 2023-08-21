@@ -854,7 +854,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
     // Convert the DataCite-format metadata to Cedar-format
     DataCiteSchema dataCiteResponse = objectMapper.readValue(returnedMetadata.toString(), DataCiteSchema.class);
-    MetadataInstance cedarDataCiteInstance = DataCiteMetadataParserNew.parseDataCiteSchema(dataCiteResponse.getData().getAttributes());
+    MetadataInstance cedarDataCiteInstance = DataCiteMetadataParser.parseDataCiteSchema(dataCiteResponse.getData().getAttributes());
 
     //Compare the converted Cedar-format metadata with the DataCite response metadata
     JsonNode convertedMetadata = objectMapper.valueToTree(cedarDataCiteInstance);

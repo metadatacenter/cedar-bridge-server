@@ -30,7 +30,7 @@ public class GenerateInstance {
   private static final Instant now = Instant.ofEpochSecond(System.currentTimeMillis() / 1000);
 
   public static MetadataInstance getDefaultInstance(String sourceArtifactId){
-    String openViewUrl = CheckOpenViewUrl.getOpenViewUrl(sourceArtifactId);
+    String openViewUrl = GenerateOpenViewUrl.getOpenViewUrl(sourceArtifactId);
     String resourceType = CedarFQResourceId.build(sourceArtifactId).getType().getValue();
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),

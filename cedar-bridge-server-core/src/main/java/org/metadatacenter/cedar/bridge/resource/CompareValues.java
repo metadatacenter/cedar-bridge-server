@@ -31,7 +31,7 @@ public class CompareValues {
 
       // Deserialize givenMetadata to MetadataInstance Class using Matthew's code
       MetadataInstance metadataInstance = mapper.readValue(givenMetadataString, MetadataInstance.class);
-      CedarInstanceParserNew.parseCedarInstance(metadataInstance, cedarConvertedDataCiteSchema, sourceArtifactId, state);
+      CedarInstanceParser.parseCedarInstance(metadataInstance, cedarConvertedDataCiteSchema, sourceArtifactId, state);
 
       String cedarConvertedDataCiteSchemaString = mapper.writeValueAsString(cedarConvertedDataCiteSchema);
       System.out.println("Cedar Given Instance Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);

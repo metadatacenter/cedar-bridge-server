@@ -8,14 +8,12 @@ import java.time.Year;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 
 import static org.metadatacenter.cedar.bridge.resource.Cedar.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.*;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.CreatorElement.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.RelatedItemElement.*;
 
-public class CedarInstanceParserNew {
+public class CedarInstanceParser {
   private static final String PREFIX = "10.82658";
   private static final String PUBLISH = "publish";
   private static final String RESOURCE_TYPE_GENERAL = "Other";
@@ -49,13 +47,13 @@ public class CedarInstanceParserNew {
     }
 
     // Set url and schemeVersion
-    attributes.setUrl(CheckOpenViewUrl.getOpenViewUrl(sourceArtifactId));
+    attributes.setUrl(GenerateOpenViewUrl.getOpenViewUrl(sourceArtifactId));
 
-    attributes.setSchemaVersion(CedarInstanceParserNew.DATACITE_SCHEMA);
+    attributes.setSchemaVersion(CedarInstanceParser.DATACITE_SCHEMA);
 
     // Pass creator values from CEDAR class to DataCite class
     List<MetadataInstance.CreatorElement> creatorList = MetadataInstance.creator().creatorList();
-    if (!creatorList.isEmpty() && !CheckEmptyListNew.emptyCreatorList(creatorList)) {
+    if (!creatorList.isEmpty() && !CheckEmptyList.emptyCreatorList(creatorList)) {
       attributes.setCreators(parseCreatorValue(creatorList, missedProperties));
     } else{
       missedProperties.add("Creator Name under Creators");
@@ -64,7 +62,7 @@ public class CedarInstanceParserNew {
 
     //Pass titles values from CEDAR class to DataCite class
     List<MetadataInstance.TitleElement> titleList = MetadataInstance.title().titleList();
-    if (!titleList.isEmpty() && !CheckEmptyListNew.emptyTitleList(titleList)) {
+    if (!titleList.isEmpty() && !CheckEmptyList.emptyTitleList(titleList)) {
       attributes.setTitles(parseTitleValue(titleList,  missedProperties));
     } else{
       missedProperties.add("Title under Titles");
@@ -96,7 +94,7 @@ public class CedarInstanceParserNew {
     //Pass subjects values
     if(MetadataInstance.subject() != null && !MetadataInstance.subject().isEmpty()){
       List<SubjectElement> subjectList = MetadataInstance.subject().subjectList();
-      if (!(CheckEmptyListNew.emptySubjectList(subjectList))) {
+      if (!(CheckEmptyList.emptySubjectList(subjectList))) {
         attributes.setSubjects(parseSubjectValue(subjectList));
       }
     }
@@ -112,7 +110,7 @@ public class CedarInstanceParserNew {
     //Pass contributors values
     if(MetadataInstance.contributor() != null && !MetadataInstance.contributor().isEmpty()){
       List<ContributorElement> contributorList = MetadataInstance.contributor().contributorList();
-      if (!CheckEmptyListNew.emptyContributorList(contributorList)){
+      if (!CheckEmptyList.emptyContributorList(contributorList)){
         attributes.setContributors(parseContributorValue(contributorList, missedProperties));
       }
     }
@@ -120,7 +118,7 @@ public class CedarInstanceParserNew {
     //Pass dates values
     if(MetadataInstance.date() != null && !MetadataInstance.date().isEmpty()){
       List<DateElement> dateList = MetadataInstance.date().dateList();
-      if (!CheckEmptyListNew.emptyDateList(dateList)){
+      if (!CheckEmptyList.emptyDateList(dateList)){
         attributes.setDates(parseDateValue(dateList, missedProperties));
       }
     }
@@ -136,7 +134,7 @@ public class CedarInstanceParserNew {
     //Pass alternateIdentifier values
     if(MetadataInstance.alternateIdentifier() != null && !MetadataInstance.alternateIdentifier().isEmpty()){
       List<AlternateIdentifierElement> alternateIdentifierList = MetadataInstance.alternateIdentifier().alternateIdentifierList();
-      if (!CheckEmptyListNew.emptyAlternateIdentifierList(alternateIdentifierList)){
+      if (!CheckEmptyList.emptyAlternateIdentifierList(alternateIdentifierList)){
         attributes.setAlternateIdentifiers(parseAlternateIdentifier(alternateIdentifierList, missedProperties));
       }
     }
@@ -144,7 +142,7 @@ public class CedarInstanceParserNew {
     //Pass relatedIdentifier values
     if(MetadataInstance.relatedIdentifier() != null && !MetadataInstance.relatedIdentifier().isEmpty()){
       List<RelatedIdentifierElement> relatedIdentifierList = MetadataInstance.relatedIdentifier().relatedIdentifierList();
-      if (!CheckEmptyListNew.emptyRelatedIdentifierList(relatedIdentifierList)){
+      if (!CheckEmptyList.emptyRelatedIdentifierList(relatedIdentifierList)){
         attributes.setRelatedIdentifiers(parseRelatedIdentifier(relatedIdentifierList, missedProperties));
       }
     }
@@ -152,13 +150,13 @@ public class CedarInstanceParserNew {
 
     //Pass size values
     List<SizeField> sizeList = MetadataInstance.size() != null ? MetadataInstance.size().sizeList() : null;
-    if (sizeList != null && sizeList.size()>0 && !CheckEmptyListNew.emptyValueList(sizeList)){
+    if (sizeList != null && sizeList.size()>0 && !CheckEmptyList.emptyValueList(sizeList)){
       attributes.setSizes(parseSizeValue(sizeList));
     }
 
     //Pass format values
     List<FormatField> formatList = MetadataInstance.format() != null ? MetadataInstance.format().formatList() : null;
-    if (formatList != null && formatList.size() > 0 && !CheckEmptyListNew.emptyValueList(formatList)){
+    if (formatList != null && formatList.size() > 0 && !CheckEmptyList.emptyValueList(formatList)){
       attributes.setFormats(parseFormatValue(formatList));
     }
 
@@ -172,7 +170,7 @@ public class CedarInstanceParserNew {
     //Pass rights values
     if(MetadataInstance.rights() != null && !MetadataInstance.rights().isEmpty()){
       List<RightsElement> rightsList = MetadataInstance.rights().rightsList();
-      if (!CheckEmptyListNew.emptyRightsList(rightsList)){
+      if (!CheckEmptyList.emptyRightsList(rightsList)){
         attributes.setRightsList(parseRightsValue(rightsList));
       }
     }
@@ -180,7 +178,7 @@ public class CedarInstanceParserNew {
     //Pass description values
     if(MetadataInstance.description() != null && !MetadataInstance.description().isEmpty()){
       List<DescriptionElement> descriptionList = MetadataInstance.description().descriptionList();
-      if (!CheckEmptyListNew.emptyDescriptionList(descriptionList)){
+      if (!CheckEmptyList.emptyDescriptionList(descriptionList)){
         attributes.setDescriptions(parseDescriptionValue(descriptionList, missedProperties));
       }
     }
@@ -189,7 +187,7 @@ public class CedarInstanceParserNew {
     //Pass geoLocation values
     if(MetadataInstance.geoLocation() != null && !MetadataInstance.geoLocation().isEmpty()){
       List<GeoLocationElement> geoLocationList = MetadataInstance.geoLocation().geoLocationList();
-      if (!CheckEmptyListNew.emptyGeoLocationList(geoLocationList)){
+      if (!CheckEmptyList.emptyGeoLocationList(geoLocationList)){
         attributes.setGeoLocations(parseGeoLocationValue(geoLocationList, missedProperties));
       }
     }
@@ -197,7 +195,7 @@ public class CedarInstanceParserNew {
     //Pass fundingReference values
     if(MetadataInstance.fundingReference() != null && !MetadataInstance.fundingReference().isEmpty()){
       List<FundingReferenceElement> fundingReferenceList = MetadataInstance.fundingReference().fundingReferenceList();
-      if (!CheckEmptyListNew.emptyFundingReferenceList(fundingReferenceList)){
+      if (!CheckEmptyList.emptyFundingReferenceList(fundingReferenceList)){
         attributes.setFundingReferences(parseFundingReference(fundingReferenceList, missedProperties));
       }
     }
@@ -205,7 +203,7 @@ public class CedarInstanceParserNew {
     //Pass relatedItem values
     if(MetadataInstance.relatedItem() != null && !MetadataInstance.relatedItem().isEmpty()){
       List<RelatedItemElement> relatedItemList = MetadataInstance.relatedItem().relatedItemList();
-      if (!CheckEmptyListNew.emptyRelatedItemList(relatedItemList)){
+      if (!CheckEmptyList.emptyRelatedItemList(relatedItemList)){
         attributes.setRelatedItems(parseRelatedItemValue(relatedItemList, missedProperties));
       }
     }
@@ -327,7 +325,7 @@ public class CedarInstanceParserNew {
       // Set values to corresponding Affiliation list in dataCiteCreator
       if(c.affiliation() != null && !c.affiliation().isEmpty()){
         List<CreatorElement.AffiliationElement> affiliationList = c.affiliation().affiliationList();
-        if (affiliationList != null && !affiliationList.isEmpty() && !CheckEmptyListNew.emptyAffiliationList(affiliationList)) {
+        if (affiliationList != null && !affiliationList.isEmpty() && !CheckEmptyList.emptyAffiliationList(affiliationList)) {
           dataCiteCreator.setAffiliations(parseAffiliationValue(affiliationList, missedProperties));
         }
       }
@@ -335,7 +333,7 @@ public class CedarInstanceParserNew {
       // Set values to corresponding Affiliation list in dataCiteCreator
       if(c.nameIdentifier() != null && !c.nameIdentifier().isEmpty()){
         List<CreatorElement.NameIdentifierElement> nameIdentifierList = c.nameIdentifier().nameIdentifierList();
-        if (nameIdentifierList != null && !nameIdentifierList.isEmpty() && !CheckEmptyListNew.emptyNameIdentifierList(nameIdentifierList)) {
+        if (nameIdentifierList != null && !nameIdentifierList.isEmpty() && !CheckEmptyList.emptyNameIdentifierList(nameIdentifierList)) {
           dataCiteCreator.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList, missedProperties));
         }
       }
@@ -444,7 +442,7 @@ public class CedarInstanceParserNew {
       // Set values to corresponding Affiliation list in dataCiteCreator
       if(c.affiliation()!=null && !c.affiliation().isEmpty()){
         List<ContributorElement.AffiliationElement> affiliationList = c.affiliation().affiliationList();
-        if (affiliationList != null && !CheckEmptyListNew.emptyAffiliationList(affiliationList)) {
+        if (affiliationList != null && !CheckEmptyList.emptyAffiliationList(affiliationList)) {
           dataCiteContributor.setAffiliations(parseAffiliationValue(affiliationList, missedProperties));
         }
       }
@@ -452,7 +450,7 @@ public class CedarInstanceParserNew {
       // Set values to corresponding nameIdentifierList list in dataCiteCreator
       if(c.nameIdentifier()!=null && !c.nameIdentifier().isEmpty()){
         List<ContributorElement.NameIdentifierElement> nameIdentifierList = c.nameIdentifier().nameIdentifierList();
-        if (nameIdentifierList != null && !CheckEmptyListNew.emptyNameIdentifierList(nameIdentifierList)) {
+        if (nameIdentifierList != null && !CheckEmptyList.emptyNameIdentifierList(nameIdentifierList)) {
           dataCiteContributor.setNameIdentifiers(parseNameIdentifierValue(nameIdentifierList, missedProperties));
         }
       }
@@ -831,12 +829,12 @@ public class CedarInstanceParserNew {
       dataCiteRelatedItem.setRelatedItemIdentifier(dataCiteRelatedItemIdentifier);
 
       //parse creators values
-      if (r.relatedItemCreator() != null && r.relatedItemCreator().relatedItemCreatorList() != null && !r.relatedItemCreator().relatedItemCreatorList().isEmpty() && !CheckEmptyListNew.emptyRelatedItemCreatorList(r.relatedItemCreator().relatedItemCreatorList())){
+      if (r.relatedItemCreator() != null && r.relatedItemCreator().relatedItemCreatorList() != null && !r.relatedItemCreator().relatedItemCreatorList().isEmpty() && !CheckEmptyList.emptyRelatedItemCreatorList(r.relatedItemCreator().relatedItemCreatorList())){
         dataCiteRelatedItem.setCreators(parseRelatedItemCreators(r.relatedItemCreator().relatedItemCreatorList(), missedProperties));
       }
 
       // parse titles values
-      if (r.title() != null && r.title().titleList() != null && !r.title().titleList().isEmpty() && !CheckEmptyListNew.emptyTitleList(r.title().titleList())){
+      if (r.title() != null && r.title().titleList() != null && !r.title().titleList().isEmpty() && !CheckEmptyList.emptyTitleList(r.title().titleList())){
         dataCiteRelatedItem.setTitles(parseTitleValue(r.title().titleList(), missedProperties));
       } else {
         missedProperties.add("Title under Related Items");
@@ -845,7 +843,7 @@ public class CedarInstanceParserNew {
       //parse contributors values
       if(r.relatedItemContributor() != null && r.relatedItemContributor().relatedItemContributorList() != null){
         List<RelatedItemContributorElement> contributorList = r.relatedItemContributor().relatedItemContributorList();
-        if (!contributorList.isEmpty() && !CheckEmptyListNew.emptyRelatedItemContributorList(contributorList)){
+        if (!contributorList.isEmpty() && !CheckEmptyList.emptyRelatedItemContributorList(contributorList)){
           dataCiteRelatedItem.setContributors(parseRelatedItemContributors(contributorList, missedProperties));
         }
       }

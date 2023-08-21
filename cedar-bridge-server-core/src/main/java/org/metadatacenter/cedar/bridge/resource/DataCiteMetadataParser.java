@@ -2,7 +2,6 @@ package org.metadatacenter.cedar.bridge.resource;
 
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
 
-import java.lang.Number;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.*;
@@ -11,7 +10,6 @@ import static org.metadatacenter.cedar.bridge.resource.Cedar.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.AlternateIdentifierElement.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.CreatorElement.*;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.CreatorElement.AffiliationElement.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.DateElement.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.DescriptionElement.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.FundingReferenceElement.*;
@@ -22,7 +20,7 @@ import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.Re
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.RelatedItemElement.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.RightsElement.*;
 
-public class DataCiteMetadataParserNew {
+public class DataCiteMetadataParser {
     private static final String PREFIX = "10.82658";
     private static final String DATACITE_ID_URL_PREFIX = "http://purl.org/datacite/v4.4/";
     private static final String PERSOANL_ID_URL = "http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Persoanl";

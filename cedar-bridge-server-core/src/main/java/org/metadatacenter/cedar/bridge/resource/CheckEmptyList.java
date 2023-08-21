@@ -6,7 +6,7 @@ import static org.metadatacenter.cedar.bridge.resource.Cedar.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.RelatedItemElement.*;
 
-public class CheckEmptyListNew {
+public class CheckEmptyList {
   public static boolean emptyCreatorList(List<CreatorElement> creatorList){
     String name = creatorList.get(0).creatorName().value();
     String nameType = creatorList.get(0).nameType() != null ? creatorList.get(0).nameType().label() : null;
