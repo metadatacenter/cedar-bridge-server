@@ -43,7 +43,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   @Test
   public void dataCiteInstanceRichDataTest() throws IOException, DataCiteInstanceValidationException {
     // Retrieve the given DataCite instance from the file
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRichMetadata());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRichMetadata());
 
     // Create a DOI using the given DataCite instance
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
@@ -63,7 +63,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceSimplyDataTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredOnly());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredOnly());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -80,7 +80,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceAllRequiredDataTest() throws IOException, DataCiteInstanceValidationException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceAllUnderRequiredElements());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceAllUnderRequiredElements());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -97,7 +97,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRequiredPlusSubjectTest() throws IOException, DataCiteInstanceValidationException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndSubject());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndSubject());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -114,7 +114,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRequiredPlusContributorTest() throws IOException, DataCiteInstanceValidationException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndContributor());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndContributor());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -131,7 +131,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRequiredPlusDateTest() throws IOException,DataCiteInstanceValidationException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndDate());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndDate());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -148,7 +148,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRequiredPlusLangTest() throws IOException, DataCiteInstanceValidationException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndLang());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndLang());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -165,7 +165,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRequiredPlusAlternateIdentifierTest() throws IOException, DataCiteInstanceValidationException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndAlternateIdentifier());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndAlternateIdentifier());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -182,7 +182,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRequiredPlusRelatedIdentifierTest() throws IOException, DataCiteInstanceValidationException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndRelatedIdentifier());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndRelatedIdentifier());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -199,7 +199,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRequiredPlusSizeFormatVersionTest() throws IOException, DataCiteInstanceValidationException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndSizeFormatVersion());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndSizeFormatVersion());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -216,7 +216,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRequiredPlusRightsTest() throws IOException, DataCiteInstanceValidationException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndRights());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndRights());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -233,7 +233,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRequiredPlusDescriptionTest() throws IOException, DataCiteInstanceValidationException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndDescription());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndDescription());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -250,7 +250,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRequiredPlusFundingRefTest() throws IOException, DataCiteInstanceValidationException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndFundingRef());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndFundingRef());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -267,7 +267,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRequiredPlusGeoLocTest() throws IOException, DataCiteInstanceValidationException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndGeoLocation());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndGeoLocation());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -284,7 +284,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRequiredPlusRelatedItemTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndRelatedItem());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndRelatedItem());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -301,7 +301,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRequiredPlusRandomTest() throws IOException, DataCiteInstanceValidationException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndRandomFields());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndRandomFields());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -318,7 +318,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRequiredPlusEmptyStringTest() throws IOException, DataCiteInstanceValidationException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndEmptyString());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndEmptyString());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -335,7 +335,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceRequiredPlusAllElementExpandedTest() throws IOException, DataCiteInstanceValidationException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndAllEmptyFields());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndAllEmptyFields());
 
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
@@ -360,7 +360,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceMissingAllFieldsTest() throws IOException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceMissingAllFields());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceMissingAllFields());
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
     Assert.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
@@ -368,7 +368,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceMissingPrefixFieldTest() throws IOException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceMissingPrefix());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceMissingPrefix());
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
     Assert.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
@@ -376,7 +376,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceMissingPublisherFieldTest() throws IOException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceMissingPublisher());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceMissingPublisher());
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
@@ -384,7 +384,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceMissingPublicationYearFieldTest() throws IOException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceMissingPublicationYear());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceMissingPublicationYear());
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
@@ -392,7 +392,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceMissingMultipleRequiredFieldsTest() throws IOException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceMissingMultipleRequiredFields());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceMissingMultipleRequiredFields());
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
@@ -400,7 +400,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceMissingContributorNameFieldTest() throws IOException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceMissingContributorName());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceMissingContributorName());
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
@@ -408,7 +408,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceMissingContributorTypeFieldTest() throws IOException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceMissingContributorType());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceMissingContributorType());
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
@@ -416,7 +416,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceMissingRelatedIdentifierTypeFieldTest() throws IOException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceMissingRelatedIdentifierType());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceMissingRelatedIdentifierType());
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
@@ -424,7 +424,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceMissingRelationTypeFieldTest() throws IOException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceMissingRelationType());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceMissingRelationType());
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
@@ -432,7 +432,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceMissingFunderNameFieldTest() throws IOException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceMissingFunderName());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceMissingFunderName());
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
@@ -440,7 +440,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceMissingRelatedItemTypeFieldTest() throws IOException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceMissingRelatedItemType());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceMissingRelatedItemType());
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
@@ -448,7 +448,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceMissingRelatedItemRelationTypeFieldTest() throws IOException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceMissingRelatedItemRelationType());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceMissingRelatedItemRelationType());
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
@@ -456,7 +456,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceIncorrectNameTypeInputTest() throws IOException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceWrongNameType());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceWrongNameType());
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
@@ -464,7 +464,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
   @Test
   public void dataCiteInstanceGeoLocationBoxOutOfRangeValueTest() throws IOException{
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceDataOutOfRange());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceDataOutOfRange());
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
     Assert.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
@@ -491,7 +491,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   public void draftDoiSaveAndUpdateSimpleMetadataTest() throws IOException, DataCiteInstanceValidationException {
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredOnly());
+    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredOnly());
 
     // Create a draft DOI using the given DataCite instance
     Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
@@ -508,7 +508,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT));
 
     // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRichMetadata());
+    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRichMetadata());
 
     // Update the draft DOI metadata
     Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, DRAFT);
@@ -529,7 +529,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   public void draftDoiSaveAndUpdateRichMetadataTest() throws IOException, DataCiteInstanceValidationException {
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRichMetadata());
+    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRichMetadata());
 
     // Create a draft DOI using the given DataCite instance
     Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
@@ -546,7 +546,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT));
 
     // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRichMetadataRichUpdate());
+    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRichMetadataRichUpdate());
 
     // Update the draft DOI metadata
     Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, DRAFT);
@@ -567,7 +567,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   public void draftDoiSaveAndPublishSimpleMetadataTest() throws IOException, DataCiteInstanceValidationException {
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredOnly());
+    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredOnly());
 
     // Create a draft DOI using the given DataCite instance
     Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
@@ -584,7 +584,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT));
 
     // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndRandomFields());;
+    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndRandomFields());;
 
     // Publish the updated draft DOI metadata
     Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, PUBLISH);
@@ -607,7 +607,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   public void draftDoiSaveAndPublishRichMetadataTest() throws IOException, DataCiteInstanceValidationException {
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRichMetadata());
+    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRichMetadata());
 
     // Create a draft DOI using the given DataCite instance
     Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
@@ -624,7 +624,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT));
 
     // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRichMetadataRichUpdate());
+    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRichMetadataRichUpdate());
 
     // Publish the updated draft DOI metadata
     Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, PUBLISH);
@@ -645,7 +645,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   public void draftDoiAddNewInstanceTest() throws IOException, DataCiteInstanceValidationException {
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRichMetadata());
+    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRichMetadata());
 
     // Create a draft DOI using the given DataCite instance
     Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
@@ -662,7 +662,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT));
 
     // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRichMetadataAddNewInstance());
+    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRichMetadataAddNewInstance());
 
     // Publish the updated draft DOI metadata
     Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, PUBLISH);
@@ -683,7 +683,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   public void draftDoiDeleteInstanceTest() throws IOException, DataCiteInstanceValidationException {
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRichMetadata());
+    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRichMetadata());
 
     // Create a draft DOI using the given DataCite instance
     Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
@@ -700,7 +700,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT));
 
     // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRichMetadataDeleteInstance());
+    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRichMetadataDeleteInstance());
 
     // Publish the updated draft DOI metadata
     Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, PUBLISH);
@@ -721,7 +721,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   public void draftDoiDeleteAndAddNewInstanceTest() throws IOException, DataCiteInstanceValidationException {
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRichMetadata());
+    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRichMetadata());
 
     // Create a draft DOI using the given DataCite instance
     Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
@@ -738,7 +738,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT));
 
     // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRichMetadataDeleteAndAddInstance());
+    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRichMetadataDeleteAndAddInstance());
 
     // Publish the updated draft DOI metadata
     Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, PUBLISH);
@@ -759,7 +759,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   public void draftDoiDeleteAllInstanceTest() throws IOException, DataCiteInstanceValidationException {
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRichMetadata());
+    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRichMetadata());
 
     // Create a draft DOI using the given DataCite instance
     Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
@@ -776,7 +776,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT));
 
     // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredAndAlternateIdentifier());
+    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredAndAlternateIdentifier());
 
     // Publish the updated draft DOI metadata
     Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, PUBLISH);
@@ -797,7 +797,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   public void draftDoiSaveWithEmptyDataCiteInstanceTest() throws IOException, DataCiteInstanceValidationException {
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceMissingAllFields());
+    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceMissingAllFields());
 
     // Create a draft DOI using the given DataCite instance
     Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
@@ -808,7 +808,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   public void draftDoiUpdateWithoutPrefixFieldTest() throws IOException, DataCiteInstanceValidationException {
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceRequiredOnly());
+    JsonNode givenMetadataBeforeUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceRequiredOnly());
 
     // Create a draft DOI using the given DataCite instance
     Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
@@ -825,7 +825,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
     Assert.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT));
 
     // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateTestFiles.getInstanceMissingPrefix());;
+    JsonNode givenMetadataAfterUpdate = objectMapper.valueToTree(GenerateInstance.getInstanceMissingPrefix());;
 
     // Update the draft DOI metadata
     Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, DRAFT);
@@ -836,7 +836,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   public void compareDraftDoiInstanceWithDataCiteResponseTest() throws IOException, DataCiteInstanceValidationException {
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
     // Retrieve the given DataCite instance from the file
-    JsonNode givenMetadata = objectMapper.valueToTree(GenerateTestFiles.getInstanceRichMetadata());
+    JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRichMetadata());
 
     // Create a draft DOI using the given DataCite instance
     Response draftDoiBeforeUpdateResponse = createDoi(givenMetadata, sourceArtifactId, DRAFT);

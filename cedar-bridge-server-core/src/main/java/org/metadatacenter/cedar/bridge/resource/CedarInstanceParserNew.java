@@ -1,6 +1,5 @@
 package org.metadatacenter.cedar.bridge.resource;
 
-import org.metadatacenter.cedar.bridge.resource.CedarProperties.*;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
 import org.metadatacenter.id.CedarFQResourceId;
 import org.metadatacenter.model.CedarResourceType;

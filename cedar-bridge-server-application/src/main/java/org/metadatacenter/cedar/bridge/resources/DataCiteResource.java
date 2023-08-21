@@ -15,7 +15,6 @@ import org.apache.http.util.EntityUtils;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.bridge.resource.*;
 import org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance;
-import org.metadatacenter.cedar.bridge.resource.CedarProperties.CedarDataCiteInstance;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.Attributes;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.DataCiteSchema;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
@@ -122,11 +121,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       String dataCiteResponseString = mapper.writeValueAsString(dataCiteResponse);
       System.out.println("DataCiteResponse converted to Data Cite Schema Json: " + dataCiteResponseString);
 
-      // Pass the value from dataCiteResponse to cedarDataCiteInstance
-//      CedarDataCiteInstance cedarDataCiteInstance = new CedarDataCiteInstance();
-//      DataCiteMetadataParser.parseDataCiteSchema(dataCiteResponse.getData().getAttributes(), cedarDataCiteInstance);
-
-      // Pass the value from dataCiteResponse to MetadataInstance(Based on Matthew's Code)
+      // Pass the value from dataCiteResponse to MetadataInstance
       MetadataInstance cedarDataCiteInstance = DataCiteMetadataParserNew.parseDataCiteSchema(dataCiteResponse.getData().getAttributes());
 
       //Serialize DataCiteRequest Class to json
@@ -204,7 +199,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     // later: check if the source artifact is published - if it is an instance
 
     //Check if there is an already started DOI metadata instance. If yes, load it as well
-    //Use publisher and OpenView Url as parameters to send query to DataCite
+    //Use publisher and openView Url as parameters to send query to DataCite
     try {
       Response httpResponse = getDraftDoiMetadata(sourceArtifactId);
       HashMap<String, Object> entity = (HashMap<String, Object>) httpResponse.getEntity();
@@ -212,7 +207,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       JsonNode dataNode = (JsonNode) entity.get("draftMetadata");
 
       if (hasDraftDoi){
-        // if draft DOI is returned, convert the data from dataCite JSON to JSON-LD, and put it into response
+        // if draft DOI is returned, convert the data from dataCite JSON to Cedar Instance JSON-LD, and put it into response
         JsonNode attributesNode = dataNode.get(0).get("attributes");
         JsonNode draftDoi = attributesNode.get("doi");
         ObjectMapper mapper = new ObjectMapper();
@@ -224,9 +219,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
         System.out.println("existingDoiMetadata converted to Data Cite Schema Json: " + existingDoiMetadataString);
 
         // Pass the value from dataCiteResponse to cedarDataCiteInstance
-//        CedarDataCiteInstance cedarExistingDoiMetadata = new CedarDataCiteInstance();
-//        DataCiteMetadataParser.parseDataCiteSchema(existingDoiMetadata, cedarExistingDoiMetadata);
-        // Pass the value from dataCiteResponse to cedarDataCiteInstance using Matthew's Code
         MetadataInstance cedarExistingDoiMetadata = DataCiteMetadataParserNew.parseDataCiteSchema(existingDoiMetadata);
         response.put("existingDataCiteMetadata", cedarExistingDoiMetadata);
         response.put("draftDoi", draftDoi);
@@ -235,7 +227,9 @@ public class DataCiteResource extends CedarMicroserviceResource {
         System.out.println("Converted Cedar DataCite Instance JSON-LD: " + cedarDataCiteInstanceString);
       }
       else{
-        response.put("existingDataCiteMetadata", null);
+        // if draft DOI is not available, set the url and resourceType fields
+        MetadataInstance defaultInstance = GenerateInstance.getDefaultInstance(sourceArtifactId);
+        response.put("existingDataCiteMetadata", defaultInstance);
         response.put("draftDoi", null);
       }
     } catch(IOException | InterruptedException e){
@@ -462,8 +456,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     try {
       // Deserialize JSON-LD to CedarDataCiteInstance Class
       String metadataString = metadata.toString();
-//      CedarDataCiteInstance cedarInstance = mapper.readValue(metadataString, CedarDataCiteInstance.class);
-      // Deserialize JSON-LD to MetadataInstance Class using Matthew's code
+      // Deserialize JSON-LD to MetadataInstance Class
       MetadataInstance cedarInstance = mapper.readValue(metadataString, MetadataInstance.class);
 
       String cedarInstanceString = mapper.writeValueAsString(cedarInstance);

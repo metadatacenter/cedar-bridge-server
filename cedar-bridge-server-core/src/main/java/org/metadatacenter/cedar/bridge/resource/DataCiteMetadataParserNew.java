@@ -1,7 +1,5 @@
 package org.metadatacenter.cedar.bridge.resource;
 
-import org.metadatacenter.cedar.bridge.resource.CedarProperties.Date;
-import org.metadatacenter.cedar.bridge.resource.CedarProperties.*;
 import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
 
 import java.lang.Number;
@@ -97,8 +95,8 @@ public class DataCiteMetadataParserNew {
       return new MetadataInstance(
           "TheId",
           "The name",
-          "The description",
-          "<Insert template IRI here>",
+          "",
+          "https://repo.metadatacenter.orgx/templates/2c1d808e-f913-4e39-bdab-1f00ae98d4bf",
           now,
           "Created by",
           now,

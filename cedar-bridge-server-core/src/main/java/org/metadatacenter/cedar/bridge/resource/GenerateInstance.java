@@ -1,5 +1,7 @@
 package org.metadatacenter.cedar.bridge.resource;
 
+import org.metadatacenter.id.CedarFQResourceId;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -16,7 +18,7 @@ import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.Ge
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.RightsElement.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.SubjectElement.*;
 
-public class GenerateTestFiles {
+public class GenerateInstance {
   private static final String ELEMENT_IRI_PREFIX = "https://repo.metadatacenter.org/template-element-instances/";
   private static final String INSTANCE_IRI_PREFIX = "https://repo.metadatacenter.org/template-instances/";
   private static final String TEMPLATE_ID = "https://repo.metadatacenter.org/templates/5b6e0952-8a56-4f97-a35d-7ce784773b57";
@@ -26,6 +28,43 @@ public class GenerateTestFiles {
   private static final String PUBLISHER = "CEDAR";
 
   private static final Instant now = Instant.ofEpochSecond(System.currentTimeMillis() / 1000);
+
+  public static MetadataInstance getDefaultInstance(String sourceArtifactId){
+    String openViewUrl = CheckOpenViewUrl.getOpenViewUrl(sourceArtifactId);
+    String resourceType = CedarFQResourceId.build(sourceArtifactId).getType().getValue();
+    return new MetadataInstance(
+        INSTANCE_IRI_PREFIX + UUID.randomUUID(),
+        "Default Instance",
+        "A new DataCite Instance with default values",
+        TEMPLATE_ID,
+        now,
+        "Created by",
+        now,
+        "Modified by",
+        "Derived from",
+        PrefixField.of(PREFIX),
+        UrlField.of(openViewUrl),
+        CreatorElementList.of(),
+        TitleElementList.of(),
+        PublicationYearField.of(PUBLICATION_YEAR),
+        PublisherField.of(PUBLISHER),
+        ResourceTypeField.of(resourceType),
+        SubjectElementList.of(),
+        ContributorElementList.of(),
+        DateElementList.of(),
+        LanguageField.of(),
+        AlternateIdentifierElementList.of(),
+        RelatedIdentifierElementList.of(),
+        SizeFieldList.of(),
+        FormatFieldList.of(),
+        VersionField.of(),
+        RightsElementList.of(),
+        DescriptionElementList.of(),
+        GeoLocationElementList.of(),
+        FundingReferenceElementList.of(),
+        RelatedItemElementList.of()
+    );
+  }
   public static MetadataInstance getInstanceRequiredOnly(){
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
