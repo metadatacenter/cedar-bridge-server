@@ -35,7 +35,10 @@ public abstract class AbstractBridgeServerResourceTest
   protected static final String BASE_URL = "http://localhost";
 
   protected static final String FILE_BASE_PATH = "TestJsonFiles/";
-  protected static final String displayAffiliation = "?affiliation=true";
+  protected static final String DISPLAY_AFFILIATION = "?affiliation=true";
+  protected static final String DUMMY_SOURCE_ARTIFACT_ID_PREFIX = "https://repo.metadatacenter.org/template-instances/";
+  protected static final String PUBLISH = "publish";
+  protected static final String DRAFT = "draft";
 
   static {
     log = LoggerFactory.getLogger("Cedar Bridge Server Test");

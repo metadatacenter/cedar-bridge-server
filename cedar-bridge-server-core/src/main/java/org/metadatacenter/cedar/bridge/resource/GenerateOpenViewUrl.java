@@ -6,7 +6,7 @@ import org.metadatacenter.model.CedarResourceType;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-public class CheckOpenViewUrl {
+public class GenerateOpenViewUrl {
   public static String getOpenViewUrl(String sourceArtifactId){
     CedarResourceType cedarResourceType = CedarFQResourceId.build(sourceArtifactId).getType();
     String encodedSourceArtifactId = URLEncoder.encode(sourceArtifactId, StandardCharsets.UTF_8);

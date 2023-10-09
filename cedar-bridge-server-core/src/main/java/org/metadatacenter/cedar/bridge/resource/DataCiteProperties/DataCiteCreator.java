@@ -16,9 +16,9 @@ public class DataCiteCreator {
     @JsonProperty("familyName")
     private String familyName;
     @JsonProperty("affiliation")
-    private List<DataCiteAffiliation> dataCiteAffiliations;
+    private List<DataCiteAffiliation> affiliations;
     @JsonProperty("nameIdentifiers")
-    private List<DataCiteNameIdentifier> dataCiteNameIdentifiers;
+    private List<DataCiteNameIdentifier> nameIdentifiers;
 
     public DataCiteCreator() {
     }
@@ -56,20 +56,18 @@ public class DataCiteCreator {
     }
 
     public List<DataCiteAffiliation> getAffiliations() {
-        return dataCiteAffiliations;
+        return affiliations;
     }
 
-    public void setAffiliations(List<DataCiteAffiliation> dataCiteAffiliations) {
-        this.dataCiteAffiliations = dataCiteAffiliations;
+    public void setAffiliations(List<DataCiteAffiliation> affiliations) {
+        this.affiliations = affiliations;
     }
 
     public List<DataCiteNameIdentifier> getNameIdentifiers() {
-        return dataCiteNameIdentifiers;
+        return nameIdentifiers;
     }
 
-    public void setNameIdentifiers(List<DataCiteNameIdentifier> dataCiteNameIdentifiers) {
-        this.dataCiteNameIdentifiers = dataCiteNameIdentifiers;
+    public void setNameIdentifiers(List<DataCiteNameIdentifier> nameIdentifiers) {
+        this.nameIdentifiers = nameIdentifiers;
     }
-
-
 }
