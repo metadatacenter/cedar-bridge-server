@@ -1,8 +1,7 @@
-package org.metadatacenter.cedar.bridge.resource.DataCiteProperties;
+package org.metadatacenter.cedar.bridge.resource.datacite;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import java.util.List;
 

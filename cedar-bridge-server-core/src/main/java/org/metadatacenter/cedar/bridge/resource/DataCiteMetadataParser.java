@@ -1,6 +1,6 @@
 package org.metadatacenter.cedar.bridge.resource;
 
-import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
+import org.metadatacenter.cedar.bridge.resource.datacite.*;
 
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -544,20 +544,13 @@ public class DataCiteMetadataParser {
                 String funderIdentifierType = f.getFunderIdentifierType();
                 String funderIdentifierTypeId = null;
                 if (funderIdentifierType != null) {
-                    switch (funderIdentifierType) {
-                        case "GRID":
-                            funderIdentifierTypeId = "https://www.grid.ac/";
-                            break;
-                        case "ISNI":
-                            funderIdentifierTypeId = "http://id.loc.gov/ontologies/bibframe/Isni";
-                            break;
-                        case "ROR":
-                            funderIdentifierTypeId = "http://purl.obolibrary.org/obo/BE_ROR";
-                            break;
-                        case "Other":
-                            funderIdentifierTypeId = "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17649";
-                            break;
-                    }
+                  funderIdentifierTypeId = switch (funderIdentifierType) {
+                    case "GRID" -> "https://www.grid.ac/";
+                    case "ISNI" -> "http://id.loc.gov/ontologies/bibframe/Isni";
+                    case "ROR" -> "http://purl.obolibrary.org/obo/BE_ROR";
+                    case "Other" -> "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17649";
+                    default -> funderIdentifierTypeId;
+                  };
                 }
                     String schemeUri = f.getSchemeUri();
                     String awardNumber = f.getAwardNumber();
@@ -689,20 +682,13 @@ public class DataCiteMetadataParser {
                     String numberType = r.getNumberType();
                     String numberTypeId = null;
                     if (numberType != null) {
-                        switch (numberType) {
-                            case "Report":
-                                numberTypeId = "http://purl.bioontology.org/ontology/SNOMEDCT/229059009";
-                                break;
-                            case "Article":
-                                numberTypeId = "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C47902";
-                                break;
-                            case "Chapter":
-                                numberTypeId = "http://purl.org/ontology/bibo/Chapter";
-                                break;
-                            case "Others":
-                                numberTypeId = "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17649";
-                                break;
-                        }
+                      numberTypeId = switch (numberType) {
+                        case "Report" -> "http://purl.bioontology.org/ontology/SNOMEDCT/229059009";
+                        case "Article" -> "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C47902";
+                        case "Chapter" -> "http://purl.org/ontology/bibo/Chapter";
+                        case "Others" -> "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17649";
+                        default -> numberTypeId;
+                      };
                     }
                     String volume = r.getVolume();
                     String issue = r.getIssue();

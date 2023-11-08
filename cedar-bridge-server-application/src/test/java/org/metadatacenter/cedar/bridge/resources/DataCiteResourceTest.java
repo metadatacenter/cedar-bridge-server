@@ -5,7 +5,7 @@ import org.junit.*;
 import org.metadatacenter.cedar.bridge.resource.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.DataCiteSchema;
+import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteSchema;
 import org.metadatacenter.http.CedarResponseStatus;
 
 import javax.ws.rs.client.Entity;

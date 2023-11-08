@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
+import org.metadatacenter.cedar.bridge.resource.datacite.*;
 
 
 import java.util.*;
