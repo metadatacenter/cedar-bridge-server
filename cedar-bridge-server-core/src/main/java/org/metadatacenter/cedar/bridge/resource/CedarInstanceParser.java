@@ -1,6 +1,6 @@
 package org.metadatacenter.cedar.bridge.resource;
 
-import org.metadatacenter.cedar.bridge.resource.DataCiteProperties.*;
+import org.metadatacenter.cedar.bridge.resource.datacite.*;
 import org.metadatacenter.id.CedarFQResourceId;
 import org.metadatacenter.model.CedarResourceType;
 
@@ -235,7 +235,7 @@ public class CedarInstanceParser {
           name = a.name() != null ? a.name().value() : null;
           affiliationIdentifier = a.affiliationIdentifier() != null ? a.affiliationIdentifier().value():null;
           affiliationIdentifierScheme = a.affiliationIdentifierScheme() != null ? a.affiliationIdentifierScheme().value() : null;
-          if (affiliationIdentifierScheme == null || affiliationIdentifierScheme.equals("")){
+          if (affiliationIdentifierScheme == null || affiliationIdentifierScheme.isEmpty()){
             missedProperties.add("Affiliation Identifier Scheme under Creators");
           }
           affiliationSchemeURI = a.schemeUri() != null ? a.schemeUri().id() : null;
@@ -244,7 +244,7 @@ public class CedarInstanceParser {
           name = a.name() != null ? a.name().value() : null;
           affiliationIdentifier = a.affiliationIdentifier() != null ? a.affiliationIdentifier().value():null;
           affiliationIdentifierScheme = a.affiliationIdentifierScheme() != null ? a.affiliationIdentifierScheme().value() : null;
-          if (affiliationIdentifierScheme == null || affiliationIdentifierScheme.equals("")){
+          if (affiliationIdentifierScheme == null || affiliationIdentifierScheme.isEmpty()){
             missedProperties.add("Affiliation Identifier Scheme under Contributors");
           }
           affiliationSchemeURI = a.schemeUri() != null ? a.schemeUri().id() : null;
@@ -275,7 +275,7 @@ public class CedarInstanceParser {
           CreatorElement.NameIdentifierElement n = (CreatorElement.NameIdentifierElement) obj;
           nameIdentifierName = n.name() != null ? n.name().value() : null;
           nameIdentifierScheme = n.nameIdentifierScheme() != null ? n.nameIdentifierScheme().value() : null;
-          if (nameIdentifierScheme == null || nameIdentifierScheme.equals("")){
+          if (nameIdentifierScheme == null || nameIdentifierScheme.isEmpty()){
             missedProperties.add("Name Identifier Scheme under Creators");
           }
           nameIdentifierSchemeUri = n.schemeUri() != null ? n.schemeUri().id() : null;
@@ -283,7 +283,7 @@ public class CedarInstanceParser {
           ContributorElement.NameIdentifierElement n = (ContributorElement.NameIdentifierElement) obj;
           nameIdentifierName = n.name() != null ? n.name().value() : null;
           nameIdentifierScheme = n.nameIdentifierScheme() != null ? n.nameIdentifierScheme().value() : null;
-          if (nameIdentifierScheme == null || nameIdentifierScheme.equals("")){
+          if (nameIdentifierScheme == null || nameIdentifierScheme.isEmpty()){
             missedProperties.add("Name Identifier Scheme under Contributors");
           }
           nameIdentifierSchemeUri = n.schemeUri() != null ? n.schemeUri().id() : null;
@@ -309,7 +309,7 @@ public class CedarInstanceParser {
       DataCiteCreator dataCiteCreator = new DataCiteCreator();
       // Retrieve values from CEDAR class
       String creatorName = c.creatorName().value();
-      if (creatorName == null || creatorName.equals("")){
+      if (creatorName == null || creatorName.isEmpty()){
         missedProperties.add("Creator Name under Creators");
       }
 
@@ -421,7 +421,7 @@ public class CedarInstanceParser {
       DataCiteContributor dataCiteContributor = new DataCiteContributor();
       // Retrieve values from CEDAR class
       String name = c.contributorName()!=null ? c.contributorName().value() : null;
-      if (name == null || name.equals("")){
+      if (name == null || name.isEmpty()){
         missedProperties.add("Contributor Name under Contributors");
       }
       String nameType = c.nameType() != null ? c.nameType().label() : null;
@@ -469,7 +469,7 @@ public class CedarInstanceParser {
       DataCiteDate dataCiteDate = new DataCiteDate();
       String date = d.date() != null ? d.date().value() : null;
       String dateType = d.dateType() != null ? d.dateType().label() : null;
-      if (dateType == null || dateType.equals("")){
+      if (dateType == null || dateType.isEmpty()){
         missedProperties.add("Date Type under Date");
       }
       String dateInformation = d.dateInformation()!=null ? d.dateInformation().value():null;
@@ -490,7 +490,7 @@ public class CedarInstanceParser {
       DataCiteAlternateIdentifier dataCiteAlternateIdentifier = new DataCiteAlternateIdentifier();
       String alternateIdentifier = a.alternateIdentifier() != null ? a.alternateIdentifier().value() : null;
       String alternateIdentifierType = a.alternateIdentifierType() != null ? a.alternateIdentifierType().value() : null;
-      if (alternateIdentifierType == null || alternateIdentifierType.equals("")){
+      if (alternateIdentifierType == null || alternateIdentifierType.isEmpty()){
         missedProperties.add("Alternate Identifier Type under Alternate Identifiers");
       }
 
@@ -749,7 +749,7 @@ public class CedarInstanceParser {
     for(FundingReferenceElement f : fundingReferenceList) {
       DataCiteFundingReference dataCiteFundingReference = new DataCiteFundingReference();
       String funderName = f.funderName() != null ? f.funderName().value() : null;
-      if (funderName == null || funderName.equals("")){
+      if (funderName == null || funderName.isEmpty()){
         missedProperties.add("Funder Name under Funding Reference");
       }
       String funderIdentifier = f.funderIdentifier() != null ? f.funderIdentifier().value() : null;
@@ -862,7 +862,7 @@ public class CedarInstanceParser {
       DataCiteCreator dataCiteCreator = new DataCiteCreator();
       // Retrieve values from CEDAR class
       String creatorName = c.creatorName().value();
-      if (creatorName == null || creatorName.equals("")){
+      if (creatorName == null || creatorName.isEmpty()){
         missedProperties.add("Creator Name under Related Items");
       }
 
@@ -887,14 +887,14 @@ public class CedarInstanceParser {
       DataCiteRelatedItemContributor dataCiteRelatedItemContributor = new DataCiteRelatedItemContributor();
       // Retrieve values from CEDAR class
       String name = c.contributorName() != null ? c.contributorName().value() : null;
-      if (name == null || name.equals("")) {
+      if (name == null || name.isEmpty()) {
         missedProperties.add("Contributor Name under Related Items");
       }
       String nameType = c.nameType() != null ? c.nameType().label() : null;
       String givenName = c.givenName() != null ? c.givenName().value() : null;
       String familyName = c.familyName() != null ? c.familyName().value() : null;
       String contributorType = c.contributorType() != null ? c.contributorType().label() : null;
-      if (contributorType == null || contributorType.equals("")) {
+      if (contributorType == null || contributorType.isEmpty()) {
         missedProperties.add("Contributor Type under Related Items");
       }
 

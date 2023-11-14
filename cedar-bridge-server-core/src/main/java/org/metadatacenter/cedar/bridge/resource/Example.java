@@ -8,8 +8,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.metadatacenter.cedar.bridge.resource.Cedar.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.*;

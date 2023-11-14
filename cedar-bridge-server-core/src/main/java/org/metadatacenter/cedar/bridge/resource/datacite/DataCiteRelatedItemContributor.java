@@ -1,12 +1,10 @@
-package org.metadatacenter.cedar.bridge.resource.DataCiteProperties;
+package org.metadatacenter.cedar.bridge.resource.datacite;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.List;
-
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DataCiteCreator {
+public class DataCiteRelatedItemContributor {
     @JsonProperty("name")
     private String name;
     @JsonProperty("nameType")
@@ -15,13 +13,8 @@ public class DataCiteCreator {
     private String givenName;
     @JsonProperty("familyName")
     private String familyName;
-    @JsonProperty("affiliation")
-    private List<DataCiteAffiliation> affiliations;
-    @JsonProperty("nameIdentifiers")
-    private List<DataCiteNameIdentifier> nameIdentifiers;
-
-    public DataCiteCreator() {
-    }
+    @JsonProperty("contributorType")
+    private String contributorType;
 
     public String getName() {
         return name;
@@ -55,19 +48,11 @@ public class DataCiteCreator {
         this.familyName = familyName;
     }
 
-    public List<DataCiteAffiliation> getAffiliations() {
-        return affiliations;
+    public String getContributorType() {
+        return contributorType;
     }
 
-    public void setAffiliations(List<DataCiteAffiliation> affiliations) {
-        this.affiliations = affiliations;
-    }
-
-    public List<DataCiteNameIdentifier> getNameIdentifiers() {
-        return nameIdentifiers;
-    }
-
-    public void setNameIdentifiers(List<DataCiteNameIdentifier> nameIdentifiers) {
-        this.nameIdentifiers = nameIdentifiers;
+    public void setContributorType(String contributorType) {
+        this.contributorType = contributorType;
     }
 }
