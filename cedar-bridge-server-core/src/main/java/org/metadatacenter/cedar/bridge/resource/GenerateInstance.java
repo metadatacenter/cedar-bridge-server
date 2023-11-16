@@ -3,6 +3,7 @@ package org.metadatacenter.cedar.bridge.resource;
 import org.metadatacenter.id.CedarFQResourceId;
 
 import java.time.Instant;
+import java.time.Year;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,14 +25,14 @@ public class GenerateInstance {
   private static final String TEMPLATE_ID = "https://repo.metadatacenter.org/templates/5b6e0952-8a56-4f97-a35d-7ce784773b57";
   private static final String USER_ID = "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44";
   private static final String PREFIX = "10.82658";
-  private static final String PUBLICATION_YEAR = "2023";
   private static final String PUBLISHER = "CEDAR";
-
+  private static final String publicationYear = String.valueOf(Year.now().getValue()) + "-01-01";
   private static final Instant now = Instant.ofEpochSecond(System.currentTimeMillis() / 1000);
 
   public static MetadataInstance getDefaultInstance(String sourceArtifactId){
     String openViewUrl = GenerateOpenViewUrl.getOpenViewUrl(sourceArtifactId);
     String resourceType = CedarFQResourceId.build(sourceArtifactId).getType().getValue();
+    String capitalizedResourceType = resourceType.substring(0,1).toUpperCase() + resourceType.substring(1);
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Default Instance",
@@ -46,9 +47,9 @@ public class GenerateInstance {
         UrlField.of(openViewUrl),
         CreatorElementList.of(),
         TitleElementList.of(),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
-        ResourceTypeField.of(resourceType),
+        ResourceTypeField.of(capitalizedResourceType),
         SubjectElementList.of(),
         ContributorElementList.of(),
         DateElementList.of(),
@@ -92,7 +93,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -175,7 +176,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Rich Metadata Test"),
                 TitleElement.TitleTypeField.of("http://purl.org/datacite/v4.4/OtherTitle", "Other"))
         ),
-        MetadataInstance.PublicationYearField.of(PUBLICATION_YEAR),
+        MetadataInstance.PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(List.of(
@@ -403,7 +404,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Rich Metadata Test"),
                 TitleElement.TitleTypeField.of("http://purl.org/datacite/v4.4/OtherTitle", "Other"))
         ),
-        MetadataInstance.PublicationYearField.of(PUBLICATION_YEAR),
+        MetadataInstance.PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -450,7 +451,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(List.of(
@@ -510,7 +511,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -596,7 +597,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -652,7 +653,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -699,7 +700,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -753,7 +754,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -817,7 +818,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -870,7 +871,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -930,7 +931,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -984,7 +985,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -1040,7 +1041,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -1100,7 +1101,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -1183,7 +1184,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -1347,7 +1348,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -1502,7 +1503,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required And All Empty Fields"),
                 TitleElement.TitleTypeField.of())
         ),
-        MetadataInstance.PublicationYearField.of(PUBLICATION_YEAR),
+        MetadataInstance.PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(
@@ -1704,7 +1705,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Required properties only"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -1751,7 +1752,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Missing Publisher"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -2026,7 +2027,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Missing RelatedIdentifierType Test"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -2082,7 +2083,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Missing RelationType Test"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -2138,7 +2139,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Missing FunderName Test"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -2194,7 +2195,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Missing RelatedItemType Test"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -2278,7 +2279,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Missing RelatedItemType Test"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -2373,7 +2374,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Wrong NameType Test"),
                 TitleElement.TitleTypeField.of("http://purl.org/datacite/v4.4/OtherTitle", "Other"))
         ),
-        MetadataInstance.PublicationYearField.of(PUBLICATION_YEAR),
+        MetadataInstance.PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -2420,7 +2421,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Data in GeoLocation Out Of Range Test"),
                 TitleElement.TitleTypeField.of())
         ),
-        PublicationYearField.of(PUBLICATION_YEAR),
+        PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(),
@@ -2500,7 +2501,7 @@ public class GenerateInstance {
                     TitleElement.TitleField2.of("Rich Metadata Test"),
                     TitleElement.TitleTypeField.of("http://purl.org/datacite/v4.4/OtherTitle", "Other"))
         )),
-        MetadataInstance.PublicationYearField.of(PUBLICATION_YEAR),
+        MetadataInstance.PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(
@@ -2738,7 +2739,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Rich Metadata Test"),
                 TitleElement.TitleTypeField.of("http://purl.org/datacite/v4.4/OtherTitle", "Other"))
         )),
-        MetadataInstance.PublicationYearField.of(PUBLICATION_YEAR),
+        MetadataInstance.PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(List.of(
@@ -3046,7 +3047,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Rich Metadata Test"),
                 TitleElement.TitleTypeField.of("http://purl.org/datacite/v4.4/OtherTitle", "Other"))
         ),
-        MetadataInstance.PublicationYearField.of(PUBLICATION_YEAR),
+        MetadataInstance.PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(
@@ -3153,7 +3154,7 @@ public class GenerateInstance {
                 TitleElement.TitleField2.of("Update Rich Metadata with Deleted And New Added Instances of Each Element"),
                 TitleElement.TitleTypeField.of("http://purl.org/datacite/v4.4/OtherTitle", "Subtitle"))
         ),
-        MetadataInstance.PublicationYearField.of(PUBLICATION_YEAR),
+        MetadataInstance.PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of("Template"),
         SubjectElementList.of(
