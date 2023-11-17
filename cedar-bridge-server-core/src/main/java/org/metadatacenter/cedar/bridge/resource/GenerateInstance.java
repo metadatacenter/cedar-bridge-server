@@ -42,7 +42,7 @@ public class GenerateInstance {
         "Created by",
         now,
         "Modified by",
-        "Derived from",
+        null,
         PrefixField.of(PREFIX),
         UrlField.of(openViewUrl),
         CreatorElementList.of(),

@@ -140,6 +140,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
   @Path("/create-doi")
   public Response createDOIStart(@QueryParam(QP_SOURCE_ARTIFACT_ID) String sourceArtifactId) throws CedarException {
     CedarRequestContext c = buildRequestContext();
+    String userID = c.getCedarUser().getId();
     c.must(c.user()).be(LoggedIn);
     c.must(c.user()).have(CedarPermission.TEMPLATE_READ);
 
