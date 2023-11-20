@@ -29,7 +29,7 @@ public class GenerateInstance {
   private static final String publicationYear = String.valueOf(Year.now().getValue()) + "-01-01";
   private static final Instant now = Instant.ofEpochSecond(System.currentTimeMillis() / 1000);
 
-  public static MetadataInstance getDefaultInstance(String sourceArtifactId){
+  public static MetadataInstance getDefaultInstance(String sourceArtifactId, String userID){
     String openViewUrl = GenerateOpenViewUrl.getOpenViewUrl(sourceArtifactId);
     String resourceType = CedarFQResourceId.build(sourceArtifactId).getType().getValue();
     String capitalizedResourceType = resourceType.substring(0,1).toUpperCase() + resourceType.substring(1);
@@ -39,9 +39,9 @@ public class GenerateInstance {
         "A new DataCite Instance with default values",
         TEMPLATE_ID,
         now,
-        "Created by",
+        userID,
         now,
-        "Modified by",
+        userID,
         null,
         PrefixField.of(PREFIX),
         UrlField.of(openViewUrl),

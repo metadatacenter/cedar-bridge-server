@@ -85,9 +85,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
   @Timed
   @Path("/get-doi-metadata/{id}")
   public Response getDOIMetadata(@PathParam(PP_ID) String doiIdUrl) throws CedarException {
-
     CedarRequestContext c = buildRequestContext();
-
+    String userID = c.getCedarUser().getId();
 //    c.must(c.user()).be(LoggedIn);
 
     try {
@@ -121,7 +120,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       System.out.println("DataCiteResponse converted to Data Cite Schema Json: " + dataCiteResponseString);
 
       // Pass the value from dataCiteResponse to MetadataInstance
-      MetadataInstance cedarDataCiteInstance = DataCiteMetadataParser.parseDataCiteSchema(dataCiteResponse.getData().getAttributes());
+      MetadataInstance cedarDataCiteInstance = DataCiteMetadataParser.parseDataCiteSchema(dataCiteResponse.getData().getAttributes(), userID);
 
       //Serialize DataCiteRequest Class to json
       String cedarDataCiteInstanceString = mapper.writeValueAsString(cedarDataCiteInstance);
@@ -219,7 +218,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
         System.out.println("existingDoiMetadata converted to Data Cite Schema Json: " + existingDoiMetadataString);
 
         // Pass the value from dataCiteResponse to cedarDataCiteInstance
-        MetadataInstance cedarExistingDoiMetadata = DataCiteMetadataParser.parseDataCiteSchema(existingDoiMetadata);
+        MetadataInstance cedarExistingDoiMetadata = DataCiteMetadataParser.parseDataCiteSchema(existingDoiMetadata, userID);
         response.put("existingDataCiteMetadata", cedarExistingDoiMetadata);
         response.put("draftDoi", draftDoi);
 
@@ -227,7 +226,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
         System.out.println("Converted Cedar DataCite Instance JSON-LD: " + cedarDataCiteInstanceString);
       } else {
         // if draft DOI is not available, set the url and resourceType fields
-        MetadataInstance defaultInstance = GenerateInstance.getDefaultInstance(sourceArtifactId);
+        MetadataInstance defaultInstance = GenerateInstance.getDefaultInstance(sourceArtifactId, userID);
         response.put("existingDataCiteMetadata", defaultInstance);
         response.put("draftDoi", null);
       }

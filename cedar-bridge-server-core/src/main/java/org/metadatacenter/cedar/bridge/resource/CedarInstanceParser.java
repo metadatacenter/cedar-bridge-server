@@ -408,9 +408,10 @@ public class CedarInstanceParser {
 
   private static DataCiteType parseTypeValue(String resourceType) {
     DataCiteType dataCiteType = new DataCiteType();
+    String capitalizedResourceType = resourceType.substring(0,1).toUpperCase() + resourceType.substring(1);
 //        String resourceTypeGeneral = resourceTypeElement.getResourceTypeGeneral().toString();
     dataCiteType.setResourceTypeGeneral(RESOURCE_TYPE_GENERAL);
-    dataCiteType.setResourceType(resourceType);
+    dataCiteType.setResourceType(capitalizedResourceType);
     return dataCiteType;
   }
 

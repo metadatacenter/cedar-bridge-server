@@ -835,6 +835,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
   @Test
   public void compareDraftDoiInstanceWithDataCiteResponseTest() throws IOException, DataCiteInstanceValidationException {
     String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
+    String userId = DUMMY_USER_ID_PREFIX + UUID.randomUUID();
     // Retrieve the given DataCite instance from the file
     JsonNode givenMetadata = objectMapper.valueToTree(GenerateInstance.getInstanceRichMetadata());
 
@@ -854,7 +855,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest
 
     // Convert the DataCite-format metadata to Cedar-format
     DataCiteSchema dataCiteResponse = objectMapper.readValue(returnedMetadata.toString(), DataCiteSchema.class);
-    MetadataInstance cedarDataCiteInstance = DataCiteMetadataParser.parseDataCiteSchema(dataCiteResponse.getData().getAttributes());
+    MetadataInstance cedarDataCiteInstance = DataCiteMetadataParser.parseDataCiteSchema(dataCiteResponse.getData().getAttributes(),userId);
 
     //Compare the converted Cedar-format metadata with the DataCite response metadata
     JsonNode convertedMetadata = objectMapper.valueToTree(cedarDataCiteInstance);

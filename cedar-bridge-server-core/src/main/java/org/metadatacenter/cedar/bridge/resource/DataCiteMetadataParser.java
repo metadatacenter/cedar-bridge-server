@@ -28,7 +28,7 @@ public class DataCiteMetadataParser {
     private static final String DATE_TYPE = "xsd:date";
     private static final String DECIMAL_TYPE = "xsd:decimal";
 
-    public static MetadataInstance parseDataCiteSchema(Attributes dataCiteAttributes) {
+    public static MetadataInstance parseDataCiteSchema(Attributes dataCiteAttributes, String userID) {
       var now = Instant.ofEpochSecond(System.currentTimeMillis() / 1000);
 
       String url = dataCiteAttributes.getUrl();
@@ -96,10 +96,10 @@ public class DataCiteMetadataParser {
           "",
           "https://repo.metadatacenter.orgx/templates/2c1d808e-f913-4e39-bdab-1f00ae98d4bf",
           now,
-          "Created by",
+          userID,
           now,
-          "Modified by",
-          "Derived from",
+          userID,
+          null,
           PrefixField.of(PREFIX),
           UrlField.of(url),
           CreatorElementList.of(creatorList),
