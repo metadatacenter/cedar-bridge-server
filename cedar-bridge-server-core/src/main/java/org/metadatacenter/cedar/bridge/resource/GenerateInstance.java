@@ -45,8 +45,20 @@ public class GenerateInstance {
         null,
         PrefixField.of(PREFIX),
         UrlField.of(openViewUrl),
-        CreatorElementList.of(),
-        TitleElementList.of(),
+        CreatorElementList.of(
+            new CreatorElement(generateId(),
+                CreatorElement.CreatorNameField.of(),
+                CreatorElement.NameTypeField.of(),
+                CreatorElement.GivenNameField.of(),
+                CreatorElement.FamilyNameField.of(),
+                CreatorElement.AffiliationElementList.of(),
+                CreatorElement.NameIdentifierElementList.of())
+        ),
+        TitleElementList.of(
+            new TitleElement(generateId(),
+                TitleElement.TitleField2.of(),
+                TitleElement.TitleTypeField.of())
+        ),
         PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
         ResourceTypeField.of(capitalizedResourceType),
