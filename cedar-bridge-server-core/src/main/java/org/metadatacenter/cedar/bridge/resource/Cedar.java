@@ -419,28 +419,32 @@ public class Cedar {
         /**
          * The location of the landing page with more information about the resource.
          */
-        public record UrlField(String value) implements LiteralField {
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        public record UrlField(String id) implements IriField {
 
             /**
-             * Creates an instance of the {@code  UrlField} record with a {@code  null}
-             * value.
-             *
-             * @return An instance of the {@code  UrlField} record.
+             * Creates an empty UrlField instance, with null values for the id and
+             * label.
              */
             public static UrlField of() {
                 return new UrlField(null);
             }
 
             /**
-             * Creates an instance of the {@code  UrlField} record with the specified value.
+             * Create an instance of UrlField with the specified id and label.
              *
-             * @param value
-             *            The value to set for the record.
-             * @return An instance of the {@code  UrlField} record.
+             * @param id
+             *            The id. This is an IRI.
              */
+
             @JsonCreator
-            public static UrlField of(@JsonProperty("@value") String value) {
-                return new UrlField(value);
+            public static UrlField of(@JsonProperty("@id") String id) {
+                return new UrlField(id);
+            }
+
+            @Override
+            public String label() {
+                return "";
             }
         }
 
