@@ -130,7 +130,7 @@ public class DataCiteMetadataParser {
         if (dataCiteAffiliations != null && !dataCiteAffiliations.isEmpty()){
             for (DataCiteAffiliation a : dataCiteAffiliations) {
                 //initialize corresponding class
-                String name = a.getAffiliationIdentifier();
+                String name = a.getName();
                 String affiliationIdentifier = a.getAffiliationIdentifier();
                 String affiliationScheme = a.getAffiliationIdentifierScheme();
                 String schemeUri = a.getAffiliationSchemeURI();

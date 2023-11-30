@@ -214,6 +214,11 @@ public class DataCiteResource extends CedarMicroserviceResource {
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
 //        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         Attributes existingDoiMetadata = mapper.treeToValue(attributesNode, Attributes.class);
+
+        //Print out the response from DataCite
+        String responseFromDataCite = mapper.writeValueAsString(dataNode);
+        System.out.println("Response from DataCite is :" + responseFromDataCite);
+
         String existingDoiMetadataString = mapper.writeValueAsString(existingDoiMetadata);
         System.out.println("existingDoiMetadata converted to Data Cite Schema Json: " + existingDoiMetadataString);
 
@@ -249,7 +254,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       InterruptedException {
     CedarRequestContext c = buildRequestContext();
 
-//    c.must(c.user()).be(LoggedIn);
+    c.must(c.user()).be(LoggedIn);
 
     Map<String, Object> response = new HashMap<>();
 
@@ -258,7 +263,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     JsonNode validationResult = validationResultPair.getRight();
 
     //Call CEDAR validation endpoint and continue if return true
-    // if (validates){
+//     if (validates){
     if (true) {
       // Get DOI request json
       String jsonData = "";
