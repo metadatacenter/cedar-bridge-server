@@ -87,7 +87,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
   public Response getDOIMetadata(@PathParam(PP_ID) String doiIdUrl) throws CedarException {
     CedarRequestContext c = buildRequestContext();
     String userID = c.getCedarUser().getId();
-//    c.must(c.user()).be(LoggedIn);
+    c.must(c.user()).be(LoggedIn);
 
     try {
       //Get the doi from doiName
@@ -263,8 +263,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
     JsonNode validationResult = validationResultPair.getRight();
 
     //Call CEDAR validation endpoint and continue if return true
-//     if (validates){
-    if (true) {
+    if (validates){
+//    if (true) {
       // Get DOI request json
       String jsonData = "";
       if (dataCiteInstance != null && !dataCiteInstance.isEmpty()) {
@@ -375,8 +375,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     } else {
       // Failed in Validation Check
       response.put("request", dataCiteInstance);
-//      response.put("validationResult", validationResult);
-//      response.put("validationResult", null);
+      response.put("validationResult", validationResult);
       return CedarResponse
           .badRequest()
           .errorMessage("Validation Error")

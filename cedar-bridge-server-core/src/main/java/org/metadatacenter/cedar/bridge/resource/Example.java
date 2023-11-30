@@ -25,7 +25,7 @@ public class Example {
   }
 
   public MetadataInstance get() {
-    var now = Instant.ofEpochSecond(System.currentTimeMillis() / 1000);
+    var now = Instant.ofEpochSecond(System.currentTimeMillis() / 1000).toString();
 //    DescriptionElementElement descriptionElement = new DescriptionElementElement("the description id", DescriptionField.of(), DescriptionTypeField.of());
 //    descriptionElementElementList.add(descriptionElement);
 
