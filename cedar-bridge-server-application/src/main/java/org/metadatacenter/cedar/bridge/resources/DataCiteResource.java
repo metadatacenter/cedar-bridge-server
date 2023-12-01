@@ -27,6 +27,7 @@ import org.metadatacenter.http.CedarResponseStatus;
 import org.metadatacenter.id.CedarArtifactId;
 import org.metadatacenter.id.CedarFQResourceId;
 import org.metadatacenter.id.CedarTemplateId;
+import org.metadatacenter.id.CedarTemplateInstanceId;
 import org.metadatacenter.model.BiboStatus;
 import org.metadatacenter.model.CedarResourceType;
 import org.metadatacenter.model.ModelNodeNames;
@@ -218,8 +219,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
             .build();
       }
     }
-    //TODO:
-    // later: check if the source artifact is published - if it is an instance
 
     //TODO:check the doi in _annotation
 
@@ -289,8 +288,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
     JsonNode validationResult = validationResultPair.getRight();
 
     //Call CEDAR validation endpoint and continue if return true
-//    if (validates){
-    if(true){
+    if (validates){
+//    if(true){
       // Get DOI request json
       String jsonData = "";
       if (dataCiteInstance != null && !dataCiteInstance.isEmpty()) {
@@ -339,19 +338,26 @@ public class DataCiteResource extends CedarMicroserviceResource {
 //            DataCiteSchema dataCiteResponse = mapper.readValue(jsonResponse, DataCiteSchema.class);
             JsonNode jsonNode = mapper.readTree(jsonResponse);
             String id = jsonNode.get("data").get("id").asText();
-            //todo:change the hard-coded string
             String doiName = DOI_PREFIX + id;
             URI uri = URI.create(doiName);
             response.put(DOI_ID, id);
             response.put(DOI_NAME, doiName);
             response.put(DATACITE_RESPONSE, jsonResponse);
 
-            //todo: add _annotation to sourceArtifactProxyJson and then put artifact
-            CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
-            CedarArtifactId sourceArtifactIdTyped = CedarArtifactId.build(sourceArtifactId, sourceArtifactResourceId.getType());
-            String url2 = microserviceUrlUtil.getArtifact().getArtifactTypeWithId(sourceArtifactResourceId.getType(),
-                sourceArtifactIdTyped);
-            JsonNode sourceArtifactProxyJson = ProxyUtil.proxyGetBodyAsJsonNode(url2, c);
+            //todo: If a DOI is created, add _annotation to sourceArtifactProxyJson and then put artifact
+//            if (statusCode == HttpConstants.CREATED) {
+//              CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
+//              CedarResourceType sourceArtifactType = sourceArtifactResourceId.getType();
+//              CedarArtifactId sourceArtifactIdTyped = CedarArtifactId.build(sourceArtifactId, sourceArtifactType);
+//              String url = microserviceUrlUtil.getArtifact().getArtifactTypeWithId(sourceArtifactType,
+//                  sourceArtifactIdTyped);
+//              JsonNode sourceArtifactProxyJson = ProxyUtil.proxyGetBodyAsJsonNode(url, c);
+//
+//              // Add doi of _annotation
+//
+//              // put the artifact
+//              ProxyUtil.proxyPut(url, c);
+//            }
 
             return CedarResponse
                 .created(uri)
@@ -442,8 +448,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       URI uri = URI.create(endpointUrl);
       HttpClient client = HttpClient.newHttpClient();
       HttpRequest request = HttpRequest.newBuilder(uri)
-          .header(CONTENT_TYPE, APPLICATION_VND_API_JSON)
-//              .header("Authorization", adminUserApiKey)
+          .header(CONTENT_TYPE, APPLICATION_JSON)
           .header(AUTHORIZATION, apiKey)
           .header(Accept, APPLICATION_JSON)
           .POST(HttpRequest.BodyPublishers.ofString(String.valueOf(validationBody)))
