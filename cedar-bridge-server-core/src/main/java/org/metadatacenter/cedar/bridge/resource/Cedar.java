@@ -351,9 +351,9 @@ public class Cedar {
             contextMap.put(FieldNames.date,
                 "https://schema.metadatacenter.org/properties/717029a8-eed6-4158-849d-f7a6c4625c12");
             contextMap.put(FieldNames.language,
-                "https://schema.metadatacenter.org/properties/97a7b266-ca03-4439-8823-ac42f6a2e7d3");
+                "https://schema.metadatacenter.org/properties/77af7ff0-cb2f-4410-9f29-6f8ddb6bfe4c");
             contextMap.put(FieldNames.alternateIdentifier,
-                "https://schema.metadatacenter.org/properties/8476fe12-35c7-48a5-a0d9-2878b525aba6");
+                "https://schema.metadatacenter.org/properties/12966978-080f-4784-a2fc-969c4efaa147");
             contextMap.put(FieldNames.relatedIdentifier,
                 "https://schema.metadatacenter.org/properties/1de465ba-40e9-4901-a0b0-dc9ddbb9be3e");
             contextMap.put(FieldNames.size,

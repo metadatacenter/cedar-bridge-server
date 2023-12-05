@@ -34,8 +34,8 @@ public class GenerateInstance {
     String resourceType = CedarFQResourceId.build(sourceArtifactId).getType().getValue();
     String capitalizedResourceType = resourceType.substring(0,1).toUpperCase() + resourceType.substring(1);
     return new MetadataInstance(
-        INSTANCE_IRI_PREFIX + UUID.randomUUID(),
-        "Default Instance",
+        null,
+        "Default DataCite Instance",
         "A new DataCite Instance with default values",
         TEMPLATE_ID,
         nowAsString,
