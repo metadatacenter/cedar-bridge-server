@@ -37,7 +37,7 @@ public class GenerateInstance {
         null,
         "Default DataCite Instance",
         "A new DataCite Instance with default values",
-        TEMPLATE_ID,
+        templateId,
         nowAsString,
         userID,
         nowAsString,
