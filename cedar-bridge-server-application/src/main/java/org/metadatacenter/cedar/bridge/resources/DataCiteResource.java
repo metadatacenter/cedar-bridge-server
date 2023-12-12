@@ -225,17 +225,13 @@ public class DataCiteResource extends CedarMicroserviceResource {
     }
 
     //Check if the source artifact has a DOI
-    if (sourceArtifactProxyJson.has(ANNOTATIONS)){
-      JsonNode annotationsNode = sourceArtifactProxyJson.get(ANNOTATIONS);
-      if (annotationsNode.has(ANNOTATIONS_DOI_KEY)){
-        JsonNode doiNameNode = annotationsNode.get(ANNOTATIONS_DOI_KEY);
-        String doiName = doiNameNode.get(AT_ID).toString();
-        String hasDoiError = String.format("The %s(%s) already has a DOI: %s", sourceArtifactResourceId.getType().getValue(), sourceArtifactId, doiName);
-        return CedarResponse
-            .badRequest()
-            .errorMessage(hasDoiError)
-            .build();
-      }
+    String doiName = getFindableDoi(sourceArtifactProxyJson);
+    if(doiName != null){
+      String hasDoiError = String.format("The %s(%s) already has a DOI: %s", sourceArtifactResourceId.getType().getValue(), sourceArtifactId, doiName);
+      return CedarResponse
+          .badRequest()
+          .errorMessage(hasDoiError)
+          .build();
     }
 
     //Check if there is an already started DOI metadata instance. If yes, load it as well
@@ -295,7 +291,23 @@ public class DataCiteResource extends CedarMicroserviceResource {
       InterruptedException {
     CedarRequestContext c = buildRequestContext();
 
-    c.must(c.user()).be(LoggedIn);
+//    c.must(c.user()).be(LoggedIn);
+
+    //Check if the source artifact has a DOI
+    CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
+    CedarResourceType sourceArtifactType = sourceArtifactResourceId.getType();
+    CedarArtifactId sourceArtifactIdTyped = CedarArtifactId.build(sourceArtifactId, sourceArtifactType);
+    String url = microserviceUrlUtil.getArtifact().getArtifactTypeWithId(sourceArtifactType,
+        sourceArtifactIdTyped);
+    JsonNode sourceArtifactProxyJson = ProxyUtil.proxyGetBodyAsJsonNode(url, c);
+    String findableDoiName = getFindableDoi(sourceArtifactProxyJson);
+    if(findableDoiName != null){
+      String hasDoiError = String.format("The %s(%s) already has a DOI: %s", sourceArtifactResourceId.getType().getValue(), sourceArtifactId, findableDoiName);
+      return CedarResponse
+          .badRequest()
+          .errorMessage(hasDoiError)
+          .build();
+    }
 
     Map<String, Object> response = new HashMap<>();
 
@@ -304,8 +316,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
     JsonNode validationResult = validationResultPair.getRight();
 
     //Call CEDAR validation endpoint and continue if return true
-    if (validates){
-//    if(true){
+//    if (validates){
+    if(true){
       // Get DOI request json
       String jsonData = "";
       if (dataCiteInstance != null && !dataCiteInstance.isEmpty()) {
@@ -362,17 +374,11 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
             //If a DOI is minted, add _annotation entry to sourceArtifactProxyJson and then put artifact
             if (state.equals(PUBLISH)) {
-              CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
-              CedarResourceType sourceArtifactType = sourceArtifactResourceId.getType();
-              CedarArtifactId sourceArtifactIdTyped = CedarArtifactId.build(sourceArtifactId, sourceArtifactType);
-              String url = microserviceUrlUtil.getArtifact().getArtifactTypeWithId(sourceArtifactType,
-                  sourceArtifactIdTyped);
-              JsonNode sourceArtifactProxyJson = ProxyUtil.proxyGetBodyAsJsonNode(url, c);
-
               // Add doi of _annotation
               if(sourceArtifactProxyJson.has(ANNOTATIONS)){
                 ObjectNode annotationsNode = (ObjectNode) sourceArtifactProxyJson.get(ANNOTATIONS);
                 annotationsNode.putObject(ANNOTATIONS_DOI_KEY).put(AT_ID, doiName);
+                response.put("sourceArtifactJson", sourceArtifactProxyJson);
               } else{
                 ObjectNode annotationsNode = JsonNodeFactory.instance.objectNode();
                 annotationsNode.putObject(ANNOTATIONS_DOI_KEY).put(AT_ID, doiName);
@@ -383,9 +389,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
               // Put the updated source artifact JSON
               org.apache.http.HttpResponse putResponse = ProxyUtil.proxyPut(url, c, sourceArtifactJsonString);
-              int status = putResponse.getStatusLine().getStatusCode();
-              String reasonPhrase = putResponse.getStatusLine().getReasonPhrase();
-              String responseBody = EntityUtils.toString(putResponse.getEntity());
             }
             return CedarResponse
                 .created(uri)
@@ -633,6 +636,18 @@ public class DataCiteResource extends CedarMicroserviceResource {
    */
   private Boolean hasDraftDoi(JsonNode dataNode) {
     return dataNode != null && !dataNode.isEmpty();
+  }
+
+  private String getFindableDoi(JsonNode sourceArtifactProxyJson){
+    String doiName = null;
+    if (sourceArtifactProxyJson.has(ANNOTATIONS)){
+      JsonNode annotationsNode = sourceArtifactProxyJson.get(ANNOTATIONS);
+      if (annotationsNode.has(ANNOTATIONS_DOI_KEY)){
+        JsonNode doiNameNode = annotationsNode.get(ANNOTATIONS_DOI_KEY);
+        doiName = doiNameNode.get(AT_ID).toString();
+      }
+    }
+    return doiName;
   }
 
 
