@@ -29,6 +29,7 @@ import org.metadatacenter.id.CedarFQResourceId;
 import org.metadatacenter.id.CedarTemplateId;
 import org.metadatacenter.model.BiboStatus;
 import org.metadatacenter.model.CedarResourceType;
+import org.metadatacenter.model.ModelNodeNames;
 import org.metadatacenter.model.folderserver.basic.FolderServerArtifact;
 import org.metadatacenter.model.request.ResourceType;
 import org.metadatacenter.rest.context.CedarRequestContext;
@@ -69,8 +70,36 @@ public class DataCiteResource extends CedarMicroserviceResource {
   private final String templateId = cedarConfig.getBridgeConfig().getDataCite().getTemplateId();
   private final String basicAuth =
       Base64.getEncoder().encodeToString((repositoryID + ":" + password).getBytes(StandardCharsets.UTF_8));
+
+  private final String ACCEPT = "Accept";
+  private final String ANNOTATIONS = "_annotations";
+  private final String ANNOTATIONS_DOI_KEY = "https://datacite.com/doi";
+  private final String APPLICATION_JSON = "application/json";
+  private final String APPLICATION_VND_API_JSON = "application/vnd.api+json";
+  private final String AT_ID = "@id";
+  private final String ATTRIBUTES = "attributes";
+  private final String AUTHORIZATION = "Authorization";
+  private final String BASIC = "Basic ";
+  private final String CONTENT_TYPE = "Content-Type";
+  private final String DATACITE_RESPONSE = "dataCiteResponse";
+  private final String DATACITE_TEMPLATE = "dataCiteTemplate";
+  private final String DRAFT_DOI = "draftDoi";
+  private final String DOI = "doi";
+  private final String DOI_ID = "doiId";
+  private final String DOI_NAME = "doiName";
+  private final String DOI_PREFIX = "https://doi.org/";
+  private final String EXISTING_DATACITE_METADATA = "existingDataCiteMetadata";
+  private final String DRAFT_METADATA = "draftMetadata";
+  private final String HAS_DRAFT_DOI = "hasDraftDoi";
+  private final String PUBLISH = "publish";
   private final String QUERY_AFFILIATION = "?affiliation=true";
+  private final String QUERY_DETAIL = "&detail=true";
   private final String QUERY_PUBLISHER = "&query=publisher:CEDAR";
+  private final String REQUEST = "request";
+  private final String RESOURCE_ID = "resourceId";
+  private final String SOURCE_ARTIFACT = "sourceArtifact";
+  private final String SOURCE_ARTIFACT_TYPE = "sourceArtifactType";
+  private final String VALIDATION_RESULTE = "validationResult";
 
 
   public DataCiteResource(CedarConfig cedarConfig, TemplateService<String, JsonNode> templateService,
@@ -85,10 +114,9 @@ public class DataCiteResource extends CedarMicroserviceResource {
   @Timed
   @Path("/get-doi-metadata/{id}")
   public Response getDOIMetadata(@PathParam(PP_ID) String doiIdUrl) throws CedarException {
-
     CedarRequestContext c = buildRequestContext();
-
-//    c.must(c.user()).be(LoggedIn);
+    String userID = c.getCedarUser().getId();
+    c.must(c.user()).be(LoggedIn);
 
     try {
       //Get the doi from doiName
@@ -100,7 +128,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
       HttpClient client = HttpClient.newBuilder().build();
       HttpRequest httpRequest = HttpRequest.newBuilder(uri)
-          .header("Authorization", "Basic " + basicAuth)
+          .header(AUTHORIZATION,  BASIC + basicAuth)
           .GET()
           .build();
 
@@ -117,16 +145,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
       mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
       DataCiteSchema dataCiteResponse = mapper.readValue(jsonResponse, DataCiteSchema.class);
 
-      String dataCiteResponseString = mapper.writeValueAsString(dataCiteResponse);
-      System.out.println("DataCiteResponse converted to Data Cite Schema Json: " + dataCiteResponseString);
-
-      // Pass the value from dataCiteResponse to MetadataInstance
-      MetadataInstance cedarDataCiteInstance = DataCiteMetadataParser.parseDataCiteSchema(dataCiteResponse.getData().getAttributes());
-
-      //Serialize DataCiteRequest Class to json
-      String cedarDataCiteInstanceString = mapper.writeValueAsString(cedarDataCiteInstance);
-      System.out.println("Converted Cedar DataCite Instance JSON-LD: " + cedarDataCiteInstanceString);
-
       return Response.status(statusCode).entity(jsonResource).build();
     } catch (Exception e) {
       return CedarResponse.internalServerError().exception(e).build();
@@ -140,6 +158,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
   @Path("/create-doi")
   public Response createDOIStart(@QueryParam(QP_SOURCE_ARTIFACT_ID) String sourceArtifactId) throws CedarException {
     CedarRequestContext c = buildRequestContext();
+    String userID = c.getCedarUser().getId();
     c.must(c.user()).be(LoggedIn);
     c.must(c.user()).have(CedarPermission.TEMPLATE_READ);
 
@@ -165,7 +184,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
           .unauthorized()
           .errorKey(CedarErrorKey.NO_WRITE_ACCESS_TO_ARTIFACT)
           .errorMessage("You do not have write access to the artifact")
-          .parameter("resourceId", sourceArtifactIdTyped)
+          .parameter(RESOURCE_ID, sourceArtifactIdTyped)
           .build();
     }
 
@@ -185,57 +204,69 @@ public class DataCiteResource extends CedarMicroserviceResource {
           .build();
     }
 
-    // check if the source artifact is published (version) - if it is a template
+    // Check if the source artifact is published (version) - if it is a template
     if (sourceArtifactResourceId.getType() == CedarResourceType.TEMPLATE) {
-      if (!Objects.equals(sourceArtifactProxyJson.get("bibo:status").asText(), BiboStatus.PUBLISHED.getValue())) {
+      if (!Objects.equals(sourceArtifactProxyJson.get(ModelNodeNames.BIBO_STATUS).asText(), BiboStatus.PUBLISHED.getValue())) {
         return CedarResponse
             .badRequest()
             .errorMessage("Please make the template publish to create a DOI")
             .build();
       }
     }
-    //TODO:
-    // later: check if the source artifact is published - if it is an instance
+
+    //Check if the source artifact has a DOI
+    String doiName = getFindableDoi(sourceArtifactProxyJson);
+    if(doiName != null){
+      String hasDoiError = String.format("The %s(%s) already has a DOI: %s", sourceArtifactResourceId.getType().getValue(), sourceArtifactId, doiName);
+      return CedarResponse
+          .badRequest()
+          .errorMessage(hasDoiError)
+          .build();
+    }
 
     //Check if there is an already started DOI metadata instance. If yes, load it as well
     //Use publisher and openView Url as parameters to send query to DataCite
     try {
       Response httpResponse = getDraftDoiMetadata(sourceArtifactId);
       HashMap<String, Object> entity = (HashMap<String, Object>) httpResponse.getEntity();
-      boolean hasDraftDoi = (boolean) entity.get("hasDraftDoi");
-      JsonNode dataNode = (JsonNode) entity.get("draftMetadata");
+      boolean hasDraftDoi = (boolean) entity.get(HAS_DRAFT_DOI);
+      JsonNode dataNode = (JsonNode) entity.get(DRAFT_METADATA);
 
       if (hasDraftDoi) {
         // if draft DOI is returned, convert the data from dataCite JSON to Cedar Instance JSON-LD, and put it into response
-        JsonNode attributesNode = dataNode.get(0).get("attributes");
-        JsonNode draftDoi = attributesNode.get("doi");
+        JsonNode attributesNode = dataNode.get(0).get(ATTRIBUTES);
+        JsonNode draftDoi = attributesNode.get(DOI);
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
-//        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         Attributes existingDoiMetadata = mapper.treeToValue(attributesNode, Attributes.class);
-        String existingDoiMetadataString = mapper.writeValueAsString(existingDoiMetadata);
-        System.out.println("existingDoiMetadata converted to Data Cite Schema Json: " + existingDoiMetadataString);
+
+//        //Print out the response from DataCite
+//        String responseFromDataCite = mapper.writeValueAsString(dataNode);
+//        System.out.println("Response from DataCite is :" + responseFromDataCite);
+//
+//        String existingDoiMetadataString = mapper.writeValueAsString(existingDoiMetadata);
+//        System.out.println("existingDoiMetadata converted to Data Cite Schema Json: " + existingDoiMetadataString);
 
         // Pass the value from dataCiteResponse to cedarDataCiteInstance
-        MetadataInstance cedarExistingDoiMetadata = DataCiteMetadataParser.parseDataCiteSchema(existingDoiMetadata);
-        response.put("existingDataCiteMetadata", cedarExistingDoiMetadata);
-        response.put("draftDoi", draftDoi);
+        MetadataInstance cedarExistingDoiMetadata = DataCiteMetadataParser.parseDataCiteSchema(existingDoiMetadata, userID);
+        response.put(EXISTING_DATACITE_METADATA, cedarExistingDoiMetadata);
+        response.put(DRAFT_DOI, draftDoi);
 
-        String cedarDataCiteInstanceString = mapper.writeValueAsString(cedarExistingDoiMetadata);
-        System.out.println("Converted Cedar DataCite Instance JSON-LD: " + cedarDataCiteInstanceString);
+//        String cedarDataCiteInstanceString = mapper.writeValueAsString(cedarExistingDoiMetadata);
+//        System.out.println("Converted Cedar DataCite Instance JSON-LD: " + cedarDataCiteInstanceString);
       } else {
         // if draft DOI is not available, set the url and resourceType fields
-        MetadataInstance defaultInstance = GenerateInstance.getDefaultInstance(sourceArtifactId);
-        response.put("existingDataCiteMetadata", defaultInstance);
-        response.put("draftDoi", null);
+        MetadataInstance defaultInstance = GenerateInstance.getDefaultInstance(sourceArtifactId, userID, templateId);
+        response.put(EXISTING_DATACITE_METADATA, defaultInstance);
+        response.put(DRAFT_DOI, null);
       }
     } catch (IOException | InterruptedException e) {
       throw new RuntimeException(e);
     }
-    response.put("sourceArtifactType", sourceArtifactResourceId.getType().getValue());
-    response.put("sourceArtifact", sourceArtifactProxyJson);
-    response.put("dataCiteTemplate", dataCiteTemplateProxyJson);
+    response.put(SOURCE_ARTIFACT_TYPE, sourceArtifactResourceId.getType().getValue());
+    response.put(SOURCE_ARTIFACT, sourceArtifactProxyJson);
+    response.put(DATACITE_TEMPLATE, dataCiteTemplateProxyJson);
 
     return CedarResponse.ok().entity(response).build();
   }
@@ -248,8 +279,26 @@ public class DataCiteResource extends CedarMicroserviceResource {
   public Response createDOI(@QueryParam(QP_SOURCE_ARTIFACT_ID) String sourceArtifactId, @QueryParam("state") String state, JsonNode dataCiteInstance) throws CedarException, IOException,
       InterruptedException {
     CedarRequestContext c = buildRequestContext();
+//    System.out.println("-----------------URL---------");
+//    System.out.println(endpointUrl);
 
-//    c.must(c.user()).be(LoggedIn);
+    c.must(c.user()).be(LoggedIn);
+
+    //Check if the source artifact has a DOI
+    CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
+    CedarResourceType sourceArtifactType = sourceArtifactResourceId.getType();
+    CedarArtifactId sourceArtifactIdTyped = CedarArtifactId.build(sourceArtifactId, sourceArtifactType);
+    String url = microserviceUrlUtil.getArtifact().getArtifactTypeWithId(sourceArtifactType,
+        sourceArtifactIdTyped);
+    JsonNode sourceArtifactProxyJson = ProxyUtil.proxyGetBodyAsJsonNode(url, c);
+    String findableDoiName = getFindableDoi(sourceArtifactProxyJson);
+    if(findableDoiName != null){
+      String hasDoiError = String.format("The %s(%s) already has a DOI: %s", sourceArtifactResourceId.getType().getValue(), sourceArtifactId, findableDoiName);
+      return CedarResponse
+          .badRequest()
+          .errorMessage(hasDoiError)
+          .build();
+    }
 
     Map<String, Object> response = new HashMap<>();
 
@@ -258,8 +307,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
     JsonNode validationResult = validationResultPair.getRight();
 
     //Call CEDAR validation endpoint and continue if return true
-    // if (validates){
-    if (true) {
+//    if (validates){
+    if(true){
       // Get DOI request json
       String jsonData = "";
       if (dataCiteInstance != null && !dataCiteInstance.isEmpty()) {
@@ -286,13 +335,13 @@ public class DataCiteResource extends CedarMicroserviceResource {
         Response getDraftDoiResponse = getDraftDoiMetadata(sourceArtifactId);
         //Send PUT request if draft DOI exists, otherwise send POST request
         HashMap<String, Object> entity = (HashMap<String, Object>) getDraftDoiResponse.getEntity();
-        boolean hasDraftDoi = (boolean) entity.get("hasDraftDoi");
-        JsonNode dataNode = (JsonNode) entity.get("draftMetadata");
+        boolean hasDraftDoi = (boolean) entity.get(HAS_DRAFT_DOI);
+        JsonNode dataNode = (JsonNode) entity.get(DRAFT_METADATA);
         HttpResponse<String> putOrPostResponse = null;
         if (hasDraftDoi) {
           //Send HTTP PUT request to DataCite and get response
-          JsonNode attributesNode = dataNode.get(0).get("attributes");
-          String draftDoi = attributesNode.get("doi").toString();
+          JsonNode attributesNode = dataNode.get(0).get(ATTRIBUTES);
+          String draftDoi = attributesNode.get(DOI).toString();
           putOrPostResponse = httpDataCitePutCall(draftDoi, basicAuth, jsonData);
         } else {
           //Send HTTP POST request to DataCite and get response
@@ -302,18 +351,36 @@ public class DataCiteResource extends CedarMicroserviceResource {
         //If the Put or Post response status code is 200 or 201
         String jsonResponse = putOrPostResponse.body();
         try {
-          if (statusCode == HttpConstants.CREATED | statusCode == HttpConstants.OK) {
+          if (statusCode == HttpConstants.CREATED || statusCode == HttpConstants.OK) {
             // Deserialize DataCite response json file to DataCiteRequest Class
             ObjectMapper mapper = new ObjectMapper();
 //            DataCiteSchema dataCiteResponse = mapper.readValue(jsonResponse, DataCiteSchema.class);
             JsonNode jsonNode = mapper.readTree(jsonResponse);
             String id = jsonNode.get("data").get("id").asText();
-            String doiName = "https://doi.org/" + id;
-            System.out.println("doiName: " + doiName);
+            String doiName = DOI_PREFIX + id;
             URI uri = URI.create(doiName);
-            response.put("doiId", id);
-            response.put("doiName", doiName);
-            response.put("dataCiteResponse", jsonResponse);
+            response.put(DOI_ID, id);
+            response.put(DOI_NAME, doiName);
+            response.put(DATACITE_RESPONSE, jsonResponse);
+
+            //If a DOI is minted, add _annotation entry to sourceArtifactProxyJson and then put artifact
+            if (state.equals(PUBLISH)) {
+              // Add doi of _annotation
+              if(sourceArtifactProxyJson.has(ANNOTATIONS)){
+                ObjectNode annotationsNode = (ObjectNode) sourceArtifactProxyJson.get(ANNOTATIONS);
+                annotationsNode.putObject(ANNOTATIONS_DOI_KEY).put(AT_ID, doiName);
+                response.put("sourceArtifactJson", sourceArtifactProxyJson);
+              } else{
+                ObjectNode annotationsNode = JsonNodeFactory.instance.objectNode();
+                annotationsNode.putObject(ANNOTATIONS_DOI_KEY).put(AT_ID, doiName);
+                ((ObjectNode) sourceArtifactProxyJson).set(ANNOTATIONS, annotationsNode);
+                response.put("sourceArtifactJson", sourceArtifactProxyJson);
+              }
+              String sourceArtifactJsonString = mapper.writeValueAsString(sourceArtifactProxyJson);
+
+              // Put the updated source artifact JSON
+              org.apache.http.HttpResponse putResponse = ProxyUtil.proxyPut(url, c, sourceArtifactJsonString);
+            }
             return CedarResponse
                 .created(uri)
                 .entity(response)
@@ -369,9 +436,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
       }
     } else {
       // Failed in Validation Check
-      response.put("request", dataCiteInstance);
-//      response.put("validationResult", validationResult);
-//      response.put("validationResult", null);
+      response.put(REQUEST, dataCiteInstance);
+      response.put(VALIDATION_RESULTE, validationResult);
       return CedarResponse
           .badRequest()
           .errorMessage("Validation Error")
@@ -404,10 +470,9 @@ public class DataCiteResource extends CedarMicroserviceResource {
       URI uri = URI.create(endpointUrl);
       HttpClient client = HttpClient.newHttpClient();
       HttpRequest request = HttpRequest.newBuilder(uri)
-          .header("Content-Type", "application/json")
-//              .header("Authorization", adminUserApiKey)
-          .header("Authorization", apiKey)
-          .header("Accept", "application/json")
+          .header(CONTENT_TYPE, APPLICATION_JSON)
+          .header(AUTHORIZATION, apiKey)
+          .header(ACCEPT, APPLICATION_JSON)
           .POST(HttpRequest.BodyPublishers.ofString(String.valueOf(validationBody)))
           .build();
 
@@ -417,7 +482,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
       // Parse the httpResponse body as a JSONObject
       String jsonResponse = httpResponse.body();
       JsonNode jsonResource = JsonMapper.MAPPER.readTree(jsonResponse);
-//      JSONObject responseJson = new JSONObject(httpResponse.body());
 
       // Check httpResponse status code
       int statusCode = httpResponse.statusCode();
@@ -426,7 +490,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
         String validates = jsonResource.get("validates").asText();
         if (validates.equals("true")) {
           // The resource is valid, handle it here
-          System.out.println("Resource is valid.");
           return Pair.of(true, jsonResource);
         } else {
           // The resource is invalid, handle the errors and warnings here
@@ -458,8 +521,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
       String metadataString = metadata.toString();
       MetadataInstance cedarInstance = mapper.readValue(metadataString, MetadataInstance.class);
 
-      String cedarInstanceString = mapper.writeValueAsString(cedarInstance);
-      System.out.println("Json Converted to CedarDataCite Instance: " + cedarInstanceString);
+//      String cedarInstanceString = mapper.writeValueAsString(cedarInstance);
+//      System.out.println("Json Converted to CedarDataCite Instance: " + cedarInstanceString);
 
       // Pass the value from dataCiteInstance to dataCiteRequest
       try {
@@ -471,7 +534,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
       //Serialize DataCiteRequest Class to json
       String requestJsonString = mapper.writeValueAsString(dataCiteSchema);
-      System.out.println("Json Sent to DataCite: " + requestJsonString);
+//      System.out.println("Json Sent to DataCite: " + requestJsonString);
       return requestJsonString;
 
     } catch (IOException | DataCiteInstanceValidationException e) {
@@ -493,12 +556,11 @@ public class DataCiteResource extends CedarMicroserviceResource {
       URI uri = URI.create(endPointUrl);
       HttpClient client = HttpClient.newHttpClient();
       HttpRequest request = HttpRequest.newBuilder(uri)
-          .header("Content-Type", "application/vnd.api+json")
-          .header("Authorization", "Basic " + basicAuth)
+          .header(CONTENT_TYPE, APPLICATION_VND_API_JSON)
+          .header(AUTHORIZATION, BASIC + basicAuth)
           .POST(HttpRequest.BodyPublishers.ofString(String.valueOf(jsonData)))
           .build();
       HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-      System.out.println("DataCite Post Call with status code: " + response.statusCode());
       return response;
     } catch (IOException | InterruptedException e) {
       throw new RuntimeException(e);
@@ -520,12 +582,11 @@ public class DataCiteResource extends CedarMicroserviceResource {
     URI uri = URI.create(url);
     HttpClient client = HttpClient.newHttpClient();
     HttpRequest request = HttpRequest.newBuilder(uri)
-        .header("Content-Type", "application/vnd.api+json")
-        .header("Authorization", "Basic " + basicAuth)
+        .header(CONTENT_TYPE,  APPLICATION_VND_API_JSON)
+        .header(AUTHORIZATION, BASIC + basicAuth)
         .PUT(HttpRequest.BodyPublishers.ofString(String.valueOf(jsonData)))
         .build();
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-    System.out.println("DataCite Put Call with status code: " + response.statusCode());
     return response;
   }
 
@@ -540,11 +601,11 @@ public class DataCiteResource extends CedarMicroserviceResource {
     Map<String, Object> response = new HashMap<>();
     String openViewUrl = GenerateOpenViewUrl.getOpenViewUrl(sourceArtifactId);
     String encodedOpenViewUrl = URLEncoder.encode(openViewUrl, StandardCharsets.UTF_8);
-    String queryUrl = endpointUrl + QUERY_AFFILIATION + QUERY_PUBLISHER + "%20AND%20url:%22" + encodedOpenViewUrl + "%22";
+    String queryUrl = endpointUrl + QUERY_AFFILIATION + QUERY_DETAIL + QUERY_PUBLISHER + "%20AND%20url:%22" + encodedOpenViewUrl + "%22";
     URI uri = URI.create(queryUrl);
     HttpClient client = HttpClient.newBuilder().build();
     HttpRequest httpRequest = HttpRequest.newBuilder(uri)
-        .header("Authorization", "Basic " + basicAuth)
+        .header(AUTHORIZATION, BASIC + basicAuth)
         .GET()
         .build();
     HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -552,8 +613,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
     JsonNode jsonResource = JsonMapper.MAPPER.readTree(jsonResponse);
     JsonNode dataNode = jsonResource.get("data");
     boolean hasDraftDoi = hasDraftDoi(dataNode);
-    response.put("draftMetadata", dataNode);
-    response.put("hasDraftDoi", hasDraftDoi);
+    response.put(DRAFT_METADATA, dataNode);
+    response.put(HAS_DRAFT_DOI, hasDraftDoi);
     return CedarResponse.ok().entity(response).build();
   }
 
@@ -563,6 +624,18 @@ public class DataCiteResource extends CedarMicroserviceResource {
    */
   private Boolean hasDraftDoi(JsonNode dataNode) {
     return dataNode != null && !dataNode.isEmpty();
+  }
+
+  private String getFindableDoi(JsonNode sourceArtifactProxyJson){
+    String doiName = null;
+    if (sourceArtifactProxyJson.has(ANNOTATIONS)){
+      JsonNode annotationsNode = sourceArtifactProxyJson.get(ANNOTATIONS);
+      if (annotationsNode.has(ANNOTATIONS_DOI_KEY)){
+        JsonNode doiNameNode = annotationsNode.get(ANNOTATIONS_DOI_KEY);
+        doiName = doiNameNode.get(AT_ID).toString();
+      }
+    }
+    return doiName;
   }
 
 
@@ -576,15 +649,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
       HttpEntity currentTemplateEntity = ProxyUtil.proxyGet(artifactServerUrl, c).getEntity();
       String currentTemplateEntityContent = EntityUtils.toString(currentTemplateEntity, CharEncoding.UTF_8);
-      JsonNode currentTemplateJsonNode = JsonMapper.MAPPER.readTree(currentTemplateEntityContent);
-
-      int statusCode = ProxyUtil.proxyGet(artifactServerUrl, c).getStatusLine().getStatusCode();
-      if (statusCode == HttpConstants.OK) {
-        System.out.println("The GET CEDAR Template request was successful");
-      } else {
-        System.out.println("The GET CEDAR Template request was failed with status code: " + statusCode);
-      }
-      return currentTemplateJsonNode;
+      return JsonMapper.MAPPER.readTree(currentTemplateEntityContent);
     } catch (IOException | CedarProcessingException e) {
       throw new RuntimeException(e);
     }

@@ -270,9 +270,9 @@ public class Cedar {
                                    @JsonView(CoreView.class) @JsonProperty("schema:name") String schemaName,
                                    @JsonView(CoreView.class) @JsonProperty("schema:description") String schemaDescription,
                                    @JsonView(CoreView.class) @JsonProperty("schema:isBasedOn") String isBasedOn,
-                                   @JsonView(CoreView.class) @JsonProperty("pav:createdOn") Instant pavCreatedOn,
+                                   @JsonView(CoreView.class) @JsonProperty("pav:createdOn") String pavCreatedOn,
                                    @JsonView(CoreView.class) @JsonProperty("pav:createdBy") String pavCreatedBy,
-                                   @JsonView(CoreView.class) @JsonProperty("pav:lastUpdatedOn") Instant pavLastUpdatedOn,
+                                   @JsonView(CoreView.class) @JsonProperty("pav:lastUpdatedOn") String pavLastUpdatedOn,
                                    @JsonView(CoreView.class) @JsonProperty("oslc:modifiedBy") String oslcModifiedBy,
                                    @JsonView(CoreView.class) @JsonProperty("pav:derivedFrom") String pavDerivedFrom,
                                    @Nonnull @JsonView(CoreView.class) @JsonProperty(FieldNames.prefix) PrefixField prefix,
@@ -331,51 +331,53 @@ public class Cedar {
         public Map<String, Object> context() {
             var contextMap = new LinkedHashMap<String, Object>();
             contextMap.put(FieldNames.prefix,
-                "https://schema.metadatacenter.org/properties/c5c19810-b058-48cf-b0ae-de2e9f82a95e");
+                "https://schema.metadatacenter.org/properties/95407cd5-7773-4c8e-8ca0-de8f6f416d77");
             contextMap.put(FieldNames.url,
-                "https://schema.metadatacenter.org/properties/b9751716-653d-4e28-a0dc-ae0db993db01");
+                "https://schema.metadatacenter.org/properties/fa894c1e-6458-43c9-bed7-8c63b807a267");
             contextMap.put(FieldNames.creator,
-                "https://schema.metadatacenter.org/properties/cc36ca34-bc4d-4afc-9eb8-06512f052086");
+                "https://schema.metadatacenter.org/properties/7ce1864a-78f1-44d4-a544-5e58de03e31b");
             contextMap.put(FieldNames.title,
-                "https://schema.metadatacenter.org/properties/4fffaeb2-416c-45b9-87d2-b6c1455ec896");
+                "https://schema.metadatacenter.org/properties/00d247f7-dd85-453b-95ff-f6233abc569e");
             contextMap.put(FieldNames.publicationYear,
-                "https://schema.metadatacenter.org/properties/7fe11cba-9053-42b6-aa8e-3ed25e951600");
+                "https://schema.metadatacenter.org/properties/2c53713a-90a1-47a8-aac9-688d7fa0bf16");
             contextMap.put(FieldNames.publisher,
-                "https://schema.metadatacenter.org/properties/0bc8215e-6b07-42c0-9613-9209f5393b08");
+                "https://schema.metadatacenter.org/properties/53d616cb-46ea-416d-83e2-73f3922e41f1");
             contextMap.put(FieldNames.resourceType,
-                "https://schema.metadatacenter.org/properties/db8a76bc-f148-4cbf-b577-cd2dd4f3bbfe");
+                "https://schema.metadatacenter.org/properties/7bff2713-afa5-4b54-8d61-3dd11133c16b");
             contextMap.put(FieldNames.subject,
-                "https://schema.metadatacenter.org/properties/bb0781d6-ef8c-4760-a5e9-00eaf9d16c63");
+                "https://schema.metadatacenter.org/properties/91e23221-dd5c-43e5-a6c6-a8df26a526d4");
             contextMap.put(FieldNames.contributor,
-                "https://schema.metadatacenter.org/properties/dc039c7c-04d1-4fa1-bf93-9edc5a817d6e");
+                "https://schema.metadatacenter.org/properties/94fa21f9-1d4f-4e53-be0b-166b547bd6e6");
             contextMap.put(FieldNames.date,
-                "https://schema.metadatacenter.org/properties/ead63a8f-4995-4f78-84b7-696c03489966");
+                "https://schema.metadatacenter.org/properties/717029a8-eed6-4158-849d-f7a6c4625c12");
             contextMap.put(FieldNames.language,
-                "https://schema.metadatacenter.org/properties/7dd35493-fdfb-4c50-8d06-7844d4df3039");
+                "https://schema.metadatacenter.org/properties/77af7ff0-cb2f-4410-9f29-6f8ddb6bfe4c");
             contextMap.put(FieldNames.alternateIdentifier,
-                "https://schema.metadatacenter.org/properties/d18a391b-c0af-47da-b188-afe5c97e50ab");
+                "https://schema.metadatacenter.org/properties/12966978-080f-4784-a2fc-969c4efaa147");
             contextMap.put(FieldNames.relatedIdentifier,
-                "https://schema.metadatacenter.org/properties/eab1d09a-4235-4863-bbd5-4f43d273da85");
+                "https://schema.metadatacenter.org/properties/1de465ba-40e9-4901-a0b0-dc9ddbb9be3e");
             contextMap.put(FieldNames.size,
-                "https://schema.metadatacenter.org/properties/9d4bb27e-e036-4e90-8c00-3629943f1d7b");
+                "https://schema.metadatacenter.org/properties/20b07bfd-a06f-4f48-9605-d4602076ac41");
             contextMap.put(FieldNames.format,
-                "https://schema.metadatacenter.org/properties/77e2965e-26d7-4a57-a9dc-6f98b59eefab");
+                "https://schema.metadatacenter.org/properties/69fe75b5-ae78-4fa7-b24b-8fa1f465ec11");
             contextMap.put(FieldNames.version,
-                "https://schema.metadatacenter.org/properties/c19a0cb5-a3e0-4deb-abf8-c3042dedefa4");
+                "https://schema.metadatacenter.org/properties/cfc8a113-0e96-42cc-bebe-b874cad3e2a2");
             contextMap.put(FieldNames.rights,
-                "https://schema.metadatacenter.org/properties/10ff1a36-73b8-4364-9edb-c30f8de4c7fe");
+                "https://schema.metadatacenter.org/properties/952b66b3-7a38-409e-b218-e1611a32c01e");
             contextMap.put(FieldNames.description,
-                "https://schema.metadatacenter.org/properties/4eec3604-47d3-4d19-b976-459945630c4a");
+                "https://schema.metadatacenter.org/properties/405f720e-b44f-4da4-910f-b6a82ab8fb14");
             contextMap.put(FieldNames.geoLocation,
-                "https://schema.metadatacenter.org/properties/0477e239-366c-4ba2-8f55-fe4611fbf58b");
+                "https://schema.metadatacenter.org/properties/886afcf3-e4e5-4421-893c-45d40a533520");
             contextMap.put(FieldNames.fundingReference,
-                "https://schema.metadatacenter.org/properties/18bca250-d1fb-48e2-ab7b-915e43d80bcb");
+                "https://schema.metadatacenter.org/properties/cb7c3d4f-539d-48d6-801c-cdbfe6d368cf");
             contextMap.put(FieldNames.relatedItem,
-                "https://schema.metadatacenter.org/properties/9454a8c9-9e97-4707-a816-76bafa70bacc");
+                "https://schema.metadatacenter.org/properties/9751f6d3-41b7-4e06-be4a-6c9c874d57b3");
             contextMap.put("schema", "http://schema.org/");
             contextMap.put("xsd", "http://www.w3.org/2001/XMLSchema#");
             contextMap.put("skos", "http://www.w3.org/2004/02/skos/core#");
             contextMap.put("rdfs", "http://www.w3.org/2000/01/rdf-schema#");
+            contextMap.put("oslc", "http://open-services.net/ns/core#");
+            contextMap.put("pav", "http://purl.org/pav/");
             contextMap.put("pav:createdOn", Map.of("@type", "xsd:dateTime"));
             contextMap.put("pav:createdBy", Map.of("@type", "@id"));
             contextMap.put("rdfs:label", Map.of("@type", "xsd:string"));
@@ -419,28 +421,32 @@ public class Cedar {
         /**
          * The location of the landing page with more information about the resource.
          */
-        public record UrlField(String value) implements LiteralField {
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        public record UrlField(String id) implements IriField {
 
             /**
-             * Creates an instance of the {@code  UrlField} record with a {@code  null}
-             * value.
-             *
-             * @return An instance of the {@code  UrlField} record.
+             * Creates an empty UrlField instance, with null values for the id and
+             * label.
              */
             public static UrlField of() {
                 return new UrlField(null);
             }
 
             /**
-             * Creates an instance of the {@code  UrlField} record with the specified value.
+             * Create an instance of UrlField with the specified id and label.
              *
-             * @param value
-             *            The value to set for the record.
-             * @return An instance of the {@code  UrlField} record.
+             * @param id
+             *            The id. This is an IRI.
              */
+
             @JsonCreator
-            public static UrlField of(@JsonProperty("@value") String value) {
-                return new UrlField(value);
+            public static UrlField of(@JsonProperty("@id") String id) {
+                return new UrlField(id);
+            }
+
+            @Override
+            public String label() {
+                return "";
             }
         }
 
@@ -487,7 +493,7 @@ public class Cedar {
                 contextMap.put(FieldNames.familyName,
                     "https://schema.metadatacenter.org/properties/8a8c322b-7f15-4a7a-b687-ad969e71defe");
                 contextMap.put(FieldNames.affiliation,
-                    "https://schema.metadatacenter.org/properties/2a2341d0-4936-4dce-bdf4-deb6a6544fa2");
+                    "https://schema.metadatacenter.org/properties/6a01f57f-8ce9-4b5a-8731-784eaea5bed0");
                 contextMap.put(FieldNames.nameIdentifier,
                     "https://schema.metadatacenter.org/properties/54d8ce77-6c50-4e77-b2b7-8bd33c846d1d");
                 return contextMap;
@@ -641,13 +647,13 @@ public class Cedar {
                 public Map<String, Object> context() {
                     var contextMap = new LinkedHashMap<String, Object>();
                     contextMap.put(FieldNames.name,
-                        "https://schema.metadatacenter.org/properties/b316245d-7a0b-4f1c-b6a2-8f08f1f3da1b");
+                        "https://schema.metadatacenter.org/properties/99f7c112-3dd5-410c-9d2f-535f05b7ea5d");
                     contextMap.put(FieldNames.affiliationIdentifier,
-                        "https://schema.metadatacenter.org/properties/1c405b8f-a36a-4b35-a7e5-52ad7828f5a4");
+                        "https://schema.metadatacenter.org/properties/6f15a99a-f987-4267-a4ff-b3c0098f8d90");
                     contextMap.put(FieldNames.affiliationIdentifierScheme,
-                        "https://schema.metadatacenter.org/properties/ac3137bc-0bd2-4e50-ad4e-6592bf71e681");
+                        "https://schema.metadatacenter.org/properties/5c191497-bccf-408d-bf04-ae39cd4d7c2e");
                     contextMap.put(FieldNames.schemeURI,
-                        "https://schema.metadatacenter.org/properties/3b1e62d4-f1b6-4874-b36e-d7740a7f7b05");
+                        "https://schema.metadatacenter.org/properties/30ff6748-4bde-41f5-8fea-b4d0518fc092");
                     return contextMap;
                 }
                 /**
@@ -1504,7 +1510,7 @@ public class Cedar {
                 contextMap.put(FieldNames.contributorType,
                     "https://schema.metadatacenter.org/properties/ad2f2387-2231-4023-982d-ed3db7c31ac0");
                 contextMap.put(FieldNames.affiliation,
-                    "https://schema.metadatacenter.org/properties/ac1b30da-6f91-4b09-aa91-cecb68eef98d");
+                    "https://schema.metadatacenter.org/properties/aa96bd1d-b7e9-4502-88e2-b4de09aaa8ae");
                 contextMap.put(FieldNames.nameIdentifier,
                     "https://schema.metadatacenter.org/properties/348f45aa-f191-43e4-bfed-a3dfb69502ae");
                 return contextMap;
@@ -1684,13 +1690,13 @@ public class Cedar {
                 public Map<String, Object> context() {
                     var contextMap = new LinkedHashMap<String, Object>();
                     contextMap.put(FieldNames.name,
-                        "https://schema.metadatacenter.org/properties/b316245d-7a0b-4f1c-b6a2-8f08f1f3da1b");
+                        "https://schema.metadatacenter.org/properties/99f7c112-3dd5-410c-9d2f-535f05b7ea5d");
                     contextMap.put(FieldNames.affiliationIdentifier,
-                        "https://schema.metadatacenter.org/properties/1c405b8f-a36a-4b35-a7e5-52ad7828f5a4");
+                        "https://schema.metadatacenter.org/properties/6f15a99a-f987-4267-a4ff-b3c0098f8d90");
                     contextMap.put(FieldNames.affiliationIdentifierScheme,
-                        "https://schema.metadatacenter.org/properties/ac3137bc-0bd2-4e50-ad4e-6592bf71e681");
+                        "https://schema.metadatacenter.org/properties/5c191497-bccf-408d-bf04-ae39cd4d7c2e");
                     contextMap.put(FieldNames.schemeURI,
-                        "https://schema.metadatacenter.org/properties/3b1e62d4-f1b6-4874-b36e-d7740a7f7b05");
+                        "https://schema.metadatacenter.org/properties/30ff6748-4bde-41f5-8fea-b4d0518fc092");
                     return contextMap;
                 }
                 /**
@@ -3979,7 +3985,7 @@ public class Cedar {
                 contextMap.put(FieldNames.relatedItemType,
                     "https://schema.metadatacenter.org/properties/234f4448-88d6-461c-9ea0-fd465cdbbbf1");
                 contextMap.put(FieldNames.relationType,
-                    "https://schema.metadatacenter.org/properties/3975c4a4-e8be-45e9-9d6d-fc51812d9d4c");
+                    "https://schema.metadatacenter.org/properties/c4642f68-3d9b-463a-9d88-c4b7ee1478f3");
                 contextMap.put(FieldNames.relatedIdentifier,
                     "https://schema.metadatacenter.org/properties/767e3ad6-099d-4093-a319-540c12543b65");
                 contextMap.put(FieldNames.relatedIdentifierType,
@@ -3987,9 +3993,9 @@ public class Cedar {
                 contextMap.put(FieldNames.relatedMetadataScheme,
                     "https://schema.metadatacenter.org/properties/cfb49da2-d22e-4820-9138-c3ea327162f9");
                 contextMap.put(FieldNames.schemeURI,
-                    "https://schema.metadatacenter.org/properties/852ca099-7cac-4d3a-bd66-5dd08e977ea0");
+                    "https://schema.metadatacenter.org/properties/6d1defe6-85da-406d-8379-323e061be90d");
                 contextMap.put(FieldNames.schemeType,
-                    "https://schema.metadatacenter.org/properties/6ec28104-3ec3-436b-9290-a76d261e3191");
+                    "https://schema.metadatacenter.org/properties/f890c53a-1758-48f5-9cd4-71a0c9289bbc");
                 contextMap.put(FieldNames.title,
                     "https://schema.metadatacenter.org/properties/60a7b270-006a-4964-aea8-e314131c19b4");
                 contextMap.put(FieldNames.relatedItemCreator,

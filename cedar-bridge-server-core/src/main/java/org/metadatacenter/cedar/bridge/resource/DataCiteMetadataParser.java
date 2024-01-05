@@ -28,8 +28,8 @@ public class DataCiteMetadataParser {
     private static final String DATE_TYPE = "xsd:date";
     private static final String DECIMAL_TYPE = "xsd:decimal";
 
-    public static MetadataInstance parseDataCiteSchema(Attributes dataCiteAttributes) {
-      var now = Instant.ofEpochSecond(System.currentTimeMillis() / 1000);
+    public static MetadataInstance parseDataCiteSchema(Attributes dataCiteAttributes, String userID) {
+      var now = Instant.ofEpochSecond(System.currentTimeMillis() / 1000).toString();
 
       String url = dataCiteAttributes.getUrl();
 
@@ -94,12 +94,12 @@ public class DataCiteMetadataParser {
           "TheId",
           "The name",
           "",
-          "https://repo.metadatacenter.orgx/templates/2c1d808e-f913-4e39-bdab-1f00ae98d4bf",
+          "https://repo.metadatacenter.orgx/templates/30a2a0f2-e652-45bf-9071-1282d9610aa0",
           now,
-          "Created by",
+          userID,
           now,
-          "Modified by",
-          "Derived from",
+          userID,
+          "https://repo.metadatacenter.orgx/templates/30a2a0f2-e652-45bf-9071-1282d9610aa0",
           PrefixField.of(PREFIX),
           UrlField.of(url),
           CreatorElementList.of(creatorList),
@@ -130,7 +130,7 @@ public class DataCiteMetadataParser {
         if (dataCiteAffiliations != null && !dataCiteAffiliations.isEmpty()){
             for (DataCiteAffiliation a : dataCiteAffiliations) {
                 //initialize corresponding class
-                String name = a.getAffiliationIdentifier();
+                String name = a.getName();
                 String affiliationIdentifier = a.getAffiliationIdentifier();
                 String affiliationScheme = a.getAffiliationIdentifierScheme();
                 String schemeUri = a.getAffiliationSchemeURI();
