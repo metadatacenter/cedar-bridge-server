@@ -145,16 +145,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
       mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
       DataCiteSchema dataCiteResponse = mapper.readValue(jsonResponse, DataCiteSchema.class);
 
-      String dataCiteResponseString = mapper.writeValueAsString(dataCiteResponse);
-      System.out.println("DataCiteResponse converted to Data Cite Schema Json: " + dataCiteResponseString);
-
-      // Pass the value from dataCiteResponse to MetadataInstance
-      MetadataInstance cedarDataCiteInstance = DataCiteMetadataParser.parseDataCiteSchema(dataCiteResponse.getData().getAttributes(), userID);
-
-      //Serialize DataCiteRequest Class to json
-      String cedarDataCiteInstanceString = mapper.writeValueAsString(cedarDataCiteInstance);
-      System.out.println("Converted Cedar DataCite Instance JSON-LD: " + cedarDataCiteInstanceString);
-
       return Response.status(statusCode).entity(jsonResource).build();
     } catch (Exception e) {
       return CedarResponse.internalServerError().exception(e).build();
@@ -249,23 +239,22 @@ public class DataCiteResource extends CedarMicroserviceResource {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
-//        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         Attributes existingDoiMetadata = mapper.treeToValue(attributesNode, Attributes.class);
 
-        //Print out the response from DataCite
-        String responseFromDataCite = mapper.writeValueAsString(dataNode);
-        System.out.println("Response from DataCite is :" + responseFromDataCite);
-
-        String existingDoiMetadataString = mapper.writeValueAsString(existingDoiMetadata);
-        System.out.println("existingDoiMetadata converted to Data Cite Schema Json: " + existingDoiMetadataString);
+//        //Print out the response from DataCite
+//        String responseFromDataCite = mapper.writeValueAsString(dataNode);
+//        System.out.println("Response from DataCite is :" + responseFromDataCite);
+//
+//        String existingDoiMetadataString = mapper.writeValueAsString(existingDoiMetadata);
+//        System.out.println("existingDoiMetadata converted to Data Cite Schema Json: " + existingDoiMetadataString);
 
         // Pass the value from dataCiteResponse to cedarDataCiteInstance
         MetadataInstance cedarExistingDoiMetadata = DataCiteMetadataParser.parseDataCiteSchema(existingDoiMetadata, userID);
         response.put(EXISTING_DATACITE_METADATA, cedarExistingDoiMetadata);
         response.put(DRAFT_DOI, draftDoi);
 
-        String cedarDataCiteInstanceString = mapper.writeValueAsString(cedarExistingDoiMetadata);
-        System.out.println("Converted Cedar DataCite Instance JSON-LD: " + cedarDataCiteInstanceString);
+//        String cedarDataCiteInstanceString = mapper.writeValueAsString(cedarExistingDoiMetadata);
+//        System.out.println("Converted Cedar DataCite Instance JSON-LD: " + cedarDataCiteInstanceString);
       } else {
         // if draft DOI is not available, set the url and resourceType fields
         MetadataInstance defaultInstance = GenerateInstance.getDefaultInstance(sourceArtifactId, userID, templateId);
@@ -290,8 +279,10 @@ public class DataCiteResource extends CedarMicroserviceResource {
   public Response createDOI(@QueryParam(QP_SOURCE_ARTIFACT_ID) String sourceArtifactId, @QueryParam("state") String state, JsonNode dataCiteInstance) throws CedarException, IOException,
       InterruptedException {
     CedarRequestContext c = buildRequestContext();
+//    System.out.println("-----------------URL---------");
+//    System.out.println(endpointUrl);
 
-//    c.must(c.user()).be(LoggedIn);
+    c.must(c.user()).be(LoggedIn);
 
     //Check if the source artifact has a DOI
     CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
@@ -499,7 +490,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
         String validates = jsonResource.get("validates").asText();
         if (validates.equals("true")) {
           // The resource is valid, handle it here
-          System.out.println("Resource is valid.");
           return Pair.of(true, jsonResource);
         } else {
           // The resource is invalid, handle the errors and warnings here
@@ -531,8 +521,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
       String metadataString = metadata.toString();
       MetadataInstance cedarInstance = mapper.readValue(metadataString, MetadataInstance.class);
 
-      String cedarInstanceString = mapper.writeValueAsString(cedarInstance);
-      System.out.println("Json Converted to CedarDataCite Instance: " + cedarInstanceString);
+//      String cedarInstanceString = mapper.writeValueAsString(cedarInstance);
+//      System.out.println("Json Converted to CedarDataCite Instance: " + cedarInstanceString);
 
       // Pass the value from dataCiteInstance to dataCiteRequest
       try {
@@ -544,7 +534,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
       //Serialize DataCiteRequest Class to json
       String requestJsonString = mapper.writeValueAsString(dataCiteSchema);
-      System.out.println("Json Sent to DataCite: " + requestJsonString);
+//      System.out.println("Json Sent to DataCite: " + requestJsonString);
       return requestJsonString;
 
     } catch (IOException | DataCiteInstanceValidationException e) {
@@ -571,7 +561,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
           .POST(HttpRequest.BodyPublishers.ofString(String.valueOf(jsonData)))
           .build();
       HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-      System.out.println("DataCite Post Call with status code: " + response.statusCode());
       return response;
     } catch (IOException | InterruptedException e) {
       throw new RuntimeException(e);
@@ -598,7 +587,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
         .PUT(HttpRequest.BodyPublishers.ofString(String.valueOf(jsonData)))
         .build();
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-    System.out.println("DataCite Put Call with status code: " + response.statusCode());
     return response;
   }
 
