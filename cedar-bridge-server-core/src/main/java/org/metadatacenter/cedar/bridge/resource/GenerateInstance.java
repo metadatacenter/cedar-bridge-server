@@ -24,7 +24,7 @@ public class GenerateInstance {
   private static final String INSTANCE_IRI_PREFIX = "https://repo.metadatacenter.org/template-instances/";
   private static final String TEMPLATE_ID = "https://repo.metadatacenter.org/templates/5b6e0952-8a56-4f97-a35d-7ce784773b57";
   private static final String USER_ID = "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44";
-  private static final String PREFIX = "10.82658";
+  private static final String PREFIX = "10.60745";
   private static final String PUBLISHER = "CEDAR";
   private static final String publicationYear = String.valueOf(Year.now().getValue()) + "-01-01";
   private static final String nowAsString = Instant.ofEpochSecond(System.currentTimeMillis() / 1000).toString();

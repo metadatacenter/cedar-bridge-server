@@ -21,7 +21,7 @@ import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.Re
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.RightsElement.*;
 
 public class DataCiteMetadataParser {
-    private static final String PREFIX = "10.82658";
+    private static final String PREFIX = "10.60745";
     private static final String DATACITE_ID_URL_PREFIX = "http://purl.org/datacite/v4.4/";
     private static final String PERSOANL_ID_URL = "http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Persoanl";
     private static final String ORGANIZATIONAL_ID_URL = "http://www.w3.org/2006/vcard/ns#Organizational";

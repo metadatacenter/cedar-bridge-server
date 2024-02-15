@@ -14,7 +14,7 @@ import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.RelatedItemElement.*;
 
 public class CedarInstanceParser {
-  private static final String PREFIX = "10.82658";
+  private static final String PREFIX = "10.60745";
   private static final String PUBLISH = "publish";
   private static final String RESOURCE_TYPE_GENERAL = "Other";
   private static final String DRAFT = "draft";
