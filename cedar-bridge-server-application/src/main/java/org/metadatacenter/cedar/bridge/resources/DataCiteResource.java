@@ -220,6 +220,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
       return CedarResponse
           .badRequest()
           .errorMessage(hasDoiError)
+          .errorKey(CedarErrorKey.DOI_ALREADY_EXISTS)
+          .parameter("doi", doiName)
           .build();
     }
 
@@ -278,8 +280,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
   public Response createDOI(@QueryParam(QP_SOURCE_ARTIFACT_ID) String sourceArtifactId, @QueryParam("state") String state, JsonNode dataCiteInstance) throws CedarException, IOException,
       InterruptedException {
     CedarRequestContext c = buildRequestContext();
-    //    System.out.println("-----------------URL---------");
-    //    System.out.println(endpointUrl);
 
     c.must(c.user()).be(LoggedIn);
 
@@ -295,6 +295,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
       String hasDoiError = String.format("The %s(%s) already has a DOI: %s", sourceArtifactResourceId.getType().getValue(), sourceArtifactId, findableDoiName);
       return CedarResponse
           .badRequest()
+          .errorKey(CedarErrorKey.DOI_ALREADY_EXISTS)
+          .parameter("doi", findableDoiName)
           .errorMessage(hasDoiError)
           .build();
     }
@@ -381,7 +383,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
               String urlResource = microserviceUrlUtil.getResource().getCommandDOIUpdate();
               Map<String, String> commandContent = new HashMap<>();
               commandContent.put(LinkedData.ID, sourceArtifactId);
-              commandContent.put(DOI, id);
+              commandContent.put(DOI, doiName);
+              // TODO: handle put response here
               org.apache.http.HttpResponse putResponse = ProxyUtil.proxyPost(urlResource, c, JsonMapper.MAPPER.writeValueAsString(commandContent));
             }
             return CedarResponse
@@ -632,7 +635,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       JsonNode annotationsNode = sourceArtifactProxyJson.get(ANNOTATIONS);
       if (annotationsNode.has(ANNOTATIONS_DOI_KEY)) {
         JsonNode doiNameNode = annotationsNode.get(ANNOTATIONS_DOI_KEY);
-        doiName = doiNameNode.get(AT_ID).toString();
+        doiName = doiNameNode.get(AT_ID).textValue();
       }
     }
     return doiName;
