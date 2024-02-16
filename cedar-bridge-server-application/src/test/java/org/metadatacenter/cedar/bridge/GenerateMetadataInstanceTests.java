@@ -1,84 +1,42 @@
-package org.metadatacenter.cedar.bridge.resource;
-
-import org.metadatacenter.id.CedarFQResourceId;
+package org.metadatacenter.cedar.bridge;
 
 import java.time.Instant;
 import java.time.Year;
 import java.util.List;
 import java.util.UUID;
 
-import static org.metadatacenter.cedar.bridge.resource.Cedar.*;
+import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.*;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.AlternateIdentifierElement.*;
+import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.AlternateIdentifierElement.AlternateIdentifierField2;
+import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.AlternateIdentifierElement.AlternateIdentifierTypeField;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.DateElement.*;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.DescriptionElement.*;
+import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.DescriptionElement.DescriptionField2;
+import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.DescriptionElement.DescriptionTypeField;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.FundingReferenceElement.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.GeoLocationElement.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.GeoLocationElement.GeoLocationBoxElement.*;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.GeoLocationElement.GeoLocationPointElement.*;
+import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.GeoLocationElement.GeoLocationPointElement.PointLatitudeField;
+import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.GeoLocationElement.GeoLocationPointElement.PointLongitudeField;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.RightsElement.*;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.SubjectElement.*;
+import static org.metadatacenter.cedar.bridge.resource.Cedar.generateId;
 
-public class GenerateInstance {
+/*
+ * Generates a default instance for the DOI request form (URL, Year, Publisher, resourceType)
+ */
+public class GenerateMetadataInstanceTests {
   private static final String ELEMENT_IRI_PREFIX = "https://repo.metadatacenter.org/template-element-instances/";
   private static final String INSTANCE_IRI_PREFIX = "https://repo.metadatacenter.org/template-instances/";
   private static final String TEMPLATE_ID = "https://repo.metadatacenter.org/templates/5b6e0952-8a56-4f97-a35d-7ce784773b57";
   private static final String USER_ID = "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44";
-  private static final String PREFIX = "10.60745";
   private static final String PUBLISHER = "CEDAR";
-  private static final String publicationYear = String.valueOf(Year.now().getValue()) + "-01-01";
+  private static final String publicationYear = Year.now().getValue() + "-01-01";
   private static final String nowAsString = Instant.ofEpochSecond(System.currentTimeMillis() / 1000).toString();
 
-  public static MetadataInstance getDefaultInstance(String sourceArtifactId, String userID, String templateId){
-    String openViewUrl = GenerateOpenViewUrl.getOpenViewUrl(sourceArtifactId);
-    String resourceType = CedarFQResourceId.build(sourceArtifactId).getType().getValue();
-    String capitalizedResourceType = resourceType.substring(0,1).toUpperCase() + resourceType.substring(1);
-    return new MetadataInstance(
-        null,
-        "Default DataCite Instance",
-        "A new DataCite Instance with default values",
-        templateId,
-        nowAsString,
-        userID,
-        nowAsString,
-        userID,
-        templateId,
-        PrefixField.of(PREFIX),
-        UrlField.of(openViewUrl),
-        CreatorElementList.of(
-            new CreatorElement(generateId(),
-                CreatorElement.CreatorNameField.of(),
-                CreatorElement.NameTypeField.of(),
-                CreatorElement.GivenNameField.of(),
-                CreatorElement.FamilyNameField.of(),
-                CreatorElement.AffiliationElementList.of(),
-                CreatorElement.NameIdentifierElementList.of())
-        ),
-        TitleElementList.of(
-            new TitleElement(generateId(),
-                TitleElement.TitleField2.of(),
-                TitleElement.TitleTypeField.of())
-        ),
-        PublicationYearField.of(publicationYear),
-        PublisherField.of(PUBLISHER),
-        ResourceTypeField.of(capitalizedResourceType),
-        SubjectElementList.of(),
-        ContributorElementList.of(),
-        DateElementList.of(),
-        LanguageField.of(),
-        AlternateIdentifierElementList.of(),
-        RelatedIdentifierElementList.of(),
-        SizeFieldList.of(),
-        FormatFieldList.of(),
-        VersionField.of(),
-        RightsElementList.of(),
-        DescriptionElementList.of(),
-        GeoLocationElementList.of(),
-        FundingReferenceElementList.of(),
-        RelatedItemElementList.of()
-    );
-  }
-  public static MetadataInstance getInstanceRequiredOnly(){
+  private static String PREFIX = null;
+
+  // TODO: move this type of method into a test class.
+  public static MetadataInstance getInstanceRequiredOnly() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required Only Test",
@@ -125,7 +83,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRichMetadata(){
+  public static MetadataInstance getInstanceRichMetadata() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Rich Metadata Test",
@@ -145,16 +103,16 @@ public class GenerateInstance {
                 CreatorElement.GivenNameField.of("John"),
                 CreatorElement.FamilyNameField.of("Doe"),
                 CreatorElement.AffiliationElementList.of(List.of(
-                    new CreatorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
-                        CreatorElement.AffiliationElement.NameField.of("affiliation name"),
-                        CreatorElement.AffiliationElement.AffiliationIdentifierField.of("https://ror.org/04wxnsj81"),
-                        CreatorElement.AffiliationElement.AffiliationIdentifierSchemeField.of("ROR"),
-                        CreatorElement.AffiliationElement.SchemeUriField.of()),
-                    new CreatorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
-                        CreatorElement.AffiliationElement.NameField.of(),
-                        CreatorElement.AffiliationElement.AffiliationIdentifierField.of("https://ror.org/05dxps055"),
-                        CreatorElement.AffiliationElement.AffiliationIdentifierSchemeField.of("ROR"),
-                        CreatorElement.AffiliationElement.SchemeUriField.of("http://affiliation_identification_scheme_uri2"))
+                        new CreatorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
+                            CreatorElement.AffiliationElement.NameField.of("affiliation name"),
+                            CreatorElement.AffiliationElement.AffiliationIdentifierField.of("https://ror.org/04wxnsj81"),
+                            CreatorElement.AffiliationElement.AffiliationIdentifierSchemeField.of("ROR"),
+                            CreatorElement.AffiliationElement.SchemeUriField.of()),
+                        new CreatorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
+                            CreatorElement.AffiliationElement.NameField.of(),
+                            CreatorElement.AffiliationElement.AffiliationIdentifierField.of("https://ror.org/05dxps055"),
+                            CreatorElement.AffiliationElement.AffiliationIdentifierSchemeField.of("ROR"),
+                            CreatorElement.AffiliationElement.SchemeUriField.of("http://affiliation_identification_scheme_uri2"))
                     )
                 ),
                 CreatorElement.NameIdentifierElementList.of(
@@ -211,7 +169,7 @@ public class GenerateInstance {
                 ContributorElement.NameTypeField.of("http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal", "Personal"),
                 ContributorElement.GivenNameField.of("Joan"),
                 ContributorElement.FamilyNameField.of("Starr"),
-                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector","DataCollector"),
+                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector", "DataCollector"),
                 ContributorElement.AffiliationElementList.of(
                     new ContributorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                         ContributorElement.AffiliationElement.NameField.of(),
@@ -230,7 +188,7 @@ public class GenerateInstance {
                 ContributorElement.NameTypeField.of("http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal", "Personal"),
                 ContributorElement.GivenNameField.of("Jimmy"),
                 ContributorElement.FamilyNameField.of("Chou"),
-                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataManager","DataManager"),
+                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataManager", "DataManager"),
                 ContributorElement.AffiliationElementList.of(
                     new ContributorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                         ContributorElement.AffiliationElement.NameField.of(),
@@ -255,7 +213,7 @@ public class GenerateInstance {
                 DateTypeField.of("http://purl.org/datacite/v4.4/Issued", "Issued"),
                 DateInformationField.of())
         )),
-        LanguageField.of( "ar"),
+        LanguageField.of("ar"),
         AlternateIdentifierElementList.of(List.of(
             new AlternateIdentifierElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                 AlternateIdentifierField2.of("https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.4.xml"),
@@ -326,7 +284,7 @@ public class GenerateInstance {
                     SouthBoundLatitudeField.of("60"),
                     NorthBoundLatitudeField.of("-50")
                 )
-        )),
+            )),
         FundingReferenceElementList.of(
             new FundingReferenceElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                 FunderNameField.of("Mark Ten"),
@@ -377,7 +335,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceAllUnderRequiredElements(){
+  public static MetadataInstance getInstanceAllUnderRequiredElements() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "All Properties Under Required Element",
@@ -436,7 +394,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRequiredAndSubject(){
+  public static MetadataInstance getInstanceRequiredAndSubject() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required And Subject",
@@ -496,7 +454,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRequiredAndContributor(){
+  public static MetadataInstance getInstanceRequiredAndContributor() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required And Contributor",
@@ -533,7 +491,7 @@ public class GenerateInstance {
                 ContributorElement.NameTypeField.of("http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal", "Personal"),
                 ContributorElement.GivenNameField.of("Joan"),
                 ContributorElement.FamilyNameField.of("Starr"),
-                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector","DataCollector"),
+                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector", "DataCollector"),
                 ContributorElement.AffiliationElementList.of(
                     new ContributorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                         ContributorElement.AffiliationElement.NameField.of(),
@@ -552,7 +510,7 @@ public class GenerateInstance {
                 ContributorElement.NameTypeField.of("http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal", "Personal"),
                 ContributorElement.GivenNameField.of("Jimmy"),
                 ContributorElement.FamilyNameField.of("Chou"),
-                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataManager","DataManager"),
+                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataManager", "DataManager"),
                 ContributorElement.AffiliationElementList.of(
                     new ContributorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                         ContributorElement.AffiliationElement.NameField.of(),
@@ -582,7 +540,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRequiredAndDate(){
+  public static MetadataInstance getInstanceRequiredAndDate() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required And Date",
@@ -638,7 +596,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRequiredAndLang(){
+  public static MetadataInstance getInstanceRequiredAndLang() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required And Lang",
@@ -685,7 +643,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRequiredAndAlternateIdentifier(){
+  public static MetadataInstance getInstanceRequiredAndAlternateIdentifier() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required And Alternate Identifier",
@@ -739,7 +697,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRequiredAndRelatedIdentifier(){
+  public static MetadataInstance getInstanceRequiredAndRelatedIdentifier() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required And Related Identifier",
@@ -803,7 +761,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRequiredAndSizeFormatVersion(){
+  public static MetadataInstance getInstanceRequiredAndSizeFormatVersion() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required And Size Format Version",
@@ -856,7 +814,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRequiredAndRights(){
+  public static MetadataInstance getInstanceRequiredAndRights() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required And Rights",
@@ -916,7 +874,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRequiredAndDescription(){
+  public static MetadataInstance getInstanceRequiredAndDescription() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required And Description",
@@ -970,7 +928,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRequiredAndFundingRef(){
+  public static MetadataInstance getInstanceRequiredAndFundingRef() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required And FundingReference",
@@ -1026,7 +984,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRequiredAndGeoLocation(){
+  public static MetadataInstance getInstanceRequiredAndGeoLocation() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required Only And GeoLocation",
@@ -1086,7 +1044,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRequiredAndRelatedItem(){
+  public static MetadataInstance getInstanceRequiredAndRelatedItem() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required Only And RelatedItem",
@@ -1169,7 +1127,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRequiredAndRandomFields(){
+  public static MetadataInstance getInstanceRequiredAndRandomFields() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required Only Test",
@@ -1206,7 +1164,7 @@ public class GenerateInstance {
                 ContributorElement.NameTypeField.of("http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal", "Personal"),
                 ContributorElement.GivenNameField.of("Joan"),
                 ContributorElement.FamilyNameField.of("Starr"),
-                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector","DataCollector"),
+                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector", "DataCollector"),
                 ContributorElement.AffiliationElementList.of(
                     new ContributorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                         ContributorElement.AffiliationElement.NameField.of(),
@@ -1225,7 +1183,7 @@ public class GenerateInstance {
                 ContributorElement.NameTypeField.of("http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal", "Personal"),
                 ContributorElement.GivenNameField.of(),
                 ContributorElement.FamilyNameField.of(),
-                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector","DataCollector"),
+                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector", "DataCollector"),
                 ContributorElement.AffiliationElementList.of(
                     new ContributorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                         ContributorElement.AffiliationElement.NameField.of(),
@@ -1236,7 +1194,7 @@ public class GenerateInstance {
                 ContributorElement.NameIdentifierElementList.of())
         )),
         DateElementList.of(),
-        LanguageField.of( "ar"),
+        LanguageField.of("ar"),
         AlternateIdentifierElementList.of(List.of(
             new AlternateIdentifierElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                 AlternateIdentifierField2.of("https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.4.xml"),
@@ -1333,7 +1291,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRequiredAndEmptyString(){
+  public static MetadataInstance getInstanceRequiredAndEmptyString() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required And Empty String",
@@ -1370,7 +1328,7 @@ public class GenerateInstance {
                 ContributorElement.NameTypeField.of("http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal", "Personal"),
                 ContributorElement.GivenNameField.of(""),
                 ContributorElement.FamilyNameField.of(""),
-                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector","DataCollector"),
+                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector", "DataCollector"),
                 ContributorElement.AffiliationElementList.of(
                     new ContributorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                         ContributorElement.AffiliationElement.NameField.of(),
@@ -1384,9 +1342,9 @@ public class GenerateInstance {
                         ContributorElement.NameIdentifierElement.NameIdentifierSchemeField.of("ROR"),
                         ContributorElement.NameIdentifierElement.SchemeUriField.of(""))
                 )
-        )),
+            )),
         DateElementList.of(),
-        LanguageField.of( ""),
+        LanguageField.of(""),
         AlternateIdentifierElementList.of(
             new AlternateIdentifierElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                 AlternateIdentifierField2.of(""),
@@ -1477,7 +1435,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRequiredAndAllEmptyFields(){
+  public static MetadataInstance getInstanceRequiredAndAllEmptyFields() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Required And All Empty Fields",
@@ -1497,11 +1455,11 @@ public class GenerateInstance {
                 CreatorElement.GivenNameField.of(),
                 CreatorElement.FamilyNameField.of(),
                 CreatorElement.AffiliationElementList.of(
-                        new CreatorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
-                            CreatorElement.AffiliationElement.NameField.of(),
-                            CreatorElement.AffiliationElement.AffiliationIdentifierField.of(),
-                            CreatorElement.AffiliationElement.AffiliationIdentifierSchemeField.of(),
-                            CreatorElement.AffiliationElement.SchemeUriField.of())
+                    new CreatorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
+                        CreatorElement.AffiliationElement.NameField.of(),
+                        CreatorElement.AffiliationElement.AffiliationIdentifierField.of(),
+                        CreatorElement.AffiliationElement.AffiliationIdentifierSchemeField.of(),
+                        CreatorElement.AffiliationElement.SchemeUriField.of())
                 ),
                 CreatorElement.NameIdentifierElementList.of(
                     new CreatorElement.NameIdentifierElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
@@ -1553,7 +1511,7 @@ public class GenerateInstance {
                 DateTypeField.of(),
                 DateInformationField.of())
         ),
-        LanguageField.of( ),
+        LanguageField.of(),
         AlternateIdentifierElementList.of(
             new AlternateIdentifierElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                 AlternateIdentifierField2.of(),
@@ -1655,7 +1613,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceMissingAllFields(){
+  public static MetadataInstance getInstanceMissingAllFields() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Missing All Required Properties",
@@ -1690,7 +1648,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceMissingPrefix(){
+  public static MetadataInstance getInstanceMissingPrefix() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Missing Prefix",
@@ -1737,7 +1695,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceMissingPublisher(){
+  public static MetadataInstance getInstanceMissingPublisher() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Missing Publisher",
@@ -1784,7 +1742,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceMissingPublicationYear(){
+  public static MetadataInstance getInstanceMissingPublicationYear() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Missing PublicationYear",
@@ -1831,7 +1789,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceMissingMultipleRequiredFields(){
+  public static MetadataInstance getInstanceMissingMultipleRequiredFields() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Missing Multiple Required Fields",
@@ -1878,7 +1836,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceMissingContributorName(){
+  public static MetadataInstance getInstanceMissingContributorName() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Missing ContributorName",
@@ -1915,7 +1873,7 @@ public class GenerateInstance {
                 ContributorElement.NameTypeField.of("http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal", "Personal"),
                 ContributorElement.GivenNameField.of(""),
                 ContributorElement.FamilyNameField.of(""),
-                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector","DataCollector"),
+                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector", "DataCollector"),
                 ContributorElement.AffiliationElementList.of(
                     new ContributorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                         ContributorElement.AffiliationElement.NameField.of(),
@@ -1945,7 +1903,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceMissingContributorType(){
+  public static MetadataInstance getInstanceMissingContributorType() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Missing ContributorType",
@@ -2012,7 +1970,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceMissingRelatedIdentifierType(){
+  public static MetadataInstance getInstanceMissingRelatedIdentifierType() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Missing RelatedIdentifierType",
@@ -2068,7 +2026,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceMissingRelationType(){
+  public static MetadataInstance getInstanceMissingRelationType() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Missing RelationType",
@@ -2124,7 +2082,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceMissingFunderName(){
+  public static MetadataInstance getInstanceMissingFunderName() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Missing FunderName",
@@ -2180,7 +2138,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceMissingRelatedItemType(){
+  public static MetadataInstance getInstanceMissingRelatedItemType() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Missing RelatedItemType",
@@ -2264,7 +2222,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceMissingRelatedItemRelationType(){
+  public static MetadataInstance getInstanceMissingRelatedItemRelationType() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Missing RelatedItemType",
@@ -2347,7 +2305,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceWrongNameType(){
+  public static MetadataInstance getInstanceWrongNameType() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Wrong NameType",
@@ -2406,7 +2364,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceDataOutOfRange(){
+  public static MetadataInstance getInstanceDataOutOfRange() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Data in GeoLocation Out Of Range",
@@ -2466,7 +2424,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRichMetadataRichUpdate(){
+  public static MetadataInstance getInstanceRichMetadataRichUpdate() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Draft DOI Rich Metadata Update Test",
@@ -2506,12 +2464,12 @@ public class GenerateInstance {
                 ))
         ),
         TitleElementList.of(List.of(
-                new TitleElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
-                    TitleElement.TitleField2.of("Draft DOI Rich Metadata Update Test"),
-                    TitleElement.TitleTypeField.of("http://purl.org/datacite/v4.4/OtherTitle", "Other")),
-                new TitleElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
-                    TitleElement.TitleField2.of("Rich Metadata Test"),
-                    TitleElement.TitleTypeField.of("http://purl.org/datacite/v4.4/OtherTitle", "Other"))
+            new TitleElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
+                TitleElement.TitleField2.of("Draft DOI Rich Metadata Update Test"),
+                TitleElement.TitleTypeField.of("http://purl.org/datacite/v4.4/OtherTitle", "Other")),
+            new TitleElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
+                TitleElement.TitleField2.of("Rich Metadata Test"),
+                TitleElement.TitleTypeField.of("http://purl.org/datacite/v4.4/OtherTitle", "Other"))
         )),
         MetadataInstance.PublicationYearField.of(publicationYear),
         PublisherField.of(PUBLISHER),
@@ -2530,7 +2488,7 @@ public class GenerateInstance {
                 ContributorElement.NameTypeField.of("http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal", "Personal"),
                 ContributorElement.GivenNameField.of("Joan"),
                 ContributorElement.FamilyNameField.of("Starr"),
-                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector","DataCollector"),
+                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector", "DataCollector"),
                 ContributorElement.AffiliationElementList.of(
                     new ContributorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                         ContributorElement.AffiliationElement.NameField.of(),
@@ -2539,14 +2497,14 @@ public class GenerateInstance {
                         ContributorElement.AffiliationElement.SchemeUriField.of("http://affiliation_identification_scheme_uri"))
                 ),
                 ContributorElement.NameIdentifierElementList.of(List.of(
-                        new ContributorElement.NameIdentifierElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
-                            ContributorElement.NameIdentifierElement.NameField.of("name identifier 1"),
-                            ContributorElement.NameIdentifierElement.NameIdentifierSchemeField.of("ROR"),
-                            ContributorElement.NameIdentifierElement.SchemeUriField.of()),
-                        new ContributorElement.NameIdentifierElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
-                            ContributorElement.NameIdentifierElement.NameField.of("name identifier 2"),
-                            ContributorElement.NameIdentifierElement.NameIdentifierSchemeField.of("ROR"),
-                            ContributorElement.NameIdentifierElement.SchemeUriField.of())
+                    new ContributorElement.NameIdentifierElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
+                        ContributorElement.NameIdentifierElement.NameField.of("name identifier 1"),
+                        ContributorElement.NameIdentifierElement.NameIdentifierSchemeField.of("ROR"),
+                        ContributorElement.NameIdentifierElement.SchemeUriField.of()),
+                    new ContributorElement.NameIdentifierElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
+                        ContributorElement.NameIdentifierElement.NameField.of("name identifier 2"),
+                        ContributorElement.NameIdentifierElement.NameIdentifierSchemeField.of("ROR"),
+                        ContributorElement.NameIdentifierElement.SchemeUriField.of())
                 )))
         ),
         DateElementList.of(
@@ -2555,7 +2513,7 @@ public class GenerateInstance {
                 DateTypeField.of("http://purl.org/datacite/v4.4/Created", "Created"),
                 DateInformationField.of())
         ),
-        LanguageField.of( "ar"),
+        LanguageField.of("ar"),
         AlternateIdentifierElementList.of(List.of(
             new AlternateIdentifierElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                 AlternateIdentifierField2.of("https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.4.xml"),
@@ -2673,7 +2631,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRichMetadataAddNewInstance(){
+  public static MetadataInstance getInstanceRichMetadataAddNewInstance() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Update Rich Metadata with New Added Instances of Each Element",
@@ -2780,7 +2738,7 @@ public class GenerateInstance {
                 ContributorElement.NameTypeField.of("http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal", "Personal"),
                 ContributorElement.GivenNameField.of("Joan"),
                 ContributorElement.FamilyNameField.of("Starr"),
-                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector","DataCollector"),
+                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataCollector", "DataCollector"),
                 ContributorElement.AffiliationElementList.of(
                     new ContributorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                         ContributorElement.AffiliationElement.NameField.of(),
@@ -2799,7 +2757,7 @@ public class GenerateInstance {
                 ContributorElement.NameTypeField.of("http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal", "Personal"),
                 ContributorElement.GivenNameField.of("Jimmy"),
                 ContributorElement.FamilyNameField.of("Chou"),
-                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataManager","DataManager"),
+                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataManager", "DataManager"),
                 ContributorElement.AffiliationElementList.of(
                     new ContributorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                         ContributorElement.AffiliationElement.NameField.of(),
@@ -2818,7 +2776,7 @@ public class GenerateInstance {
                 ContributorElement.NameTypeField.of("http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal", "Personal"),
                 ContributorElement.GivenNameField.of("Ming"),
                 ContributorElement.FamilyNameField.of("Cao"),
-                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataManager","DataManager"),
+                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataManager", "DataManager"),
                 ContributorElement.AffiliationElementList.of(),
                 ContributorElement.NameIdentifierElementList.of())
         )),
@@ -2836,7 +2794,7 @@ public class GenerateInstance {
                 DateTypeField.of("http://purl.org/datacite/v4.4/Created", "Created"),
                 DateInformationField.of())
         )),
-        LanguageField.of( "ar"),
+        LanguageField.of("ar"),
         AlternateIdentifierElementList.of(List.of(
             new AlternateIdentifierElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                 AlternateIdentifierField2.of("https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.4.xml"),
@@ -2938,24 +2896,24 @@ public class GenerateInstance {
                     SouthBoundLatitudeField.of("20"),
                     NorthBoundLatitudeField.of("-50")
                 ))
-            )),
+        )),
         FundingReferenceElementList.of(List.of(
-                new FundingReferenceElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
-                    FunderNameField.of("Mark Ten"),
-                    FunderIdentifierField.of("05dxps055"),
-                    FunderIdentifierTypeField.of("http://purl.obolibrary.org/obo/BE_ROR", "ROR"),
-                    FundingReferenceElement.SchemeUriField.of(),
-                    AwardNumberField.of("CBET-106"),
-                    AwardUriField.of("https://www.moore.org/grants/list/GBMF3859.01"),
-                    AwardTitleField.of("Full DataCite XML Example")),
-                new FundingReferenceElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
-                    FunderNameField.of("Stanford"),
-                    FunderIdentifierField.of(),
-                    FunderIdentifierTypeField.of(),
-                    FundingReferenceElement.SchemeUriField.of(),
-                    AwardNumberField.of(),
-                    AwardUriField.of(),
-                    AwardTitleField.of())
+            new FundingReferenceElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
+                FunderNameField.of("Mark Ten"),
+                FunderIdentifierField.of("05dxps055"),
+                FunderIdentifierTypeField.of("http://purl.obolibrary.org/obo/BE_ROR", "ROR"),
+                FundingReferenceElement.SchemeUriField.of(),
+                AwardNumberField.of("CBET-106"),
+                AwardUriField.of("https://www.moore.org/grants/list/GBMF3859.01"),
+                AwardTitleField.of("Full DataCite XML Example")),
+            new FundingReferenceElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
+                FunderNameField.of("Stanford"),
+                FunderIdentifierField.of(),
+                FunderIdentifierTypeField.of(),
+                FundingReferenceElement.SchemeUriField.of(),
+                AwardNumberField.of(),
+                AwardUriField.of(),
+                AwardTitleField.of())
         )),
         RelatedItemElementList.of(List.of(
             new RelatedItemElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
@@ -3020,7 +2978,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRichMetadataDeleteInstance(){
+  public static MetadataInstance getInstanceRichMetadataDeleteInstance() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Update Rich Metadata with Deleted Instances of Each Element",
@@ -3076,7 +3034,7 @@ public class GenerateInstance {
                 ContributorElement.NameTypeField.of("http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal", "Personal"),
                 ContributorElement.GivenNameField.of("Jimmy"),
                 ContributorElement.FamilyNameField.of("Chou"),
-                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataManager","DataManager"),
+                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/DataManager", "DataManager"),
                 ContributorElement.AffiliationElementList.of(
                     new ContributorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                         ContributorElement.AffiliationElement.NameField.of(),
@@ -3097,7 +3055,7 @@ public class GenerateInstance {
                 DateTypeField.of("http://purl.org/datacite/v4.4/Issued", "Issued"),
                 DateInformationField.of())
         ),
-        LanguageField.of( "ar"),
+        LanguageField.of("ar"),
         AlternateIdentifierElementList.of(
             new AlternateIdentifierElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                 AlternateIdentifierField2.of("https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.0.xml"),
@@ -3139,7 +3097,7 @@ public class GenerateInstance {
     );
   }
 
-  public static MetadataInstance getInstanceRichMetadataDeleteAndAddInstance(){
+  public static MetadataInstance getInstanceRichMetadataDeleteAndAddInstance() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),
         "Update Rich Metadata with Deleted And New Added Instances of Each Element",
@@ -3183,7 +3141,7 @@ public class GenerateInstance {
                 ContributorElement.NameTypeField.of("http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal", "Personal"),
                 ContributorElement.GivenNameField.of("Mark"),
                 ContributorElement.FamilyNameField.of("Ten"),
-                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/ProjectLeader","ProjectLeader"),
+                ContributorElement.ContributorTypeField.of("http://purl.org/datacite/v4.4/ProjectLeader", "ProjectLeader"),
                 ContributorElement.AffiliationElementList.of(
                     new ContributorElement.AffiliationElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                         ContributorElement.AffiliationElement.NameField.of(),
@@ -3204,7 +3162,7 @@ public class GenerateInstance {
                 DateTypeField.of("http://purl.org/datacite/v4.4/Issued", "Issued"),
                 DateInformationField.of())
         ),
-        LanguageField.of( "ar"),
+        LanguageField.of("ar"),
         AlternateIdentifierElementList.of(
             new AlternateIdentifierElement(ELEMENT_IRI_PREFIX + UUID.randomUUID(),
                 AlternateIdentifierField2.of("https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.0.xml"),

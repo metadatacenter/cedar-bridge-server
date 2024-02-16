@@ -7,44 +7,44 @@ import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteGeoLocation {
-    @JsonProperty("geoLocationPlace")
-    private String geoLocationPlace;
-    @JsonProperty("geoLocationPoint")
-    private DataCiteGeoLocationPoint geoLocationPoint;
-    @JsonProperty("geoLocationBox")
-    private DataCiteGeoLocationBox geoLocationBox;
-    @JsonProperty("geoLocationPolygon")
-    private List<DataCiteGeoLocationPolygon> geoLocationPolygonList;
+  @JsonProperty("geoLocationPlace")
+  private String geoLocationPlace;
+  @JsonProperty("geoLocationPoint")
+  private DataCiteGeoLocationPoint geoLocationPoint;
+  @JsonProperty("geoLocationBox")
+  private DataCiteGeoLocationBox geoLocationBox;
+  @JsonProperty("geoLocationPolygon")
+  private List<DataCiteGeoLocationPolygon> geoLocationPolygonList;
 
-    public String getGeoLocationPlace() {
-        return geoLocationPlace;
-    }
+  public String getGeoLocationPlace() {
+    return geoLocationPlace;
+  }
 
-    public void setGeoLocationPlace(String geoLocationPlace) {
-        this.geoLocationPlace = geoLocationPlace;
-    }
+  public void setGeoLocationPlace(String geoLocationPlace) {
+    this.geoLocationPlace = geoLocationPlace;
+  }
 
-    public DataCiteGeoLocationPoint getGeoLocationPoint() {
-        return geoLocationPoint;
-    }
+  public DataCiteGeoLocationPoint getGeoLocationPoint() {
+    return geoLocationPoint;
+  }
 
-    public void setGeoLocationPoint(DataCiteGeoLocationPoint geoLocationPoint) {
-        this.geoLocationPoint = geoLocationPoint;
-    }
+  public void setGeoLocationPoint(DataCiteGeoLocationPoint geoLocationPoint) {
+    this.geoLocationPoint = geoLocationPoint;
+  }
 
-    public DataCiteGeoLocationBox getGeoLocationBox() {
-        return geoLocationBox;
-    }
+  public DataCiteGeoLocationBox getGeoLocationBox() {
+    return geoLocationBox;
+  }
 
-    public void setGeoLocationBox(DataCiteGeoLocationBox geoLocationBox) {
-        this.geoLocationBox = geoLocationBox;
-    }
+  public void setGeoLocationBox(DataCiteGeoLocationBox geoLocationBox) {
+    this.geoLocationBox = geoLocationBox;
+  }
 
-    public List<DataCiteGeoLocationPolygon> getGeoLocationPolygonList() {
-        return geoLocationPolygonList;
-    }
+  public List<DataCiteGeoLocationPolygon> getGeoLocationPolygonList() {
+    return geoLocationPolygonList;
+  }
 
-    public void setGeoLocationPolygonList(List<DataCiteGeoLocationPolygon> geoLocationPolygonList) {
-        this.geoLocationPolygonList = geoLocationPolygonList;
-    }
+  public void setGeoLocationPolygonList(List<DataCiteGeoLocationPolygon> geoLocationPolygonList) {
+    this.geoLocationPolygonList = geoLocationPolygonList;
+  }
 }

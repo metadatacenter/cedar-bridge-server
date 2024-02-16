@@ -5,24 +5,24 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteType {
-    @JsonProperty("resourceType")
-    private String resourceType;
-    @JsonProperty("resourceTypeGeneral")
-    private String resourceTypeGeneral;
+  @JsonProperty("resourceType")
+  private String resourceType;
+  @JsonProperty("resourceTypeGeneral")
+  private String resourceTypeGeneral;
 
-    public String getResourceType() {
-        return resourceType;
-    }
+  public String getResourceType() {
+    return resourceType;
+  }
 
-    public void setResourceType(String resourceType) {
-        this.resourceType = resourceType;
-    }
+  public void setResourceType(String resourceType) {
+    this.resourceType = resourceType;
+  }
 
-    public String getResourceTypeGeneral() {
-        return resourceTypeGeneral;
-    }
+  public String getResourceTypeGeneral() {
+    return resourceTypeGeneral;
+  }
 
-    public void setResourceTypeGeneral(String resourceTypeGeneral) {
-        this.resourceTypeGeneral = resourceTypeGeneral;
-    }
+  public void setResourceTypeGeneral(String resourceTypeGeneral) {
+    this.resourceTypeGeneral = resourceTypeGeneral;
+  }
 }

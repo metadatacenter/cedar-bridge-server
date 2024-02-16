@@ -228,7 +228,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     //Check if there is an already started DOI metadata instance. If yes, load it as well
     //Use publisher and openView Url as parameters to send query to DataCite
     try {
-      Response httpResponse = getDraftDoiMetadata(sourceArtifactId);
+      Response httpResponse = getDraftDoiMetadata(sourceArtifactId, cedarConfig);
       HashMap<String, Object> entity = (HashMap<String, Object>) httpResponse.getEntity();
       boolean hasDraftDoi = (boolean) entity.get(HAS_DRAFT_DOI);
       JsonNode dataNode = (JsonNode) entity.get(DRAFT_METADATA);
@@ -250,7 +250,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
         //        System.out.println("existingDoiMetadata converted to Data Cite Schema Json: " + existingDoiMetadataString);
 
         // Pass the value from dataCiteResponse to cedarDataCiteInstance
-        MetadataInstance cedarExistingDoiMetadata = DataCiteMetadataParser.parseDataCiteSchema(existingDoiMetadata, userID);
+        MetadataInstance cedarExistingDoiMetadata = DataCiteMetadataParser.parseDataCiteSchema(existingDoiMetadata, userID, cedarConfig);
         response.put(EXISTING_DATACITE_METADATA, cedarExistingDoiMetadata);
         response.put(DRAFT_DOI, draftDoi);
 
@@ -258,7 +258,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
         //        System.out.println("Converted Cedar DataCite Instance JSON-LD: " + cedarDataCiteInstanceString);
       } else {
         // if draft DOI is not available, set the url and resourceType fields
-        MetadataInstance defaultInstance = GenerateInstance.getDefaultInstance(sourceArtifactId, userID, templateId);
+        MetadataInstance defaultInstance = GenerateMetadataInstance.getDefaultInstance(sourceArtifactId, userID, templateId, cedarConfig);
         response.put(EXISTING_DATACITE_METADATA, defaultInstance);
         response.put(DRAFT_DOI, null);
       }
@@ -333,7 +333,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       }
       try {
         //Send HTTP GET request to DataCite to recheck the draft DOI
-        Response getDraftDoiResponse = getDraftDoiMetadata(sourceArtifactId);
+        Response getDraftDoiResponse = getDraftDoiMetadata(sourceArtifactId, cedarConfig);
         //Send PUT request if draft DOI exists, otherwise send POST request
         HashMap<String, Object> entity = (HashMap<String, Object>) getDraftDoiResponse.getEntity();
         boolean hasDraftDoi = (boolean) entity.get(HAS_DRAFT_DOI);
@@ -530,7 +530,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
       // Pass the value from dataCiteInstance to dataCiteRequest
       try {
-        CedarInstanceParser.parseCedarInstance(cedarInstance, dataCiteSchema, sourceArtifactId, state);
+        CedarInstanceParser.parseCedarInstance(cedarInstance, dataCiteSchema, sourceArtifactId, state, cedarConfig);
       } catch (DataCiteInstanceValidationException e) {
         e.printStackTrace();
         throw new DataCiteInstanceValidationException(e.getMessage());
@@ -600,9 +600,9 @@ public class DataCiteResource extends CedarMicroserviceResource {
    * @param sourceArtifactId ID of source template or instance for which you want to create the DOI
    * @return CedarResponse which contains draft DOI's metadata and boolean value of if draft DOI exists
    */
-  private Response getDraftDoiMetadata(String sourceArtifactId) throws IOException, InterruptedException {
+  private Response getDraftDoiMetadata(String sourceArtifactId, CedarConfig cedarConfig) throws IOException, InterruptedException {
     Map<String, Object> response = new HashMap<>();
-    String openViewUrl = GenerateOpenViewUrl.getOpenViewUrl(sourceArtifactId);
+    String openViewUrl = GenerateOpenViewUrl.getOpenViewUrl(sourceArtifactId, cedarConfig);
     String encodedOpenViewUrl = URLEncoder.encode(openViewUrl, StandardCharsets.UTF_8);
     String queryUrl = endpointUrl + QUERY_AFFILIATION + QUERY_DETAIL + QUERY_PUBLISHER + "%20AND%20url:%22" + encodedOpenViewUrl + "%22";
     URI uri = URI.create(queryUrl);

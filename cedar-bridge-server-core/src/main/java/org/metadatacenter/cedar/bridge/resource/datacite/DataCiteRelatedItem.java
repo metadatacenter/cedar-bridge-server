@@ -7,154 +7,154 @@ import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteRelatedItem {
-    @JsonProperty("relatedItemType")
-    private String relatedItemType;
-    @JsonProperty("relationType")
-    private String relationType;
-    @JsonProperty("volume")
-    private String volume;
-    @JsonProperty("issue")
-    private String issue;
-    @JsonProperty("firstPage")
-    private String firstPage;
-    @JsonProperty("lastPage")
-    private String lastPage;
-    @JsonProperty("publicationYear")
-    private Integer publicationYear;
-    @JsonProperty("publisher")
-    private String publisher;
-    @JsonProperty("edition")
-    private String edition;
-    @JsonProperty("relatedItemIdentifier")
-    private DataCiteRelatedItemIdentifier relatedItemIdentifier;
-    @JsonProperty("creators")
-    private List<DataCiteCreator> creators;
-    @JsonProperty("titles")
-    private List<DataCiteTitle> titles;
-    @JsonProperty("number")
-    private String number;
-    @JsonProperty("numberType")
-    private String numberType;
-    @JsonProperty("contributors")
-    private List<DataCiteRelatedItemContributor> contributors;
+  @JsonProperty("relatedItemType")
+  private String relatedItemType;
+  @JsonProperty("relationType")
+  private String relationType;
+  @JsonProperty("volume")
+  private String volume;
+  @JsonProperty("issue")
+  private String issue;
+  @JsonProperty("firstPage")
+  private String firstPage;
+  @JsonProperty("lastPage")
+  private String lastPage;
+  @JsonProperty("publicationYear")
+  private Integer publicationYear;
+  @JsonProperty("publisher")
+  private String publisher;
+  @JsonProperty("edition")
+  private String edition;
+  @JsonProperty("relatedItemIdentifier")
+  private DataCiteRelatedItemIdentifier relatedItemIdentifier;
+  @JsonProperty("creators")
+  private List<DataCiteCreator> creators;
+  @JsonProperty("titles")
+  private List<DataCiteTitle> titles;
+  @JsonProperty("number")
+  private String number;
+  @JsonProperty("numberType")
+  private String numberType;
+  @JsonProperty("contributors")
+  private List<DataCiteRelatedItemContributor> contributors;
 
-    public String getRelatedItemType() {
-        return relatedItemType;
-    }
+  public String getRelatedItemType() {
+    return relatedItemType;
+  }
 
-    public void setRelatedItemType(String relatedItemType) {
-        this.relatedItemType = relatedItemType;
-    }
+  public void setRelatedItemType(String relatedItemType) {
+    this.relatedItemType = relatedItemType;
+  }
 
-    public String getRelationType() {
-        return relationType;
-    }
+  public String getRelationType() {
+    return relationType;
+  }
 
-    public void setRelationType(String relationType) {
-        this.relationType = relationType;
-    }
+  public void setRelationType(String relationType) {
+    this.relationType = relationType;
+  }
 
-    public String getVolume() {
-        return volume;
-    }
+  public String getVolume() {
+    return volume;
+  }
 
-    public void setVolume(String volume) {
-        this.volume = volume;
-    }
+  public void setVolume(String volume) {
+    this.volume = volume;
+  }
 
-    public String getIssue() {
-        return issue;
-    }
+  public String getIssue() {
+    return issue;
+  }
 
-    public void setIssue(String issue) {
-        this.issue = issue;
-    }
+  public void setIssue(String issue) {
+    this.issue = issue;
+  }
 
-    public String getFirstPage() {
-        return firstPage;
-    }
+  public String getFirstPage() {
+    return firstPage;
+  }
 
-    public void setFirstPage(String firstPage) {
-        this.firstPage = firstPage;
-    }
+  public void setFirstPage(String firstPage) {
+    this.firstPage = firstPage;
+  }
 
-    public String getLastPage() {
-        return lastPage;
-    }
+  public String getLastPage() {
+    return lastPage;
+  }
 
-    public void setLastPage(String lastPage) {
-        this.lastPage = lastPage;
-    }
+  public void setLastPage(String lastPage) {
+    this.lastPage = lastPage;
+  }
 
-    public Integer getPublicationYear() {
-        return publicationYear;
-    }
+  public Integer getPublicationYear() {
+    return publicationYear;
+  }
 
-    public void setPublicationYear(Integer publicationYear) {
-        this.publicationYear = publicationYear;
-    }
+  public void setPublicationYear(Integer publicationYear) {
+    this.publicationYear = publicationYear;
+  }
 
-    public String getPublisher() {
-        return publisher;
-    }
+  public String getPublisher() {
+    return publisher;
+  }
 
-    public void setPublisher(String publisher) {
-        this.publisher = publisher;
-    }
+  public void setPublisher(String publisher) {
+    this.publisher = publisher;
+  }
 
-    public String getEdition() {
-        return edition;
-    }
+  public String getEdition() {
+    return edition;
+  }
 
-    public void setEdition(String edition) {
-        this.edition = edition;
-    }
+  public void setEdition(String edition) {
+    this.edition = edition;
+  }
 
-    public DataCiteRelatedItemIdentifier getRelatedItemIdentifier() {
-        return relatedItemIdentifier;
-    }
+  public DataCiteRelatedItemIdentifier getRelatedItemIdentifier() {
+    return relatedItemIdentifier;
+  }
 
-    public void setRelatedItemIdentifier(DataCiteRelatedItemIdentifier relatedItemIdentifier) {
-        this.relatedItemIdentifier = relatedItemIdentifier;
-    }
+  public void setRelatedItemIdentifier(DataCiteRelatedItemIdentifier relatedItemIdentifier) {
+    this.relatedItemIdentifier = relatedItemIdentifier;
+  }
 
-    public List<DataCiteCreator> getCreators() {
-        return creators;
-    }
+  public List<DataCiteCreator> getCreators() {
+    return creators;
+  }
 
-    public void setCreators(List<DataCiteCreator> creators) {
-        this.creators = creators;
-    }
+  public void setCreators(List<DataCiteCreator> creators) {
+    this.creators = creators;
+  }
 
-    public List<DataCiteTitle> getTitles() {
-        return titles;
-    }
+  public List<DataCiteTitle> getTitles() {
+    return titles;
+  }
 
-    public void setTitles(List<DataCiteTitle> titles) {
-        this.titles = titles;
-    }
+  public void setTitles(List<DataCiteTitle> titles) {
+    this.titles = titles;
+  }
 
-    public String getNumber() {
-        return number;
-    }
+  public String getNumber() {
+    return number;
+  }
 
-    public void setNumber(String number) {
-        this.number = number;
-    }
+  public void setNumber(String number) {
+    this.number = number;
+  }
 
-    public String getNumberType() {
-        return numberType;
-    }
+  public String getNumberType() {
+    return numberType;
+  }
 
-    public void setNumberType(String numberType) {
-        this.numberType = numberType;
-    }
+  public void setNumberType(String numberType) {
+    this.numberType = numberType;
+  }
 
-    public List<DataCiteRelatedItemContributor> getContributors() {
-        return contributors;
-    }
+  public List<DataCiteRelatedItemContributor> getContributors() {
+    return contributors;
+  }
 
-    public void setContributors(List<DataCiteRelatedItemContributor> contributors) {
-        this.contributors = contributors;
-    }
+  public void setContributors(List<DataCiteRelatedItemContributor> contributors) {
+    this.contributors = contributors;
+  }
 }

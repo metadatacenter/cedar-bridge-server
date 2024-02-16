@@ -2,12 +2,14 @@ package org.metadatacenter.cedar.bridge.resource;
 
 import java.util.List;
 
-import static org.metadatacenter.cedar.bridge.resource.Cedar.*;
+import static org.metadatacenter.cedar.bridge.resource.Cedar.LiteralField;
+import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance;
 import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.*;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.RelatedItemElement.*;
+import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.RelatedItemElement.RelatedItemContributorElement;
+import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.RelatedItemElement.RelatedItemCreatorElement;
 
 public class CheckEmptyList {
-  public static boolean emptyCreatorList(List<CreatorElement> creatorList){
+  public static boolean emptyCreatorList(List<CreatorElement> creatorList) {
     String name = creatorList.get(0).creatorName().value();
     String nameType = creatorList.get(0).nameType() != null ? creatorList.get(0).nameType().label() : null;
     String familyName = creatorList.get(0).familyName() != null ? creatorList.get(0).familyName().value() : null;
@@ -24,25 +26,25 @@ public class CheckEmptyList {
         && (nameIdentifierList == null || nameIdentifierList.isEmpty() || emptyNameIdentifierList(nameIdentifierList));
   }
 
-  public static boolean emptyTitleList(List<?> titleList){
+  public static boolean emptyTitleList(List<?> titleList) {
     String title = null;
     String titleType = null;
     Object obj = titleList.get(0);
 
-    if(obj instanceof MetadataInstance.TitleElement t){
+    if (obj instanceof MetadataInstance.TitleElement t) {
       title = t.title().value();
-      titleType = t.titleType()!=null ? t.titleType().label():null;
-    } else if (obj instanceof RelatedItemElement.TitleElement t){
+      titleType = t.titleType() != null ? t.titleType().label() : null;
+    } else if (obj instanceof RelatedItemElement.TitleElement t) {
       title = t.title().value();
-      titleType = t.titleType()!=null ? t.titleType().label():null;
+      titleType = t.titleType() != null ? t.titleType().label() : null;
     }
 
-    return titleList.size()==1
-        && (title==null || title.isEmpty())
-        && (titleType==null || titleType.isEmpty());
+    return titleList.size() == 1
+        && (title == null || title.isEmpty())
+        && (titleType == null || titleType.isEmpty());
   }
 
-  public static boolean emptySubjectList(List<SubjectElement> subjectList){
+  public static boolean emptySubjectList(List<SubjectElement> subjectList) {
     String subjectName = subjectList.get(0).subject() != null ? subjectList.get(0).subject().value() : null;
     String subjectScheme = subjectList.get(0).subjectScheme() != null ? subjectList.get(0).subjectScheme().value() : null;
     String subjectSchemeURI = subjectList.get(0).schemeUri() != null ? subjectList.get(0).schemeUri().id() : null;
@@ -57,7 +59,7 @@ public class CheckEmptyList {
         && (valueURI == null || valueURI.isEmpty());
   }
 
-  public static boolean emptyContributorList(List<ContributorElement> contributorList){
+  public static boolean emptyContributorList(List<ContributorElement> contributorList) {
     String contributorName = contributorList.get(0).contributorName() != null ? contributorList.get(0).contributorName().value() : null;
     String nameType = contributorList.get(0).nameType() != null ? contributorList.get(0).nameType().label() : null;
     String givenName = contributorList.get(0).givenName() != null ? contributorList.get(0).givenName().value() : null;
@@ -82,12 +84,12 @@ public class CheckEmptyList {
     String affiliationIdentifierScheme = null;
     String affiliationIdentifierSchemeURI = null;
     Object obj = affiliationList.get(0);
-    if(obj instanceof CreatorElement.AffiliationElement a){
+    if (obj instanceof CreatorElement.AffiliationElement a) {
       name = a.name() != null ? a.name().value() : null;
       affiliationIdentifier = a.affiliationIdentifier() != null ? a.affiliationIdentifier().value() : null;
       affiliationIdentifierScheme = a.affiliationIdentifierScheme() != null ? a.affiliationIdentifierScheme().value() : null;
       affiliationIdentifierSchemeURI = a.schemeUri() != null ? a.schemeUri().id() : null;
-    } else if(obj instanceof ContributorElement.AffiliationElement a){
+    } else if (obj instanceof ContributorElement.AffiliationElement a) {
       name = a.name() != null ? a.name().value() : null;
       affiliationIdentifier = a.affiliationIdentifier() != null ? a.affiliationIdentifier().value() : null;
       affiliationIdentifierScheme = a.affiliationIdentifierScheme() != null ? a.affiliationIdentifierScheme().value() : null;
@@ -101,16 +103,16 @@ public class CheckEmptyList {
         && (affiliationIdentifierSchemeURI == null || affiliationIdentifierSchemeURI.isEmpty());
   }
 
-  public static boolean emptyNameIdentifierList(List<?> nameIdentifierList){
+  public static boolean emptyNameIdentifierList(List<?> nameIdentifierList) {
     String nameIdentifierName = null;
     String nameIdentifierScheme = null;
     String schemeURI = null;
     Object obj = nameIdentifierList.get(0);
-    if(obj instanceof CreatorElement.NameIdentifierElement n){
+    if (obj instanceof CreatorElement.NameIdentifierElement n) {
       nameIdentifierName = n.name() != null ? n.name().value() : null;
       nameIdentifierScheme = n.nameIdentifierScheme() != null ? n.nameIdentifierScheme().value() : null;
       schemeURI = n.schemeUri() != null ? n.schemeUri().id() : null;
-    } else if(obj instanceof  ContributorElement.NameIdentifierElement n){
+    } else if (obj instanceof ContributorElement.NameIdentifierElement n) {
       nameIdentifierName = n.name() != null ? n.name().value() : null;
       nameIdentifierScheme = n.nameIdentifierScheme() != null ? n.nameIdentifierScheme().value() : null;
       schemeURI = n.schemeUri() != null ? n.schemeUri().id() : null;
@@ -122,9 +124,9 @@ public class CheckEmptyList {
         && (schemeURI == null || schemeURI.isEmpty());
   }
 
-  public static boolean emptyDateList(List<DateElement> dateList){
+  public static boolean emptyDateList(List<DateElement> dateList) {
     String date = dateList.get(0).date() != null ? dateList.get(0).date().value() : null;
-    String dateType= dateList.get(0).dateType() != null ? dateList.get(0).dateType().label() : null;
+    String dateType = dateList.get(0).dateType() != null ? dateList.get(0).dateType().label() : null;
     String dateInformation = dateList.get(0).dateInformation() != null ? dateList.get(0).dateInformation().value() : null;
 
     return dateList.size() == 1
@@ -133,7 +135,7 @@ public class CheckEmptyList {
         && (dateInformation == null || dateInformation.isEmpty());
   }
 
-  public static boolean emptyAlternateIdentifierList(List<AlternateIdentifierElement> alternateIdentifierList){
+  public static boolean emptyAlternateIdentifierList(List<AlternateIdentifierElement> alternateIdentifierList) {
     String alternateIdentifier = alternateIdentifierList.get(0).alternateIdentifier() != null ? alternateIdentifierList.get(0).alternateIdentifier().value() : null;
     String alternateIdentifierType = alternateIdentifierList.get(0).alternateIdentifierType() != null ? alternateIdentifierList.get(0).alternateIdentifierType().value() : null;
 
@@ -142,7 +144,7 @@ public class CheckEmptyList {
         && (alternateIdentifierType == null || alternateIdentifierType.isEmpty());
   }
 
-  public static boolean emptyRelatedIdentifierList(List<RelatedIdentifierElement> relatedIdentifierList){
+  public static boolean emptyRelatedIdentifierList(List<RelatedIdentifierElement> relatedIdentifierList) {
     String relatedIdentifier = relatedIdentifierList.get(0).relatedIdentifier() != null ? relatedIdentifierList.get(0).relatedIdentifier().value() : null;
     String relatedIdentifierType = relatedIdentifierList.get(0).relatedIdentifierType() != null ? relatedIdentifierList.get(0).relatedIdentifierType().label() : null;
     String relationType = relatedIdentifierList.get(0).relationType() != null ? relatedIdentifierList.get(0).relationType().label() : null;
@@ -161,7 +163,7 @@ public class CheckEmptyList {
         && (resourceTypeGeneral == null || resourceTypeGeneral.isEmpty());
   }
 
-  public static boolean emptyRightsList(List<RightsElement> rightsList){
+  public static boolean emptyRightsList(List<RightsElement> rightsList) {
     String rights = rightsList.get(0).rights() != null ? rightsList.get(0).rights().value() : null;
     String rightsUri = rightsList.get(0).rightsUri() != null ? rightsList.get(0).rightsUri().label() : null;
     String schemeUri = rightsList.get(0).schemeUri() != null ? rightsList.get(0).schemeUri().id() : null;
@@ -176,7 +178,7 @@ public class CheckEmptyList {
         && (rightsIdentifierScheme == null || rightsIdentifierScheme.isEmpty());
   }
 
-  public static boolean emptyDescriptionList(List<DescriptionElement> descriptionList){
+  public static boolean emptyDescriptionList(List<DescriptionElement> descriptionList) {
     String description = descriptionList.get(0).description() != null ? descriptionList.get(0).description().value() : null;
     String descriptionType = descriptionList.get(0).descriptionType() != null ? descriptionList.get(0).descriptionType().label() : null;
 
@@ -185,7 +187,7 @@ public class CheckEmptyList {
         && (descriptionType == null || descriptionType.isEmpty());
   }
 
-  public static boolean emptyGeoLocationList(List<GeoLocationElement> geoLocationList){
+  public static boolean emptyGeoLocationList(List<GeoLocationElement> geoLocationList) {
     String geoLocationPlace = geoLocationList.get(0).geoLocationPlace() != null ? geoLocationList.get(0).geoLocationPlace().value() : null;
     String pointLatitude = null;
     String pointLongitude = null;
@@ -194,26 +196,26 @@ public class CheckEmptyList {
     String southBoundLatitude = null;
     String westBoundLongitude = null;
 
-    if(geoLocationList.get(0).geoLocationPoint() != null){
-      if(geoLocationList.get(0).geoLocationPoint().pointLongitude() != null){
+    if (geoLocationList.get(0).geoLocationPoint() != null) {
+      if (geoLocationList.get(0).geoLocationPoint().pointLongitude() != null) {
         pointLongitude = geoLocationList.get(0).geoLocationPoint().pointLongitude().value();
       }
-      if(geoLocationList.get(0).geoLocationPoint().pointLatitude() != null){
+      if (geoLocationList.get(0).geoLocationPoint().pointLatitude() != null) {
         pointLatitude = geoLocationList.get(0).geoLocationPoint().pointLatitude().value();
       }
     }
 
-    if(geoLocationList.get(0).geoLocationBox() != null){
-      if(geoLocationList.get(0).geoLocationBox().eastBoundLongitude() != null){
+    if (geoLocationList.get(0).geoLocationBox() != null) {
+      if (geoLocationList.get(0).geoLocationBox().eastBoundLongitude() != null) {
         eastBoundLongitude = geoLocationList.get(0).geoLocationBox().eastBoundLongitude().value();
       }
-      if(geoLocationList.get(0).geoLocationBox().northBoundLatitude() != null){
+      if (geoLocationList.get(0).geoLocationBox().northBoundLatitude() != null) {
         northBoundLatitude = geoLocationList.get(0).geoLocationBox().northBoundLatitude().value();
       }
-      if(geoLocationList.get(0).geoLocationBox().southBoundLatitude() != null){
+      if (geoLocationList.get(0).geoLocationBox().southBoundLatitude() != null) {
         southBoundLatitude = geoLocationList.get(0).geoLocationBox().southBoundLatitude().value();
       }
-      if(geoLocationList.get(0).geoLocationBox().westBoundLongitude() != null){
+      if (geoLocationList.get(0).geoLocationBox().westBoundLongitude() != null) {
         westBoundLongitude = geoLocationList.get(0).geoLocationBox().westBoundLongitude().value();
       }
     }
@@ -228,7 +230,7 @@ public class CheckEmptyList {
         && (westBoundLongitude == null || westBoundLongitude.isEmpty());
   }
 
-  public static boolean emptyFundingReferenceList(List<FundingReferenceElement> fundingReferenceList){
+  public static boolean emptyFundingReferenceList(List<FundingReferenceElement> fundingReferenceList) {
     String funderName = fundingReferenceList.get(0).funderName() != null ? fundingReferenceList.get(0).funderName().value() : null;
     String funderIdentifier = fundingReferenceList.get(0).funderIdentifier() != null ? fundingReferenceList.get(0).funderIdentifier().value() : null;
     String funderIdentifierType = fundingReferenceList.get(0).funderIdentifierType() != null ? fundingReferenceList.get(0).funderIdentifierType().label() : null;
@@ -247,7 +249,7 @@ public class CheckEmptyList {
         && (awardTitle == null || awardTitle.isEmpty());
   }
 
-  public static boolean emptyRelatedItemList(List<RelatedItemElement> relatedItemList){
+  public static boolean emptyRelatedItemList(List<RelatedItemElement> relatedItemList) {
     String relatedItemType = relatedItemList.get(0).relatedItemType() != null ? relatedItemList.get(0).relatedItemType().label() : null;
     String relationType = relatedItemList.get(0).relationType() != null ? relatedItemList.get(0).relationType().label() : null;
     String relatedIdentifier = relatedItemList.get(0).relatedIdentifier() != null ? relatedItemList.get(0).relatedIdentifier().value() : null;
@@ -283,20 +285,20 @@ public class CheckEmptyList {
         && (publisher == null || publisher.isEmpty())
         && (edition == null || edition.isEmpty())
         && (relatedItemList.get(0).title() == null ||
-            relatedItemList.get(0).title().titleList() == null ||
-            relatedItemList.get(0).title().titleList().isEmpty() ||
-            emptyTitleList(relatedItemList.get(0).title().titleList()))
+        relatedItemList.get(0).title().titleList() == null ||
+        relatedItemList.get(0).title().titleList().isEmpty() ||
+        emptyTitleList(relatedItemList.get(0).title().titleList()))
         && (relatedItemList.get(0).relatedItemCreator() == null ||
-            relatedItemList.get(0).relatedItemCreator().relatedItemCreatorList() == null ||
-            relatedItemList.get(0).relatedItemCreator().relatedItemCreatorList().isEmpty() ||
-            emptyRelatedItemCreatorList(relatedItemList.get(0).relatedItemCreator().relatedItemCreatorList()))
+        relatedItemList.get(0).relatedItemCreator().relatedItemCreatorList() == null ||
+        relatedItemList.get(0).relatedItemCreator().relatedItemCreatorList().isEmpty() ||
+        emptyRelatedItemCreatorList(relatedItemList.get(0).relatedItemCreator().relatedItemCreatorList()))
         && (relatedItemList.get(0).relatedItemContributor() == null ||
-            relatedItemList.get(0).relatedItemContributor().relatedItemContributorList() == null ||
-            relatedItemList.get(0).relatedItemContributor().relatedItemContributorList().isEmpty() ||
-            emptyRelatedItemContributorList(relatedItemList.get(0).relatedItemContributor().relatedItemContributorList()));
+        relatedItemList.get(0).relatedItemContributor().relatedItemContributorList() == null ||
+        relatedItemList.get(0).relatedItemContributor().relatedItemContributorList().isEmpty() ||
+        emptyRelatedItemContributorList(relatedItemList.get(0).relatedItemContributor().relatedItemContributorList()));
   }
 
-  public static boolean emptyRelatedItemCreatorList(List<RelatedItemCreatorElement> creatorList){
+  public static boolean emptyRelatedItemCreatorList(List<RelatedItemCreatorElement> creatorList) {
     String name = creatorList.get(0).creatorName().value();
     String nameType = creatorList.get(0).nameType() != null ? creatorList.get(0).nameType().label() : null;
     String familyName = creatorList.get(0).familyName() != null ? creatorList.get(0).familyName().value() : null;
@@ -309,7 +311,7 @@ public class CheckEmptyList {
         && (givenName == null || givenName.isEmpty());
   }
 
-  public static boolean emptyRelatedItemContributorList(List<RelatedItemContributorElement> contributorList){
+  public static boolean emptyRelatedItemContributorList(List<RelatedItemContributorElement> contributorList) {
     String contributorName = contributorList.get(0).contributorName() != null ? contributorList.get(0).contributorName().value() : null;
     String nameType = contributorList.get(0).nameType() != null ? contributorList.get(0).nameType().label() : null;
     String givenName = contributorList.get(0).givenName() != null ? contributorList.get(0).givenName().value() : null;
@@ -324,10 +326,10 @@ public class CheckEmptyList {
         && (contributorType == null || contributorType.isEmpty());
   }
 
-  public static <T extends LiteralField> boolean emptyValueList(List<T> valueList){
+  public static <T extends LiteralField> boolean emptyValueList(List<T> valueList) {
     boolean empty = true;
-    for(LiteralField v : valueList){
-      if(v.value() != null && !v.value().isEmpty()){
+    for (LiteralField v : valueList) {
+      if (v.value() != null && !v.value().isEmpty()) {
         empty = false;
       }
     }
