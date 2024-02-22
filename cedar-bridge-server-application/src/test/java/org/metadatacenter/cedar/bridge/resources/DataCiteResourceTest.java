@@ -8,7 +8,7 @@ import org.metadatacenter.cedar.bridge.CompareValues;
 import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteInstanceValidationException;
 import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteMetadataParser;
 import org.metadatacenter.cedar.bridge.GenerateMetadataInstanceTests;
-import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteSchema;
+import org.metadatacenter.cedar.bridge.resource.datacite.form.DataCiteSchema;
 import org.metadatacenter.http.CedarResponseStatus;
 
 import javax.ws.rs.client.Entity;

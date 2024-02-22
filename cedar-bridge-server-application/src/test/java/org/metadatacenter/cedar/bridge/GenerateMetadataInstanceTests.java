@@ -1,5 +1,7 @@
 package org.metadatacenter.cedar.bridge;
 
+import org.metadatacenter.cedar.bridge.resource.datacite.DataciteConstants;
+
 import java.time.Instant;
 import java.time.Year;
 import java.util.List;
@@ -29,13 +31,12 @@ public class GenerateMetadataInstanceTests {
   private static final String INSTANCE_IRI_PREFIX = "https://repo.metadatacenter.org/template-instances/";
   private static final String TEMPLATE_ID = "https://repo.metadatacenter.org/templates/5b6e0952-8a56-4f97-a35d-7ce784773b57";
   private static final String USER_ID = "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44";
-  private static final String PUBLISHER = "CEDAR";
+  private static final String PUBLISHER = DataciteConstants.PUBLISHER;
   private static final String publicationYear = Year.now().getValue() + "-01-01";
   private static final String nowAsString = Instant.ofEpochSecond(System.currentTimeMillis() / 1000).toString();
 
   private static String PREFIX = null;
 
-  // TODO: move this type of method into a test class.
   public static MetadataInstance getInstanceRequiredOnly() {
     return new MetadataInstance(
         INSTANCE_IRI_PREFIX + UUID.randomUUID(),

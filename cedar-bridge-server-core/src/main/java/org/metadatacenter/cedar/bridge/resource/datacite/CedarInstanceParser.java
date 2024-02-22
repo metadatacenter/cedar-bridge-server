@@ -1,5 +1,6 @@
 package org.metadatacenter.cedar.bridge.resource.datacite;
 
+import org.metadatacenter.cedar.bridge.resource.datacite.form.*;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.id.CedarFQResourceId;
 import org.metadatacenter.model.CedarResourceType;
@@ -15,9 +16,9 @@ import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataIn
 import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance.RelatedItemElement.RelatedItemCreatorElement;
 
 public class CedarInstanceParser {
-  private static final String PUBLISH = "publish";
+  private static final String STATE_DRAFT = "draft";
+  private static final String STATE_PUBLISH = "publish";
   private static final String RESOURCE_TYPE_GENERAL = "Other";
-  private static final String DRAFT = "draft";
   private static final String DATACITE_SCHEMA = "http://datacite.org/schema/kernel-4";
 
   public static void parseCedarInstance(MetadataInstance MetadataInstance, DataCiteSchema dataCiteSchema, String sourceArtifactId, String state, CedarConfig cedarConfig) throws DataCiteInstanceValidationException {
@@ -40,11 +41,11 @@ public class CedarInstanceParser {
 
     // set event value
     switch (state) {
-      case PUBLISH:
-        attributes.setEvent(PUBLISH);
+      case STATE_PUBLISH:
+        attributes.setEvent(STATE_PUBLISH);
         break;
-      case DRAFT:
-        attributes.setEvent(DRAFT);
+      case STATE_DRAFT:
+        attributes.setEvent(STATE_DRAFT);
         break;
     }
 

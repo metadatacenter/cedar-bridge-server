@@ -12,10 +12,10 @@ public class GenerateOpenViewUrl {
     CedarResourceType cedarResourceType = CedarFQResourceId.build(sourceArtifactId).getType();
     String encodedSourceArtifactId = URLEncoder.encode(sourceArtifactId, StandardCharsets.UTF_8);
     String uriBase = cedarConfig.getServers().getOpenview().getUriBase();
-    if (cedarResourceType == CedarResourceType.TEMPLATE) {
-      return uriBase + "templates/" + encodedSourceArtifactId;
+    if (cedarResourceType != null && cedarResourceType.supportsDOI()) {
+      return uriBase + cedarResourceType.getPrefix() + "/" + encodedSourceArtifactId;
     } else {
-      return uriBase + "template-instances/" + encodedSourceArtifactId;
+      return null;
     }
   }
 }

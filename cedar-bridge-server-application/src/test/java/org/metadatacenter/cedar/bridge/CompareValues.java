@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.metadatacenter.cedar.bridge.resource.datacite.CedarInstanceParser;
 import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteInstanceValidationException;
+import org.metadatacenter.cedar.bridge.resource.datacite.form.*;
 import org.metadatacenter.config.CedarConfig;
 
 import java.util.Comparator;
