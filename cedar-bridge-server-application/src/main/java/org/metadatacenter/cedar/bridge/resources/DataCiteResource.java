@@ -37,8 +37,6 @@ import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.ResourcePermissionServiceSession;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
-import org.metadatacenter.server.service.TemplateInstanceService;
-import org.metadatacenter.server.service.TemplateService;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.ProxyUtil;
 import org.metadatacenter.util.json.JsonMapper;
@@ -53,7 +51,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 import static org.metadatacenter.constant.CedarQueryParameters.QP_SOURCE_ARTIFACT_ID;
@@ -63,21 +64,17 @@ import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 @Produces(MediaType.APPLICATION_JSON)
 public class DataCiteResource extends CedarMicroserviceResource {
 
-  private static TemplateService<String, JsonNode> templateService;
-  private static TemplateInstanceService<String, JsonNode> templateInstanceService;
   private final String repositoryID = cedarConfig.getBridgeConfig().getDataCite().getRepositoryId();
   private final String password = cedarConfig.getBridgeConfig().getDataCite().getPassword();
   private final String endpointUrl = cedarConfig.getBridgeConfig().getDataCite().getEndpointUrl();
   private final String templateId = cedarConfig.getBridgeConfig().getDataCite().getTemplateId();
-  private final String basicAuth =
-      Base64.getEncoder().encodeToString((repositoryID + ":" + password).getBytes(StandardCharsets.UTF_8));
+
+  private final boolean dataciteEnabled = cedarConfig.getBridgeConfig().getDataCite().isEnabled();
+  private final String basicAuth = Base64.getEncoder().encodeToString((repositoryID + ":" + password).getBytes(StandardCharsets.UTF_8));
 
 
-  public DataCiteResource(CedarConfig cedarConfig, TemplateService<String, JsonNode> templateService,
-                          TemplateInstanceService<String, JsonNode> templateInstanceService) {
+  public DataCiteResource(CedarConfig cedarConfig) {
     super(cedarConfig);
-    DataCiteResource.templateService = templateService;
-    DataCiteResource.templateInstanceService = templateInstanceService;
   }
 
   @GET
@@ -85,8 +82,15 @@ public class DataCiteResource extends CedarMicroserviceResource {
   @Path("/get-doi-metadata/{id}")
   public Response getDOIMetadata(@PathParam(PP_ID) String doiIdUrl) throws CedarException {
     CedarRequestContext c = buildRequestContext();
-    String userID = c.getCedarUser().getId();
     c.must(c.user()).be(LoggedIn);
+
+    if (!dataciteEnabled) {
+      return CedarResponse
+          .badRequest()
+          .errorKey(CedarErrorKey.DATACITE_DOI_DISABLED)
+          .errorMessage("DataCite DOI integration is disabled")
+          .build();
+    }
 
     try {
       //Get the doi from doiName
@@ -130,6 +134,15 @@ public class DataCiteResource extends CedarMicroserviceResource {
     CedarRequestContext c = buildRequestContext();
     String userID = c.getCedarUser().getId();
     c.must(c.user()).be(LoggedIn);
+
+    if (!dataciteEnabled) {
+      return CedarResponse
+          .badRequest()
+          .errorKey(CedarErrorKey.DATACITE_DOI_DISABLED)
+          .errorMessage("DataCite DOI integration is disabled")
+          .build();
+    }
+
     c.must(c.user()).have(CedarPermission.TEMPLATE_READ);
 
     Map<String, Object> response = new HashMap<>();
@@ -242,6 +255,14 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
     c.must(c.user()).be(LoggedIn);
 
+    if (!dataciteEnabled) {
+      return CedarResponse
+          .badRequest()
+          .errorKey(CedarErrorKey.DATACITE_DOI_DISABLED)
+          .errorMessage("DataCite DOI integration is disabled")
+          .build();
+    }
+
     //Check if the source artifact has a DOI
     CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
     CedarResourceType sourceArtifactType = sourceArtifactResourceId.getType();
@@ -343,13 +364,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
             JsonNode titleNode = errorNode.get("title");
             if (titleNode != null && titleNode.isTextual()) {
               String title = titleNode.asText();
-              String[] titleParts = title.split(":");
-              if (titleParts.length > 1) {
-                String titleMessage = String.join(":", Arrays.copyOfRange(titleParts, 1, titleParts.length)).trim();
-                errorMessageBuilder.append(titleMessage).append("\n");
-              } else {
-                errorMessageBuilder.append(title).append("\n");
-              }
+              errorMessageBuilder.append(title).append("\n");
             }
           }
           return CedarResponse
