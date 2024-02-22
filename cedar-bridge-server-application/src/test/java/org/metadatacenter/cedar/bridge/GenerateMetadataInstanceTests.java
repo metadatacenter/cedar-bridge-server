@@ -5,21 +5,21 @@ import java.time.Year;
 import java.util.List;
 import java.util.UUID;
 
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.*;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.AlternateIdentifierElement.AlternateIdentifierField2;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.AlternateIdentifierElement.AlternateIdentifierTypeField;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.DateElement.*;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.DescriptionElement.DescriptionField2;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.DescriptionElement.DescriptionTypeField;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.FundingReferenceElement.*;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.GeoLocationElement.*;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.GeoLocationElement.GeoLocationBoxElement.*;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.GeoLocationElement.GeoLocationPointElement.PointLatitudeField;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.GeoLocationElement.GeoLocationPointElement.PointLongitudeField;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.RightsElement.*;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance.SubjectElement.*;
-import static org.metadatacenter.cedar.bridge.resource.Cedar.generateId;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance.*;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance.AlternateIdentifierElement.AlternateIdentifierField2;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance.AlternateIdentifierElement.AlternateIdentifierTypeField;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance.DateElement.*;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance.DescriptionElement.DescriptionField2;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance.DescriptionElement.DescriptionTypeField;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance.FundingReferenceElement.*;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance.GeoLocationElement.*;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance.GeoLocationElement.GeoLocationBoxElement.*;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance.GeoLocationElement.GeoLocationPointElement.PointLatitudeField;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance.GeoLocationElement.GeoLocationPointElement.PointLongitudeField;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance.RightsElement.*;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance.SubjectElement.*;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.generateId;
 
 /*
  * Generates a default instance for the DOI request form (URL, Year, Publisher, resourceType)

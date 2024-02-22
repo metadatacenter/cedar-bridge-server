@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.*;
 import org.metadatacenter.cedar.bridge.CompareValues;
-import org.metadatacenter.cedar.bridge.resource.DataCiteInstanceValidationException;
-import org.metadatacenter.cedar.bridge.resource.DataCiteMetadataParser;
+import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteInstanceValidationException;
+import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteMetadataParser;
 import org.metadatacenter.cedar.bridge.GenerateMetadataInstanceTests;
 import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteSchema;
 import org.metadatacenter.http.CedarResponseStatus;
@@ -21,7 +21,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance;
 
 public class DataCiteResourceTest extends AbstractBridgeServerResourceTest {
   @Rule

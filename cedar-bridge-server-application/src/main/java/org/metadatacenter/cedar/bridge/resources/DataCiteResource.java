@@ -13,8 +13,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
 import org.metadatacenter.bridge.CedarDataServices;
-import org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance;
-import org.metadatacenter.cedar.bridge.resource.*;
+import org.metadatacenter.cedar.bridge.resource.datacite.*;
+import org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance;
 import org.metadatacenter.cedar.bridge.resource.datacite.Attributes;
 import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteSchema;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
@@ -72,8 +72,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
   private final String basicAuth =
       Base64.getEncoder().encodeToString((repositoryID + ":" + password).getBytes(StandardCharsets.UTF_8));
 
-  private final String ANNOTATIONS = "_annotations";
-  private final String ANNOTATIONS_DOI_KEY = "https://datacite.com/doi";
   private final String APPLICATION_JSON = "application/json";
   private final String APPLICATION_VND_API_JSON = "application/vnd.api+json";
   private final String ATTRIBUTES = "attributes";
@@ -568,10 +566,10 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
   private String getFindableDoi(JsonNode sourceArtifactProxyJson) {
     String doiName = null;
-    if (sourceArtifactProxyJson.has(ANNOTATIONS)) {
-      JsonNode annotationsNode = sourceArtifactProxyJson.get(ANNOTATIONS);
-      if (annotationsNode.has(ANNOTATIONS_DOI_KEY)) {
-        JsonNode doiNameNode = annotationsNode.get(ANNOTATIONS_DOI_KEY);
+    if (sourceArtifactProxyJson.has(ModelNodeNames.ANNOTATIONS)) {
+      JsonNode annotationsNode = sourceArtifactProxyJson.get(ModelNodeNames.ANNOTATIONS);
+      if (annotationsNode.has(ModelNodeNames.DATACITE_DOI_URI)) {
+        JsonNode doiNameNode = annotationsNode.get(ModelNodeNames.DATACITE_DOI_URI);
         doiName = doiNameNode.get(LinkedData.ID).textValue();
       }
     }

@@ -5,16 +5,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.metadatacenter.cedar.bridge.resource.CedarInstanceParser;
-import org.metadatacenter.cedar.bridge.resource.DataCiteInstanceValidationException;
-import org.metadatacenter.cedar.bridge.resource.datacite.*;
+import org.metadatacenter.cedar.bridge.resource.datacite.CedarInstanceParser;
+import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteInstanceValidationException;
 import org.metadatacenter.config.CedarConfig;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-import static org.metadatacenter.cedar.bridge.resource.Cedar.MetadataInstance;
+import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance;
 
 public class CompareValues {
   public static boolean compareResponseWithGivenMetadata(JsonNode givenMetadata, JsonNode responseMetadata, String sourceArtifactId, String state, CedarConfig cedarConfig) throws JsonProcessingException, DataCiteInstanceValidationException {
