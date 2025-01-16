@@ -31,10 +31,13 @@ import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 @Produces(MediaType.APPLICATION_JSON)
 public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
 
-  private final static String ROR_API_V2_ORGANIZATIONS = "https://api.ror.org/v2/organizations";
+  private final static String ROR_API_V2_ORGANIZATIONS_PREFIX = "organizations/";
+  private final static String ROR_API_V2_ORGANIZATION_SEARCH_PREFIX = "organizations?query=";
+  private static String ROR_API_PREFIX;
 
   public ExternalAuthorityRORResource(CedarConfig cedarConfig) {
     super(cedarConfig);
+    ROR_API_PREFIX = cedarConfig.getExternalAuthorities().getRor().getApiPrefix();
   }
 
   @GET
@@ -44,7 +47,7 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
-    String url = ROR_API_V2_ORGANIZATIONS + "/" + UrlUtil.urlEncode(rorId);
+    String url = ROR_API_PREFIX + ROR_API_V2_ORGANIZATIONS_PREFIX + UrlUtil.urlEncode(rorId);
 
     HttpResponse proxyResponse = ProxyUtil.proxyGet(url, c);
     int statusCode = proxyResponse.getStatusLine().getStatusCode();
@@ -61,6 +64,7 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
     Map<String, Object> myResponse = new HashMap<>();
     myResponse.put("found", statusCode == HttpConstants.OK);
     myResponse.put("requestedId", rorId);
+    myResponse.put("id", getId(apiResponseNode));
     myResponse.put("rawResponse", apiResponseNode);
 
 
@@ -84,7 +88,7 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
       orgNameFragment = orgNameFragment + "*";
     }
 
-    String url = ROR_API_V2_ORGANIZATIONS + "?query=" + UrlUtil.urlEncode(orgNameFragment);
+    String url = ROR_API_PREFIX + ROR_API_V2_ORGANIZATION_SEARCH_PREFIX + UrlUtil.urlEncode(orgNameFragment);
 
     HttpResponse proxyResponse = ProxyUtil.proxyGet(url, c);
     int statusCode = proxyResponse.getStatusLine().getStatusCode();
@@ -124,6 +128,15 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
       }
     }
     return names;
+  }
+
+  private String getId(JsonNode apiResponseNode) {
+    JsonNode idNode = apiResponseNode.get("id");
+    if (idNode != null && idNode.isTextual()) {
+      return idNode.textValue();
+    } else {
+      return null;
+    }
   }
 
   private List<String> getRORErrors(JsonNode apiResponseNode) {
