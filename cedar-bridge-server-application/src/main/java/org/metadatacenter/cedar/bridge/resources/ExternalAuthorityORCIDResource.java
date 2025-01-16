@@ -208,7 +208,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
 
   private static Map<String, String> getAdditionalHeadersMap() {
 
-    String bearerToken = "ba898079-726d-4cd3-be39-93b01a5cdde3";
+    String bearerToken = "YOUR-TOKEN-HERE";
 
     Map<String, String> additionalHeaders = new HashMap<>();
     additionalHeaders.put(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON);
