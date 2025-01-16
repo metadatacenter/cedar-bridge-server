@@ -65,12 +65,12 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
     myResponse.put("found", statusCode == HttpConstants.OK);
     myResponse.put("requestedId", rorId);
     myResponse.put("id", getId(apiResponseNode));
-    myResponse.put("rawResponse", apiResponseNode);
-
+    //myResponse.put("rawResponse", apiResponseNode);
 
     if (statusCode == HttpConstants.OK) {
-      myResponse.put("names", getRORNames(apiResponseNode));
+      myResponse.put("name", getBestRORName(apiResponseNode));
     } else {
+      myResponse.put("name", null);
       myResponse.put("errors", getRORErrors(apiResponseNode));
     }
 
@@ -103,7 +103,7 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
       throw new RuntimeException(e);
     }
     Map<String, Object> myResponse = new HashMap<>();
-    myResponse.put("rawResponse", apiResponseNode);
+    //myResponse.put("rawResponse", apiResponseNode);
 
     if (statusCode == HttpConstants.OK) {
       Map<String, String> rorSearchNames = getRORSearchNames(apiResponseNode);
@@ -116,18 +116,29 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
     return CedarResponse.status(CedarResponseStatus.fromStatusCode(statusCode)).entity(myResponse).build();
   }
 
-  private List<String> getRORNames(JsonNode apiResponseNode) {
-    List<String> names = new ArrayList<>();
+  private String getBestRORName(JsonNode apiResponseNode) {
     JsonNode namesNode = apiResponseNode.get("names");
     if (namesNode != null && namesNode.isArray()) {
+      String fallbackName = null;
       for (JsonNode name : namesNode) {
+        JsonNode typesNode = name.get("types");
         JsonNode valueNode = name.get("value");
-        if (valueNode != null) {
-          names.add(valueNode.textValue());
+        if (typesNode != null && typesNode.isArray()) {
+          for (JsonNode type : typesNode) {
+            if ("ror_display".equals(type.textValue())) {
+              if (valueNode != null) {
+                return valueNode.textValue(); // Return immediately if "ror_display" is found
+              }
+            }
+          }
+        }
+        if (valueNode != null && fallbackName == null) {
+          fallbackName = valueNode.textValue(); // Capture fallback name
         }
       }
+      return fallbackName; // Return fallback name if no "ror_display" is found
     }
-    return names;
+    return null;
   }
 
   private String getId(JsonNode apiResponseNode) {
@@ -153,55 +164,24 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
   }
 
   private Map<String, String> getRORSearchNames(JsonNode apiResponseNode) {
-    Map<String, String> idToNameMap = new HashMap<>(); // Temporary map for unsorted entries
+    Map<String, String> idToNameMap = new HashMap<>();
     JsonNode itemsNode = apiResponseNode.get("items");
     if (itemsNode != null && itemsNode.isArray()) {
       for (JsonNode item : itemsNode) {
         String rorId = null;
         JsonNode idNode = item.get("id");
         if (idNode != null) {
-          rorId = idNode.textValue(); // Extract the ROR ID
+          rorId = idNode.textValue();
         }
 
-        if (rorId != null) { // Ensure ROR ID exists
-          JsonNode namesNode = item.get("names");
-          if (namesNode != null && namesNode.isArray()) {
-            String fallbackName = null;
-            for (JsonNode name : namesNode) {
-              JsonNode typesNode = name.get("types");
-              JsonNode valueNode = name.get("value");
-              if (typesNode != null && typesNode.isArray()) {
-                for (JsonNode type : typesNode) {
-                  if ("ror_display".equals(type.textValue())) {
-                    if (valueNode != null) {
-                      idToNameMap.put(rorId, valueNode.textValue()); // Add to Map
-                      fallbackName = null; // Clear fallback if ror_display is found
-                    }
-                    break;
-                  }
-                }
-              }
-              if (valueNode != null && fallbackName == null) {
-                fallbackName = valueNode.textValue(); // Capture fallback name
-              }
-            }
-            if (!idToNameMap.containsKey(rorId) && fallbackName != null) {
-              idToNameMap.put(rorId, fallbackName); // Use fallback if no ror_display was found
-            }
+        if (rorId != null) {
+          String bestName = getBestRORName(item);
+          if (bestName != null) {
+            idToNameMap.put(rorId, bestName);
           }
         }
       }
     }
-
-    // Sort the map by values (names) and preserve order in LinkedHashMap
-    return idToNameMap.entrySet().stream()
-        .sorted(Map.Entry.comparingByValue())
-        .collect(
-            LinkedHashMap::new,
-            (map, entry) -> map.put(entry.getKey(), entry.getValue()),
-            LinkedHashMap::putAll
-        );
+    return idToNameMap;
   }
-
-
 }

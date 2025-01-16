@@ -4,6 +4,7 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.metadatacenter.cedar.bridge.health.BridgeServerHealthCheck;
 import org.metadatacenter.cedar.bridge.resources.DataCiteResource;
+import org.metadatacenter.cedar.bridge.resources.ExternalAuthorityORCIDResource;
 import org.metadatacenter.cedar.bridge.resources.ExternalAuthorityRORResource;
 import org.metadatacenter.cedar.bridge.resources.IndexResource;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
@@ -40,6 +41,9 @@ public class BridgeServerApplication extends CedarMicroserviceApplication<Bridge
 
     final ExternalAuthorityRORResource extAuthROR = new ExternalAuthorityRORResource(cedarConfig);
     environment.jersey().register(extAuthROR);
+
+    final ExternalAuthorityORCIDResource extAuthORCID = new ExternalAuthorityORCIDResource(cedarConfig);
+    environment.jersey().register(extAuthORCID);
 
     final BridgeServerHealthCheck healthCheck = new BridgeServerHealthCheck();
     environment.healthChecks().register("message", healthCheck);
