@@ -10,6 +10,7 @@ import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.exception.CedarException;
+import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.http.CedarResponseStatus;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.util.http.CedarResponse;
@@ -22,25 +23,41 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 import static org.metadatacenter.constant.CedarQueryParameters.QP_Q;
-import static org.metadatacenter.constant.HttpConstants.HTTP_AUTH_HEADER_BEARER_PREFIX;
+import static org.metadatacenter.constant.HttpConstants.*;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/ext-auth/orcid")
 @Produces(MediaType.APPLICATION_JSON)
 public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
 
+  private final static String ORCID_V3_PREFIX = "v3.0/";
   private final static String ORCID_API_V3_RECORD_SUFFIX = "/record";
-  private final static String ORCID_API_V3_SEARCH_PREFIX = "expanded-search/?q=";
+  private final static String ORCID_API_V3_SEARCH_PREFIX = ORCID_V3_PREFIX + "expanded-search/?q=";
+  private final static String ORCID_API_TOKEN_SUFFIX = "oauth/token";
+  private static final String ORCID_TOKEN_GRANT_TYPE = "client_credentials";
+  private static final String ORCID_TOKEN_SCOPE = "/read-public";
+
   private static String ORCID_API_PREFIX;
+  private static String CLIENT_ID;
+  private static String CLIENT_SECRET;
+
+  private static String accessToken;
+  private static long expiryTime;
+  private static final ReentrantLock lock = new ReentrantLock();
 
   public ExternalAuthorityORCIDResource(CedarConfig cedarConfig) {
     super(cedarConfig);
     ORCID_API_PREFIX = cedarConfig.getExternalAuthorities().getOrcid().getApiPrefix();
+    CLIENT_ID = cedarConfig.getExternalAuthorities().getOrcid().getClientId();
+    CLIENT_SECRET = cedarConfig.getExternalAuthorities().getOrcid().getClientSecret();
   }
 
   @GET
@@ -50,7 +67,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
-    String url = ORCID_API_PREFIX + UrlUtil.urlEncode(orcId) + ORCID_API_V3_RECORD_SUFFIX;
+    String url = ORCID_API_PREFIX + ORCID_V3_PREFIX + UrlUtil.urlEncode(orcId) + ORCID_API_V3_RECORD_SUFFIX;
 
     HttpResponse proxyResponse = ProxyUtil.proxyGet(url, getAdditionalHeadersMap());
     int statusCode = proxyResponse.getStatusLine().getStatusCode();
@@ -106,7 +123,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     Map<String, String> orcidSearchNames = new HashMap<>();
     if (statusCode == HttpConstants.OK) {
       orcidSearchNames = getORCIDSearchNames(apiResponseNode);
-      myResponse.put("found", orcidSearchNames.size() != 0);
+      myResponse.put("found", !orcidSearchNames.isEmpty());
     } else {
       myResponse.put("found", false);
       myResponse.put("errors", getORCIDErrors(apiResponseNode));
@@ -181,7 +198,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
           // Fall back to the first value in "other-name" if available
           if ((name == null || name.trim().isEmpty()) && item.has("other-name")) {
             JsonNode otherNamesNode = item.get("other-name");
-            if (otherNamesNode != null && otherNamesNode.isArray() && otherNamesNode.size() > 0) {
+            if (otherNamesNode != null && otherNamesNode.isArray() && !otherNamesNode.isEmpty()) {
               name = otherNamesNode.get(0).textValue();
             }
           }
@@ -208,7 +225,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
 
   private static Map<String, String> getAdditionalHeadersMap() {
 
-    String bearerToken = "YOUR-TOKEN-HERE";
+    String bearerToken = getAccessToken();
 
     Map<String, String> additionalHeaders = new HashMap<>();
     additionalHeaders.put(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON);
@@ -216,5 +233,53 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     return additionalHeaders;
   }
 
+  public static String getAccessToken() {
+    if (accessToken == null || System.currentTimeMillis() > expiryTime) {
+      lock.lock();
+      try {
+        if (accessToken == null || System.currentTimeMillis() > expiryTime) {
+          refreshToken();
+        }
+      } finally {
+        lock.unlock();
+      }
+    }
+    return accessToken;
+  }
+
+  private static void refreshToken() {
+    Map<String, String> headers = new HashMap<>();
+    headers.put(HTTP_HEADER_CONTENT_TYPE, CONTENT_TYPE_APPLICATION_X_WWW_FORM_URLENCODED);
+    headers.put(HTTP_HEADER_ACCEPT, CONTENT_TYPE_APPLICATION_JSON);
+
+    String body = String.format(
+        "client_id=%s&client_secret=%s&grant_type=%s&scope=%s",
+        URLEncoder.encode(CLIENT_ID, StandardCharsets.UTF_8),
+        URLEncoder.encode(CLIENT_SECRET, StandardCharsets.UTF_8),
+        URLEncoder.encode(ORCID_TOKEN_GRANT_TYPE, StandardCharsets.UTF_8),
+        URLEncoder.encode(ORCID_TOKEN_SCOPE, StandardCharsets.UTF_8)
+    );
+
+    String url = ORCID_API_PREFIX + ORCID_API_TOKEN_SUFFIX;
+
+    try {
+      HttpResponse response = ProxyUtil.proxyPost(url, headers, body);
+      int statusCode = response.getStatusLine().getStatusCode();
+
+      if (statusCode != 200) {
+        throw new RuntimeException("Failed to retrieve token. HTTP status: " + statusCode);
+      }
+
+      String responseString = EntityUtils.toString(response.getEntity());
+      JsonNode jsonResponse = JsonMapper.MAPPER.readTree(responseString);
+
+      accessToken = jsonResponse.get("access_token").asText();
+      long expiresIn = jsonResponse.get("expires_in").asLong();
+      expiryTime = System.currentTimeMillis() + (expiresIn * 1000);
+
+    } catch (IOException | CedarProcessingException e) {
+      throw new RuntimeException("Error while fetching access token", e);
+    }
+  }
 
 }
