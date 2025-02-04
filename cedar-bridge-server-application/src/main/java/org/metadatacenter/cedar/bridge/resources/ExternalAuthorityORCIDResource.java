@@ -59,7 +59,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     ORCID_API_PREFIX = cedarConfig.getExternalAuthorities().getOrcid().getApiPrefix();
     CLIENT_ID = cedarConfig.getExternalAuthorities().getOrcid().getClientId();
     CLIENT_SECRET = cedarConfig.getExternalAuthorities().getOrcid().getClientSecret();
-    determineOrcidIdPrefix();
+    ensureOrcidIdPrefixInitialized();
   }
 
   @GET
@@ -126,6 +126,19 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     myResponse.put("results", orcidSearchNames);
 
     return CedarResponse.status(CedarResponseStatus.fromStatusCode(statusCode)).entity(myResponse).build();
+  }
+
+  private void ensureOrcidIdPrefixInitialized() {
+    if (ORCID_ID_PREFIX == null) {
+      lock.lock();
+      try {
+        if (ORCID_ID_PREFIX == null) { // Double-check inside lock
+          determineOrcidIdPrefix();
+        }
+      } finally {
+        lock.unlock();
+      }
+    }
   }
 
   private static void determineOrcidIdPrefix() {
