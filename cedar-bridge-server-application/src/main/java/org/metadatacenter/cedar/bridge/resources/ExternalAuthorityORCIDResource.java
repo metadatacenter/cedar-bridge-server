@@ -64,9 +64,6 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
   @Timed
   @Path("/{id}")
   public Response geORCIDDetails(@PathParam(PP_ID) String orcId) throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-    c.must(c.user()).be(LoggedIn);
-
     String url = ORCID_API_PREFIX + ORCID_V3_PREFIX + UrlUtil.urlEncode(orcId) + ORCID_API_V3_RECORD_SUFFIX;
 
     HttpResponse proxyResponse = ProxyUtil.proxyGet(url, getAdditionalHeadersMap());
@@ -84,11 +81,10 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     Map<String, Object> myResponse = new HashMap<>();
     myResponse.put("found", statusCode == HttpConstants.OK);
     myResponse.put("requestedId", orcId);
-    myResponse.put("rawResponse", apiResponseNode);
-
 
     if (statusCode == HttpConstants.OK) {
-      myResponse.put("name", getORCIDNames(apiResponseNode));
+      myResponse.put("id", getId(apiResponseNode));
+      myResponse.put("name", getBestORCIDName(apiResponseNode));
     } else {
       myResponse.put("errors", getORCIDErrors(apiResponseNode));
     }
@@ -100,9 +96,6 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
   @Timed
   @Path("/search-by-name")
   public Response searchByName(@QueryParam(QP_Q) String searchTerm) throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-    c.must(c.user()).be(LoggedIn);
-
     String url = ORCID_API_PREFIX + ORCID_API_V3_SEARCH_PREFIX + UrlUtil.urlEncode(searchTerm);
 
     HttpResponse proxyResponse = ProxyUtil.proxyGet(url, getAdditionalHeadersMap());
@@ -118,7 +111,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
       throw new RuntimeException(e);
     }
     Map<String, Object> myResponse = new HashMap<>();
-    myResponse.put("rawResponse", apiResponseNode);
+    //myResponse.put("rawResponse", apiResponseNode);
 
     Map<String, String> orcidSearchNames = new HashMap<>();
     if (statusCode == HttpConstants.OK) {
@@ -131,6 +124,17 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     myResponse.put("results", orcidSearchNames);
 
     return CedarResponse.status(CedarResponseStatus.fromStatusCode(statusCode)).entity(myResponse).build();
+  }
+
+  private String getId(JsonNode apiResponseNode) {
+    JsonNode idWrapperNode = apiResponseNode.get("orcid-identifier");
+    if (idWrapperNode != null && idWrapperNode.isObject()) {
+      JsonNode idNode = idWrapperNode.get("uri");
+      if (idNode != null && idNode.isTextual()) {
+        return idNode.textValue();
+      }
+    }
+    return null;
   }
 
   private Map<String, Object> getORCIDNames(JsonNode apiResponseNode) {
@@ -281,5 +285,32 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
       throw new RuntimeException("Error while fetching access token", e);
     }
   }
+
+  private String getBestORCIDName(JsonNode apiResponseNode) {
+    JsonNode personNode = apiResponseNode.get("person");
+    if (personNode != null) {
+      JsonNode nameNode = personNode.get("name");
+      if (nameNode != null) {
+        JsonNode givenNamesNode = nameNode.get("given-names");
+        JsonNode familyNameNode = nameNode.get("family-name");
+        JsonNode creditNameNode = nameNode.get("credit-name");
+
+        if (creditNameNode != null && !creditNameNode.isNull()) {
+          return creditNameNode.get("value").asText(); // Prefer credit name if available
+        }
+        if (givenNamesNode != null && familyNameNode != null) {
+          return givenNamesNode.get("value").asText() + " " + familyNameNode.get("value").asText();
+        }
+        if (givenNamesNode != null) {
+          return givenNamesNode.get("value").asText();
+        }
+        if (familyNameNode != null) {
+          return familyNameNode.get("value").asText();
+        }
+      }
+    }
+    return null;
+  }
+
 
 }

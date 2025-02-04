@@ -11,7 +11,6 @@ import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.http.CedarResponseStatus;
-import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.ProxyUtil;
 import org.metadatacenter.util.http.UrlUtil;
@@ -21,11 +20,13 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 import static org.metadatacenter.constant.CedarQueryParameters.QP_Q;
-import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/ext-auth/ror")
 @Produces(MediaType.APPLICATION_JSON)
@@ -44,12 +45,9 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
   @Timed
   @Path("/{id}")
   public Response getRORDetails(@PathParam(PP_ID) String rorId) throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-    c.must(c.user()).be(LoggedIn);
-
     String url = ROR_API_PREFIX + ROR_API_V2_ORGANIZATIONS_PREFIX + UrlUtil.urlEncode(rorId);
 
-    HttpResponse proxyResponse = ProxyUtil.proxyGet(url, c);
+    HttpResponse proxyResponse = ProxyUtil.proxyGet(url, new HashMap<>());
     int statusCode = proxyResponse.getStatusLine().getStatusCode();
 
     JsonNode apiResponseNode;
@@ -81,16 +79,13 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
   @Timed
   @Path("/search-by-name")
   public Response searchByName(@QueryParam(QP_Q) String orgNameFragment) throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-    c.must(c.user()).be(LoggedIn);
-
     if (orgNameFragment != null && !orgNameFragment.isEmpty() && !orgNameFragment.endsWith("*")) {
       orgNameFragment = orgNameFragment + "*";
     }
 
     String url = ROR_API_PREFIX + ROR_API_V2_ORGANIZATION_SEARCH_PREFIX + UrlUtil.urlEncode(orgNameFragment);
 
-    HttpResponse proxyResponse = ProxyUtil.proxyGet(url, c);
+    HttpResponse proxyResponse = ProxyUtil.proxyGet(url, new HashMap<>());
     int statusCode = proxyResponse.getStatusLine().getStatusCode();
 
     JsonNode apiResponseNode;
@@ -103,12 +98,11 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
       throw new RuntimeException(e);
     }
     Map<String, Object> myResponse = new HashMap<>();
-    //myResponse.put("rawResponse", apiResponseNode);
 
     if (statusCode == HttpConstants.OK) {
       Map<String, String> rorSearchNames = getRORSearchNames(apiResponseNode);
       myResponse.put("results", rorSearchNames);
-      myResponse.put("found", rorSearchNames.size() != 0);
+      myResponse.put("found", !rorSearchNames.isEmpty());
     } else {
       myResponse.put("found", false);
     }
