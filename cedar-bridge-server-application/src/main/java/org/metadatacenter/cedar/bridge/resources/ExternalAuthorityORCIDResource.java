@@ -12,7 +12,6 @@ import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.http.CedarResponseStatus;
-import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.ProxyUtil;
 import org.metadatacenter.util.http.UrlUtil;
@@ -32,7 +31,6 @@ import java.util.stream.Collectors;
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 import static org.metadatacenter.constant.CedarQueryParameters.QP_Q;
 import static org.metadatacenter.constant.HttpConstants.*;
-import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/ext-auth/orcid")
 @Produces(MediaType.APPLICATION_JSON)
@@ -40,7 +38,8 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
 
   private final static String ORCID_V3_PREFIX = "v3.0/";
   private final static String ORCID_API_V3_RECORD_SUFFIX = "/record";
-  private final static String ORCID_API_V3_SEARCH_PREFIX = ORCID_V3_PREFIX + "expanded-search/?q=";
+  private final static String ORCID_API_V3_EXPANDED_SEARCH_PREFIX = ORCID_V3_PREFIX + "expanded-search/?q=";
+  private final static String ORCID_API_V3_SIMPLE_SEARCH_PREFIX = ORCID_V3_PREFIX + "search/?q=";
   private final static String ORCID_API_TOKEN_SUFFIX = "oauth/token";
   private static final String ORCID_TOKEN_GRANT_TYPE = "client_credentials";
   private static final String ORCID_TOKEN_SCOPE = "/read-public";
@@ -53,11 +52,14 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
   private static long expiryTime;
   private static final ReentrantLock lock = new ReentrantLock();
 
+  private static String ORCID_ID_PREFIX;
+
   public ExternalAuthorityORCIDResource(CedarConfig cedarConfig) {
     super(cedarConfig);
     ORCID_API_PREFIX = cedarConfig.getExternalAuthorities().getOrcid().getApiPrefix();
     CLIENT_ID = cedarConfig.getExternalAuthorities().getOrcid().getClientId();
     CLIENT_SECRET = cedarConfig.getExternalAuthorities().getOrcid().getClientSecret();
+    determineOrcidIdPrefix();
   }
 
   @GET
@@ -96,7 +98,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
   @Timed
   @Path("/search-by-name")
   public Response searchByName(@QueryParam(QP_Q) String searchTerm) throws CedarException {
-    String url = ORCID_API_PREFIX + ORCID_API_V3_SEARCH_PREFIX + UrlUtil.urlEncode(searchTerm);
+    String url = ORCID_API_PREFIX + ORCID_API_V3_EXPANDED_SEARCH_PREFIX + UrlUtil.urlEncode(searchTerm);
 
     HttpResponse proxyResponse = ProxyUtil.proxyGet(url, getAdditionalHeadersMap());
     int statusCode = proxyResponse.getStatusLine().getStatusCode();
@@ -124,6 +126,29 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     myResponse.put("results", orcidSearchNames);
 
     return CedarResponse.status(CedarResponseStatus.fromStatusCode(statusCode)).entity(myResponse).build();
+  }
+
+  private static void determineOrcidIdPrefix() {
+    String url = ORCID_API_PREFIX + ORCID_API_V3_SIMPLE_SEARCH_PREFIX + "stanford";
+
+    try {
+      HttpResponse response = ProxyUtil.proxyGet(url, getAdditionalHeadersMap());
+      String responseString = EntityUtils.toString(response.getEntity(), CharEncoding.UTF_8);
+      JsonNode jsonResponse = JsonMapper.MAPPER.readTree(responseString);
+      JsonNode firstResult = jsonResponse.path("result").path(0);
+      JsonNode orcidIdentifier = firstResult.path("orcid-identifier");
+
+      String uri = orcidIdentifier.path("uri").asText();
+      String path = orcidIdentifier.path("path").asText();
+
+      if (uri.endsWith(path)) {
+        ORCID_ID_PREFIX = uri.substring(0, uri.length() - path.length());
+      } else {
+        throw new RuntimeException("Could not determine ORCID ID prefix.");
+      }
+    } catch (IOException | CedarException e) {
+      throw new RuntimeException("Error retrieving ORCID ID prefix", e);
+    }
   }
 
   private String getId(JsonNode apiResponseNode) {
@@ -182,6 +207,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
         }
 
         if (orcidId != null) { // Ensure ORCID ID exists
+          orcidId = ORCID_ID_PREFIX + orcidId; // Apply prefix
           String name = null;
 
           // Try to concatenate "given-names" and "family-names"
