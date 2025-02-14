@@ -38,7 +38,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
 
   private final static String ORCID_V3_PREFIX = "v3.0/";
   private final static String ORCID_API_V3_RECORD_SUFFIX = "/record";
-  private final static String ORCID_API_V3_EXPANDED_SEARCH_PREFIX = ORCID_V3_PREFIX + "expanded-search/?q=";
+  private final static String ORCID_API_V3_EXPANDED_SEARCH_PREFIX = ORCID_V3_PREFIX + "expanded-search/?q=given-names:%s+OR+family-name:%s";
   private final static String ORCID_API_V3_SIMPLE_SEARCH_PREFIX = ORCID_V3_PREFIX + "search/?q=";
   private final static String ORCID_API_TOKEN_SUFFIX = "oauth/token";
   private static final String ORCID_TOKEN_GRANT_TYPE = "client_credentials";
@@ -66,7 +66,8 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
   @Timed
   @Path("/{id}")
   public Response geORCIDDetails(@PathParam(PP_ID) String orcId) throws CedarException {
-    String url = ORCID_API_PREFIX + ORCID_V3_PREFIX + UrlUtil.urlEncode(orcId) + ORCID_API_V3_RECORD_SUFFIX;
+    String extractedOrcId = orcId.contains("/") ? orcId.substring(orcId.lastIndexOf('/') + 1) : orcId;
+    String url = ORCID_API_PREFIX + ORCID_V3_PREFIX + UrlUtil.urlEncode(extractedOrcId) + ORCID_API_V3_RECORD_SUFFIX;
 
     HttpResponse proxyResponse = ProxyUtil.proxyGet(url, getAdditionalHeadersMap());
     int statusCode = proxyResponse.getStatusLine().getStatusCode();
@@ -83,11 +84,13 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     Map<String, Object> myResponse = new HashMap<>();
     myResponse.put("found", statusCode == HttpConstants.OK);
     myResponse.put("requestedId", orcId);
+    myResponse.put("rawResponse", apiResponseNode);
 
     if (statusCode == HttpConstants.OK) {
       myResponse.put("id", getId(apiResponseNode));
       myResponse.put("name", getBestORCIDName(apiResponseNode));
     } else {
+      myResponse.put("name", null);
       myResponse.put("errors", getORCIDErrors(apiResponseNode));
     }
 
@@ -98,7 +101,11 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
   @Timed
   @Path("/search-by-name")
   public Response searchByName(@QueryParam(QP_Q) String searchTerm) throws CedarException {
-    String url = ORCID_API_PREFIX + ORCID_API_V3_EXPANDED_SEARCH_PREFIX + UrlUtil.urlEncode(searchTerm);
+    String searchTermEncoded = UrlUtil.urlEncode(searchTerm);
+    String url = String.format(
+        ORCID_API_PREFIX + ORCID_API_V3_EXPANDED_SEARCH_PREFIX,
+        searchTermEncoded, searchTermEncoded
+    );
 
     HttpResponse proxyResponse = ProxyUtil.proxyGet(url, getAdditionalHeadersMap());
     int statusCode = proxyResponse.getStatusLine().getStatusCode();

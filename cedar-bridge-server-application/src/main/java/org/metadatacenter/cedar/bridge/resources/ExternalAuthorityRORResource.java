@@ -62,10 +62,10 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
     Map<String, Object> myResponse = new HashMap<>();
     myResponse.put("found", statusCode == HttpConstants.OK);
     myResponse.put("requestedId", rorId);
-    myResponse.put("id", getId(apiResponseNode));
-    //myResponse.put("rawResponse", apiResponseNode);
+    myResponse.put("rawResponse", apiResponseNode);
 
     if (statusCode == HttpConstants.OK) {
+      myResponse.put("id", getId(apiResponseNode));
       myResponse.put("name", getBestRORName(apiResponseNode));
     } else {
       myResponse.put("name", null);
