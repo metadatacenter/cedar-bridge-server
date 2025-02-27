@@ -40,10 +40,11 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
   private final static String ORCID_API_V3_RECORD_SUFFIX = "/record";
   private final static String ORCID_API_V3_EXPANDED_SEARCH_PREFIX = ORCID_V3_PREFIX + "expanded-search/?q=given-names:%s+OR+family-name:%s";
   private final static String ORCID_API_V3_SIMPLE_SEARCH_PREFIX = ORCID_V3_PREFIX + "search/?q=";
-  private final static String ORCID_API_TOKEN_SUFFIX = "oauth/token";
+  private final static String ORCID_TOKEN_SUFFIX = "oauth/token";
   private static final String ORCID_TOKEN_GRANT_TYPE = "client_credentials";
   private static final String ORCID_TOKEN_SCOPE = "/read-public";
 
+  private static String ORCID_TOKEN_PREFIX;
   private static String ORCID_API_PREFIX;
   private static String CLIENT_ID;
   private static String CLIENT_SECRET;
@@ -56,6 +57,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
 
   public ExternalAuthorityORCIDResource(CedarConfig cedarConfig) {
     super(cedarConfig);
+    ORCID_TOKEN_PREFIX = cedarConfig.getExternalAuthorities().getOrcid().getTokenPrefix();
     ORCID_API_PREFIX = cedarConfig.getExternalAuthorities().getOrcid().getApiPrefix();
     CLIENT_ID = cedarConfig.getExternalAuthorities().getOrcid().getClientId();
     CLIENT_SECRET = cedarConfig.getExternalAuthorities().getOrcid().getClientSecret();
@@ -310,7 +312,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
         URLEncoder.encode(ORCID_TOKEN_SCOPE, StandardCharsets.UTF_8)
     );
 
-    String url = ORCID_API_PREFIX + ORCID_API_TOKEN_SUFFIX;
+    String url = ORCID_TOKEN_PREFIX + ORCID_TOKEN_SUFFIX;
 
     try {
       HttpResponse response = ProxyUtil.proxyPost(url, headers, body);
