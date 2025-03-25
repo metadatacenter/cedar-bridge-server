@@ -26,7 +26,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 import static org.metadatacenter.constant.CedarQueryParameters.QP_Q;
@@ -38,7 +37,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
 
   private final static String ORCID_V3_PREFIX = "v3.0/";
   private final static String ORCID_API_V3_RECORD_SUFFIX = "/record";
-  private final static String ORCID_API_V3_EXPANDED_SEARCH_PREFIX = ORCID_V3_PREFIX + "expanded-search/?q=given-names:%s+OR+family-name:%s";
+  private final static String ORCID_API_V3_EXPANDED_SEARCH_PREFIX = ORCID_V3_PREFIX + "expanded-search/?q=%s";
   private final static String ORCID_API_V3_SIMPLE_SEARCH_PREFIX = ORCID_V3_PREFIX + "search/?q=";
   private final static String ORCID_TOKEN_SUFFIX = "oauth/token";
   private static final String ORCID_TOKEN_GRANT_TYPE = "client_credentials";
@@ -104,10 +103,22 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
   @Path("/search-by-name")
   public Response searchByName(@QueryParam(QP_Q) String searchTerm) throws CedarException {
     String searchTermEncoded = UrlUtil.urlEncode(searchTerm);
+
+    String solrQuery = String.format(
+        "{!edismax qf=\"given-and-family-names^50.0 family-name^10.0 given-names^10.0 credit-name^10.0 other-names^5" +
+            ".0 text^1.0\" " +
+            "pf=\"given-and-family-names^50.0\" " +
+            "bq=\"current-institution-affiliation-name:[* TO *]^100.0 past-institution-affiliation-name:[* TO *]^70\"" +
+            " mm=1}%s",
+        searchTerm
+    );
+
     String url = String.format(
         ORCID_API_PREFIX + ORCID_API_V3_EXPANDED_SEARCH_PREFIX,
-        searchTermEncoded, searchTermEncoded
-    );
+        UrlUtil.urlEncode(solrQuery)
+    ) + "&start=0&rows=50";
+
+    System.out.println(url);
 
     HttpResponse proxyResponse = ProxyUtil.proxyGet(url, getAdditionalHeadersMap());
     int statusCode = proxyResponse.getStatusLine().getStatusCode();
@@ -124,7 +135,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     Map<String, Object> myResponse = new HashMap<>();
     //myResponse.put("rawResponse", apiResponseNode);
 
-    Map<String, String> orcidSearchNames = new HashMap<>();
+    Map<String, Map<String, String>> orcidSearchNames = new HashMap<>();
     if (statusCode == HttpConstants.OK) {
       orcidSearchNames = getORCIDSearchNames(apiResponseNode);
       myResponse.put("found", !orcidSearchNames.isEmpty());
@@ -216,8 +227,8 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     return errors;
   }
 
-  private Map<String, String> getORCIDSearchNames(JsonNode apiResponseNode) {
-    Map<String, String> idToNameMap = new HashMap<>();
+  private Map<String, Map<String, String>> getORCIDSearchNames(JsonNode apiResponseNode) {
+    Map<String, Map<String, String>> idToInfoMap = new LinkedHashMap<>(); // Preserve response order
 
     JsonNode expandedResultNode = apiResponseNode.get("expanded-result");
     if (expandedResultNode != null && expandedResultNode.isArray()) {
@@ -228,26 +239,26 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
           orcidId = orcidIdNode.textValue();
         }
 
-        if (orcidId != null) { // Ensure ORCID ID exists
-          orcidId = ORCID_ID_PREFIX + orcidId; // Apply prefix
+        if (orcidId != null) {
+          orcidId = ORCID_ID_PREFIX + orcidId;
           String name = null;
 
-          // Try to concatenate "given-names" and "family-names"
-          JsonNode givenNamesNode = item.get("given-names");
-          JsonNode familyNamesNode = item.get("family-names");
-          if (givenNamesNode != null && familyNamesNode != null) {
-            name = givenNamesNode.textValue() + " " + familyNamesNode.textValue();
+          // 1. Try "credit-name" first
+          JsonNode creditNameNode = item.get("credit-name");
+          if (creditNameNode != null && !creditNameNode.asText().trim().isEmpty()) {
+            name = creditNameNode.textValue();
           }
 
-          // Fall back to "credit-name" if full name is not available
+          // 2. Fall back to "given-names" + "family-names"
           if (name == null || name.trim().isEmpty()) {
-            JsonNode creditNameNode = item.get("credit-name");
-            if (creditNameNode != null) {
-              name = creditNameNode.textValue();
+            JsonNode givenNamesNode = item.get("given-names");
+            JsonNode familyNamesNode = item.get("family-names");
+            if (givenNamesNode != null && familyNamesNode != null) {
+              name = givenNamesNode.textValue() + " " + familyNamesNode.textValue();
             }
           }
 
-          // Fall back to the first value in "other-name" if available
+          // 3. Fall back to first value in "other-name" array
           if ((name == null || name.trim().isEmpty()) && item.has("other-name")) {
             JsonNode otherNamesNode = item.get("other-name");
             if (otherNamesNode != null && otherNamesNode.isArray() && !otherNamesNode.isEmpty()) {
@@ -255,25 +266,34 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
             }
           }
 
-          // Only add to map if we have a name
           if (name != null && !name.trim().isEmpty()) {
-            idToNameMap.put(orcidId, name);
+            // Collect institution-name entries
+            String details = "";
+            JsonNode institutionsNode = item.get("institution-name");
+            if (institutionsNode != null && institutionsNode.isArray()) {
+              List<String> institutions = new ArrayList<>();
+              for (JsonNode inst : institutionsNode) {
+                if (inst != null && !inst.asText().trim().isEmpty()) {
+                  institutions.add(inst.asText());
+                }
+              }
+              details = String.join(", ", institutions);
+            }
+
+            // Build result object
+            Map<String, String> value = new HashMap<>();
+            value.put("name", name);
+            value.put("details", details);
+
+            idToInfoMap.put(orcidId, value);
           }
         }
       }
     }
 
-    return idToNameMap.entrySet().stream()
-        .sorted(Map.Entry.comparingByValue())
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey,
-                Map.Entry::getValue,
-                (e1, e2) -> e1,
-                LinkedHashMap::new
-            )
-        );
+    return idToInfoMap;
   }
+
 
   private static Map<String, String> getAdditionalHeadersMap() {
 
