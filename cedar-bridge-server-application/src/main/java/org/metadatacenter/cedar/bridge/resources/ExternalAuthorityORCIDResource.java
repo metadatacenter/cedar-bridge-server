@@ -253,8 +253,10 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
           if (name == null || name.trim().isEmpty()) {
             JsonNode givenNamesNode = item.get("given-names");
             JsonNode familyNamesNode = item.get("family-names");
-            if (givenNamesNode != null && familyNamesNode != null) {
-              name = givenNamesNode.textValue() + " " + familyNamesNode.textValue();
+            String given = givenNamesNode != null ? givenNamesNode.textValue() : null;
+            String family = familyNamesNode != null ? familyNamesNode.textValue() : null;
+            if (given != null && family != null) {
+              name = given + " " + family;
             }
           }
 

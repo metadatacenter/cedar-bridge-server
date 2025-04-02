@@ -100,7 +100,7 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
     Map<String, Object> myResponse = new HashMap<>();
 
     if (statusCode == HttpConstants.OK) {
-      Map<String, String> rorSearchNames = getRORSearchNames(apiResponseNode);
+      Map<String, Map<String, String>> rorSearchNames = getRORSearchNames(apiResponseNode);
       myResponse.put("results", rorSearchNames);
       myResponse.put("found", !rorSearchNames.isEmpty());
     } else {
@@ -157,8 +157,8 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
     return errors;
   }
 
-  private Map<String, String> getRORSearchNames(JsonNode apiResponseNode) {
-    Map<String, String> idToNameMap = new HashMap<>();
+  private Map<String, Map<String, String>> getRORSearchNames(JsonNode apiResponseNode) {
+    Map<String, Map<String, String>> idToNameMap = new HashMap<>();
     JsonNode itemsNode = apiResponseNode.get("items");
     if (itemsNode != null && itemsNode.isArray()) {
       for (JsonNode item : itemsNode) {
@@ -171,7 +171,10 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
         if (rorId != null) {
           String bestName = getBestRORName(item);
           if (bestName != null) {
-            idToNameMap.put(rorId, bestName);
+            Map<String, String> value = new HashMap<>();
+            value.put("name", bestName);
+            value.put("details", null);
+            idToNameMap.put(rorId, value);
           }
         }
       }
