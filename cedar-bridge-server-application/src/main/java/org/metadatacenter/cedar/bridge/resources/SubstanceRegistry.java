@@ -2,7 +2,6 @@ package org.metadatacenter.cedar.bridge.resources;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dropwizard.lifecycle.Managed;
 import org.apache.commons.codec.CharEncoding;
 import org.apache.http.util.EntityUtils;
 import org.metadatacenter.config.CedarConfig;
@@ -17,7 +16,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class SubstanceRegistry implements Managed {
+public class SubstanceRegistry  {
 
   private final String apiKey;
   private final String PFASSTRUCT_URL =
@@ -29,7 +28,7 @@ public class SubstanceRegistry implements Managed {
 
   private final Map<String, String> chemicalsByDtxsid = new ConcurrentHashMap<>();
 
-  private final AtomicBoolean initialized = new AtomicBoolean(false);
+  private volatile boolean loaded = false;
 
   public SubstanceRegistry(CedarConfig cedarConfig) {
     this.apiKey = cedarConfig.getExternalAuthorities().getEpaCompTox().getApiKey();
@@ -39,8 +38,9 @@ public class SubstanceRegistry implements Managed {
     return chemicalsByDtxsid;
   }
 
-  @Override
-  public void start() throws Exception {
+  public boolean isLoaded() { return loaded; }
+
+  public void loadSubstances() throws Exception {
     Map<String, String> headers = new HashMap<>();
     headers.put("Accept", MediaType.APPLICATION_JSON);
     if (apiKey != null && !apiKey.isEmpty()) {
@@ -95,10 +95,11 @@ public class SubstanceRegistry implements Managed {
         }
       }
     }
+    loaded = true;
   }
 
-  @Override
-  public void stop() throws Exception {
+  public void clearSubstances() {
     chemicalsByDtxsid.clear();
+    loaded = false;
   }
 }

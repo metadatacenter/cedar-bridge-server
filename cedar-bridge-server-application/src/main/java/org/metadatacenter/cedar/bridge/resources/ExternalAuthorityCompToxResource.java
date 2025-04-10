@@ -8,6 +8,7 @@ import org.metadatacenter.http.CedarResponseStatus;
 import org.metadatacenter.util.http.CedarResponse;
 
 import javax.ws.rs.*;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
@@ -33,6 +34,9 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
   @Path("/{id}")
   public Response getSubstanceDetails(@PathParam(PP_ID) String substanceId) throws CedarException {
 
+    if (!substanceRegistry.isLoaded())
+      return buildNotReadyResponse();
+
     Map<String, String> substances = substanceRegistry.getSubstancesByDtxsid();
     Map<String, Object> myResponse = new HashMap<>();
 
@@ -56,6 +60,8 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
   @Path("/search-by-name")
   @Produces(MediaType.APPLICATION_JSON)
   public Response searchByName(@QueryParam("q") String searchTerm) throws CedarException {
+    if (!substanceRegistry.isLoaded())
+      return buildNotReadyResponse();
 
     Map<String, String> substances = substanceRegistry.getSubstancesByDtxsid();
     Map<String, Object> myResponse = new HashMap<>();
@@ -87,6 +93,13 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
     myResponse.put("results", results);
 
     return CedarResponse.ok().entity(myResponse).build();
+  }
+
+  private Response buildNotReadyResponse() {
+    return CedarResponse.status(CedarResponseStatus.SERVICE_UNAVAILABLE)
+        .header(HttpHeaders.RETRY_AFTER, "30")
+        .entity(Map.of("message", "Substance data is still loading from EPA CompTox API."))
+        .build();
   }
 
 }

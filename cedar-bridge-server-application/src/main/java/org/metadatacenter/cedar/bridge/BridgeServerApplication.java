@@ -43,10 +43,11 @@ public class BridgeServerApplication extends CedarMicroserviceApplication<Bridge
     environment.jersey().register(extAuthORCID);
 
     final SubstanceRegistry substanceRegistry = new SubstanceRegistry(cedarConfig);
-    environment.lifecycle().manage(substanceRegistry);
 
-    final ExternalAuthorityCompToxResource extAuthEPACompTox = new ExternalAuthorityCompToxResource(cedarConfig, substanceRegistry);
-    environment.jersey().register(extAuthEPACompTox);
+    environment.lifecycle().manage(new SubstanceRegistryLoader(substanceRegistry));
+
+    final ExternalAuthorityCompToxResource extAuthCompTox = new ExternalAuthorityCompToxResource(cedarConfig, substanceRegistry);
+    environment.jersey().register(extAuthCompTox);
 
     final BridgeServerHealthCheck healthCheck = new BridgeServerHealthCheck();
     environment.healthChecks().register("message", healthCheck);
