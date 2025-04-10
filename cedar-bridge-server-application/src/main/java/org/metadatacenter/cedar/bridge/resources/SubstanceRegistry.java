@@ -71,7 +71,6 @@ public class SubstanceRegistry  {
 
       HttpResponse detailResponse = ProxyUtil.proxyPost(DTXSID_BATCH_LOOKUP_URL, headers, payloadJson);
 
-      System.out.print(".");
       int detailStatus = detailResponse.getStatusLine().getStatusCode();
       if (detailStatus != HttpConstants.OK) {
         // TODO Log System.err.println("Batch " + i + " failed: HTTP " + detailStatus);
