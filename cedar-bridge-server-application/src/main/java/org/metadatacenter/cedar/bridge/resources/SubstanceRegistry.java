@@ -15,6 +15,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SubstanceRegistry implements Managed {
 
@@ -22,9 +23,13 @@ public class SubstanceRegistry implements Managed {
   private final String PFASSTRUCT_URL =
       "https://api-ccte.epa.gov/chemical/list/chemicals/search/by-listname/PFASSTRUCT";
   private static final String DTXSID_BATCH_LOOKUP_URL = "https://api-ccte.epa.gov/chemical/detail/search/by-dtxsid/";
+  private static final String DTXSID_FIELD = "dtxsid";
+  private static final String PREFERRED_NAME_FIELD = "preferredName";
   private static final int BATCH_SIZE = 1000;
 
   private final Map<String, String> chemicalsByDtxsid = new ConcurrentHashMap<>();
+
+  private final AtomicBoolean initialized = new AtomicBoolean(false);
 
   public SubstanceRegistry(CedarConfig cedarConfig) {
     this.apiKey = cedarConfig.getExternalAuthorities().getEpaCompTox().getApiKey();
@@ -83,8 +88,8 @@ public class SubstanceRegistry implements Managed {
       List<Map<String, Object>> results = mapper.readValue(detailJson, new TypeReference<>() {});
 
       for (Map<String, Object> result : results) {
-        String id = (String) result.get("dtxsid");
-        String name = (String) result.get("preferredName");
+        String id = (String) result.get(DTXSID_FIELD);
+        String name = (String) result.get(PREFERRED_NAME_FIELD);
         if (id != null && name != null) {
           chemicalsByDtxsid.put(id, name);
         }

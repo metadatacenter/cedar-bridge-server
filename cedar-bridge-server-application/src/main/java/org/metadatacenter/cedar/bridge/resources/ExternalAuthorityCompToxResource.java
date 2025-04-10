@@ -11,6 +11,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
@@ -49,4 +50,43 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
       return CedarResponse.ok().entity(myResponse).build();
     }
   }
+
+  @GET
+  @Timed
+  @Path("/search-by-name")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response searchByName(@QueryParam("q") String searchTerm) throws CedarException {
+
+    Map<String, String> substances = substanceRegistry.getSubstancesByDtxsid();
+    Map<String, Object> myResponse = new HashMap<>();
+    Map<String, Map<String, Object>> results = new LinkedHashMap<>();
+
+    if (searchTerm == null || searchTerm.trim().isEmpty()) {
+      myResponse.put("found", false);
+      myResponse.put("results", results);
+      return CedarResponse.ok().entity(myResponse).build();
+    }
+
+    String fragmentLower = searchTerm.toLowerCase();
+
+    for (Map.Entry<String, String> entry : substances.entrySet()) {
+      String dtxsid = entry.getKey();
+      String preferredName = entry.getValue();
+
+      if (preferredName != null && preferredName.toLowerCase().contains(fragmentLower)) {
+        String substanceIri = SUBSTANCE_IRI_BASE + dtxsid;
+        Map<String, Object> substanceResultObject = new HashMap<>();
+        substanceResultObject.put("name", preferredName);
+        substanceResultObject.put("details", null);
+
+        results.put(substanceIri, substanceResultObject);
+      }
+    }
+
+    myResponse.put("found", !results.isEmpty());
+    myResponse.put("results", results);
+
+    return CedarResponse.ok().entity(myResponse).build();
+  }
+
 }
