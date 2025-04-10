@@ -6,7 +6,6 @@ import org.metadatacenter.cedar.bridge.health.BridgeServerHealthCheck;
 import org.metadatacenter.cedar.bridge.resources.*;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.config.CedarConfig;
-import org.metadatacenter.config.ExternalAuthorityEPACompTox;
 import org.metadatacenter.model.ServerName;
 
 public class BridgeServerApplication extends CedarMicroserviceApplication<BridgeServerConfiguration> {
@@ -46,7 +45,7 @@ public class BridgeServerApplication extends CedarMicroserviceApplication<Bridge
     final SubstanceRegistry substanceRegistry = new SubstanceRegistry(cedarConfig);
     environment.lifecycle().manage(substanceRegistry);
 
-    final ExternalAuthorityEPACompToxResource extAuthEPACompTox = new ExternalAuthorityEPACompToxResource(cedarConfig, substanceRegistry);
+    final ExternalAuthorityCompToxResource extAuthEPACompTox = new ExternalAuthorityCompToxResource(cedarConfig, substanceRegistry);
     environment.jersey().register(extAuthEPACompTox);
 
     final BridgeServerHealthCheck healthCheck = new BridgeServerHealthCheck();

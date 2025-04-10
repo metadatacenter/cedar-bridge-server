@@ -11,6 +11,7 @@ import org.metadatacenter.util.http.ProxyUtil;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpEntity;
 
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,6 +21,8 @@ public class SubstanceRegistry implements Managed {
   private final String apiKey;
   private final String PFASSTRUCT_URL =
       "https://api-ccte.epa.gov/chemical/list/chemicals/search/by-listname/PFASSTRUCT";
+  private static final String DTXSID_BATCH_LOOKUP_URL = "https://api-ccte.epa.gov/chemical/detail/search/by-dtxsid/";
+  private static final int BATCH_SIZE = 1000;
 
   private final Map<String, String> chemicalsByDtxsid = new ConcurrentHashMap<>();
 
@@ -53,32 +56,37 @@ public class SubstanceRegistry implements Managed {
 
     String json = EntityUtils.toString(entity, CharEncoding.UTF_8);
     ObjectMapper mapper = new ObjectMapper();
-    List<String> dtxsids = mapper.readValue(json, new TypeReference<>() {});
+    List<String> dtxsids = mapper.readValue(json, new TypeReference<>() {
+    });
 
-    for (String dtxsid : dtxsids) {
-      if (dtxsid == null || dtxsid.isEmpty())
-        continue;
+    for (int i = 0; i < dtxsids.size(); i += BATCH_SIZE) {
+      List<String> batch = dtxsids.subList(i, Math.min(i + BATCH_SIZE, dtxsids.size()));
+      String payloadJson = mapper.writeValueAsString(batch);
+      headers.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
 
-      String detailUrl = "https://api-ccte.epa.gov/chemical/detail/search/by-dtxsid/" + dtxsid;
-      HttpResponse detailResponse = ProxyUtil.proxyGet(detailUrl, headers);
+      HttpResponse detailResponse = ProxyUtil.proxyPost(DTXSID_BATCH_LOOKUP_URL, headers, payloadJson);
 
+      System.out.print(".");
       int detailStatus = detailResponse.getStatusLine().getStatusCode();
       if (detailStatus != HttpConstants.OK) {
-        // TODO Log ("Failed to fetch detail for " + dtxsid + ": HTTP " + detailStatus);
+        // TODO Log System.err.println("Batch " + i + " failed: HTTP " + detailStatus);
         continue;
       }
 
       HttpEntity detailEntity = detailResponse.getEntity();
-      if (detailEntity != null) {
-        String detailJson = EntityUtils.toString(detailEntity, CharEncoding.UTF_8);
-        Map<String, Object> detailMap = mapper.readValue(detailJson, new TypeReference<>() {
-        });
-        Object preferredNameObj = detailMap.get("preferredName");
+      if (detailEntity == null) {
+        // TODO Log System.err.println("Batch " + i + " returned empty response");
+        continue;
+      }
 
-        if (preferredNameObj instanceof String) {
-          chemicalsByDtxsid.put(dtxsid, (String) preferredNameObj);
-        } else {
-          // TODO Log ("No preferredName found for " + dtxsid);
+      String detailJson = EntityUtils.toString(detailEntity, CharEncoding.UTF_8);
+      List<Map<String, Object>> results = mapper.readValue(detailJson, new TypeReference<>() {});
+
+      for (Map<String, Object> result : results) {
+        String id = (String) result.get("dtxsid");
+        String name = (String) result.get("preferredName");
+        if (id != null && name != null) {
+          chemicalsByDtxsid.put(id, name);
         }
       }
     }
