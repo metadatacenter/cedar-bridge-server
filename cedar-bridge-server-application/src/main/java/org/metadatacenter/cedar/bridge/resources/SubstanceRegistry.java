@@ -14,7 +14,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SubstanceRegistry  {
 
@@ -26,7 +25,7 @@ public class SubstanceRegistry  {
   private static final String PREFERRED_NAME_FIELD = "preferredName";
   private static final int BATCH_SIZE = 1000;
 
-  private final Map<String, String> chemicalsByDtxsid = new ConcurrentHashMap<>();
+  private final Map<String, String> substancesByDtxsid = new ConcurrentHashMap<>();
 
   private volatile boolean loaded = false;
 
@@ -35,7 +34,7 @@ public class SubstanceRegistry  {
   }
 
   public Map<String, String> getSubstancesByDtxsid() {
-    return chemicalsByDtxsid;
+    return substancesByDtxsid;
   }
 
   public boolean isLoaded() { return loaded; }
@@ -90,7 +89,7 @@ public class SubstanceRegistry  {
         String id = (String) result.get(DTXSID_FIELD);
         String name = (String) result.get(PREFERRED_NAME_FIELD);
         if (id != null && name != null) {
-          chemicalsByDtxsid.put(id, name);
+          substancesByDtxsid.put(id, name);
         }
       }
     }
@@ -98,7 +97,7 @@ public class SubstanceRegistry  {
   }
 
   public void clearSubstances() {
-    chemicalsByDtxsid.clear();
+    substancesByDtxsid.clear();
     loaded = false;
   }
 }
