@@ -6,17 +6,17 @@ import java.util.concurrent.Executors;
 
 public class SubstanceRegistryLoader implements Managed {
 
-  private final SubstanceRegistry sustanceRegistry;
+  private final SubstanceRegistry substanceRegistry;
 
-  public SubstanceRegistryLoader(SubstanceRegistry sustanceRegistry) {
-    this.sustanceRegistry = sustanceRegistry;
+  public SubstanceRegistryLoader(SubstanceRegistry substanceRegistry) {
+    this.substanceRegistry = substanceRegistry;
   }
 
   @Override
   public void start() {
     Executors.newSingleThreadExecutor().submit(() -> {
       try {
-        sustanceRegistry.loadSubstances();
+        substanceRegistry.loadSubstances();
       } catch (Exception e) {
         throw new RuntimeException("Error loading substances: " + e.getMessage(), e);
       }
@@ -25,6 +25,6 @@ public class SubstanceRegistryLoader implements Managed {
 
   @Override
   public void stop() {
-    this.sustanceRegistry.clearSubstances();
+    this.substanceRegistry.clearSubstances();
   }
 }
