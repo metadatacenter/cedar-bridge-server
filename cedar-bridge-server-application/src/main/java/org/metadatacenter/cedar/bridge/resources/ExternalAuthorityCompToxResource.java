@@ -11,6 +11,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -40,13 +41,17 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
     Map<String, String> substances = substanceRegistry.getSubstancesByDtxsid();
     Map<String, Object> myResponse = new HashMap<>();
 
-    String ctxsid = substanceId.startsWith(SUBSTANCE_IRI_BASE) ? substanceId.substring(SUBSTANCE_IRI_BASE.length()) : substanceId;
+    // Normalize: extract ctxsid if full IRI, otherwise treat as fragment
+    final String ctxsid = substanceId.startsWith(SUBSTANCE_IRI_BASE)
+        ? substanceId.substring(SUBSTANCE_IRI_BASE.length())
+        : substanceId;
 
+    final String fullSubstanceIri = SUBSTANCE_IRI_BASE + ctxsid;
     myResponse.put("requestedId", substanceId);
 
     if (substances.containsKey(ctxsid)) {
       myResponse.put("found", true);
-      myResponse.put("id", substanceId);
+      myResponse.put("id", fullSubstanceIri);
       myResponse.put("name", substances.get(ctxsid));
       return CedarResponse.ok().entity(myResponse).build();
     } else {
