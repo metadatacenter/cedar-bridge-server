@@ -28,15 +28,16 @@ import static org.metadatacenter.constant.CedarQueryParameters.QP_Q;
 @Produces(MediaType.APPLICATION_JSON)
 public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
 
-  private static String RRID_API_PREFIX;
-  private static String RRID_API_KEY;
   private static String IDENTIFIERS_ORG_RRID_PREFIX = "https://identifiers.org/RRID:";
   private static String SCICRUNCH_RESOLVER_API = "https://scicrunch.org/resolver/";
 
+  private static String rridApiPrefix;
+  private static String rridApiKey;
+
   public ExternalAuthorityRRIDResource(CedarConfig cedarConfig) {
     super(cedarConfig);
-    RRID_API_PREFIX = cedarConfig.getExternalAuthorities().getRrid().getApiPrefix();
-    RRID_API_KEY = cedarConfig.getExternalAuthorities().getRrid().getApiKey();
+    rridApiPrefix = cedarConfig.getExternalAuthorities().getRrid().getApiPrefix();
+    rridApiKey = cedarConfig.getExternalAuthorities().getRrid().getApiKey();
   }
 
   @GET
@@ -52,7 +53,7 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
     myResponse.put("requestedId", rridId);
 
     Map<String, String> headers = new HashMap<>();
-    headers.put("apikey", RRID_API_KEY);
+    headers.put("apikey", rridApiKey);
 
     try {
       HttpResponse proxyResponse = ProxyUtil.proxyGet(sciCrunchResolverUrl, headers);
@@ -108,10 +109,10 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
 
     Map<String, String> headers = new HashMap<>();
     headers.put("Content-Type", MediaType.APPLICATION_JSON);
-    headers.put("apikey", RRID_API_KEY);
+    headers.put("apikey", rridApiKey);
 
     try {
-      HttpResponse proxyResponse = ProxyUtil.proxyPost(RRID_API_PREFIX, headers, requestBody);
+      HttpResponse proxyResponse = ProxyUtil.proxyPost(rridApiPrefix, headers, requestBody);
       int statusCode = proxyResponse.getStatusLine().getStatusCode();
       String responseString = EntityUtils.toString(proxyResponse.getEntity());
       JsonNode apiResponseNode = JsonMapper.MAPPER.readTree(responseString);
