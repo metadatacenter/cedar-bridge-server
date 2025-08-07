@@ -12,7 +12,6 @@ import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.http.CedarResponseStatus;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.ProxyUtil;
-import org.metadatacenter.util.http.UrlUtil;
 import org.metadatacenter.util.json.JsonMapper;
 
 import javax.ws.rs.*;
@@ -31,7 +30,7 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
 
   private static String RRID_API_PREFIX;
   private static String RRID_API_KEY;
-  private static String IDENTIFIERS_ORD_RRID_PREFIX = "https://identifiers.org/RRID:";
+  private static String IDENTIFIERS_ORG_RRID_PREFIX = "https://identifiers.org/RRID:";
   private static String SCICRUNCH_RESOLVER_API = "https://scicrunch.org/resolver/";
 
   public ExternalAuthorityRRIDResource(CedarConfig cedarConfig) {
@@ -72,7 +71,7 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
 
           if (identifier != null && name != null) {
             myResponse.put("found", true);
-            myResponse.put("id", IDENTIFIERS_ORD_RRID_PREFIX + identifier);
+            myResponse.put("id", IDENTIFIERS_ORG_RRID_PREFIX + identifier);
             myResponse.put("name", name);
           } else {
             myResponse.put("found", false);
@@ -93,7 +92,6 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
   @Timed
   @Path("/search-by-name")
   public Response searchByName(@QueryParam(QP_Q) String nameFragment) throws CedarException {
-    String url = RRID_API_PREFIX + "/elastic/v1/RIN_CellLine_pr,RIN_Antibody_pr,RIN_Tool_pr,RIN_Organism_pr/_search";
 
     String requestBody = "{\n" +
         "  \"size\": 10,\n" +
@@ -113,15 +111,33 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
     headers.put("apikey", RRID_API_KEY);
 
     try {
-      HttpResponse proxyResponse = ProxyUtil.proxyPost(url, headers, requestBody);
+      HttpResponse proxyResponse = ProxyUtil.proxyPost(RRID_API_PREFIX, headers, requestBody);
       int statusCode = proxyResponse.getStatusLine().getStatusCode();
       String responseString = EntityUtils.toString(proxyResponse.getEntity());
       JsonNode apiResponseNode = JsonMapper.MAPPER.readTree(responseString);
 
       Map<String, Object> response = new HashMap<>();
-      response.put("found", statusCode == 200);
-      response.put("results", apiResponseNode.path("hits").path("hits"));
+      response.put("found", statusCode == HttpConstants.OK);
 
+      Map<String, Object> results = new HashMap<>();
+      JsonNode hits = apiResponseNode.path("hits").path("hits");
+
+      for (JsonNode hit : hits) {
+        JsonNode itemNode = hit.path("_source").path("item");
+        String identifier = itemNode.path("identifier").asText(null);
+        String name = itemNode.path("name").asText(null);
+
+        if (identifier != null && name != null) {
+          String rridUrl = IDENTIFIERS_ORG_RRID_PREFIX + identifier;
+
+          Map<String, Object> entry = new HashMap<>();
+          entry.put("name", name);
+          entry.put("details", null); // Placeholder, can be enriched later
+
+          results.put(rridUrl, entry);
+        }
+      }
+      response.put("results", results);
       return CedarResponse.status(CedarResponseStatus.fromStatusCode(statusCode)).entity(response).build();
     } catch (IOException e) {
       throw new RuntimeException(e);
