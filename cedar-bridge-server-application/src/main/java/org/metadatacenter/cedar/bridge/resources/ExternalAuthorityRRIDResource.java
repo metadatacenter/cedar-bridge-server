@@ -127,13 +127,14 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
         JsonNode itemNode = hit.path("_source").path("item");
         String identifier = itemNode.path("identifier").asText(null);
         String name = itemNode.path("name").asText(null);
+        String details = buildDetails(itemNode);
 
         if (identifier != null && name != null) {
           String rridUrl = IDENTIFIERS_ORG_RRID_PREFIX + identifier;
 
           Map<String, Object> entry = new HashMap<>();
           entry.put("name", name);
-          entry.put("details", null); // Placeholder, can be enriched later
+          entry.put("details", details);
 
           results.put(rridUrl, entry);
         }
@@ -152,5 +153,25 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
     }
     return id.toUpperCase().startsWith("RRID:") ? id : "RRID:" + id;
   }
+
+  private String buildDetails(JsonNode itemNode) {
+    String name = itemNode.path("name").asText("");
+
+    String type = "resource";
+    for (JsonNode typeNode : itemNode.path("types")) {
+      String t = typeNode.path("name").asText(null);
+      if (t != null) {
+        type = t;
+        break;
+      }
+    }
+
+    int xrefCount = itemNode.path("alternateIdentifiers").size();
+
+    return String.format(
+        "%s is a %s. Alternate identifiers exist in %d database(s).", name, type, xrefCount
+    );
+  }
+
 
 }
