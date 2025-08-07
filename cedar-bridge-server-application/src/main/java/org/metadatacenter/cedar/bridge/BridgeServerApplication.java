@@ -39,6 +39,9 @@ public class BridgeServerApplication extends CedarMicroserviceApplication<Bridge
     final ExternalAuthorityRORResource extAuthROR = new ExternalAuthorityRORResource(cedarConfig);
     environment.jersey().register(extAuthROR);
 
+    final ExternalAuthorityRRIDResource extAuthRrid = new ExternalAuthorityRRIDResource(cedarConfig);
+    environment.jersey().register(extAuthRrid);
+
     final ExternalAuthorityORCIDResource extAuthORCID = new ExternalAuthorityORCIDResource(cedarConfig);
     environment.jersey().register(extAuthORCID);
 
