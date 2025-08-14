@@ -34,16 +34,15 @@ public class ExternalAuthorityPubMedResource extends CedarMicroserviceResource {
   private static final String ESEARCH = EUTILS_BASE + "esearch.fcgi?db=pubmed&retmode=json";
   private static final String ESUMMARY = EUTILS_BASE + "esummary.fcgi?db=pubmed&retmode=json";
 
-  // Optional: supply API key/email via config if you have them (improves rate limits)
-  private static String ncbiApiKey;   // cedarConfig.externalAuthorities.pubmed.apiKey (optional)
-  private static String ncbiTool;     // cedarConfig.externalAuthorities.pubmed.tool (optional)
-  private static String ncbiEmail;    // cedarConfig.externalAuthorities.pubmed.email (optional)
+  private static String ncbiApiKey;
+  private static String ncbiTool;
+  private static String ncbiEmail;
 
   public ExternalAuthorityPubMedResource(CedarConfig cedarConfig) {
     super(cedarConfig);
-    ncbiApiKey = null; // pm.getApiKey();
-    ncbiTool = null; // pm.getTool();
-    ncbiEmail = null; // pm.getEmail();
+    ncbiApiKey = cedarConfig.getExternalAuthorities().getPubMed().getApiKey();
+    ncbiTool =  "CEDAR";
+    ncbiEmail = "admin@metadatacenter.org";
   }
 
   @GET

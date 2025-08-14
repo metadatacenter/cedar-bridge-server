@@ -34,18 +34,18 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
 
   private final static String ROR_API_V2_ORGANIZATIONS_PREFIX = "organizations/";
   private final static String ROR_API_V2_ORGANIZATION_SEARCH_PREFIX = "organizations?query=";
-  private static String ROR_API_PREFIX;
+  private static String rorApiPrefix;
 
   public ExternalAuthorityRORResource(CedarConfig cedarConfig) {
     super(cedarConfig);
-    ROR_API_PREFIX = cedarConfig.getExternalAuthorities().getRor().getApiPrefix();
+    rorApiPrefix = cedarConfig.getExternalAuthorities().getRor().getApiPrefix();
   }
 
   @GET
   @Timed
   @Path("/{id}")
   public Response getRORDetails(@PathParam(PP_ID) String rorId) throws CedarException {
-    String url = ROR_API_PREFIX + ROR_API_V2_ORGANIZATIONS_PREFIX + UrlUtil.urlEncode(rorId);
+    String url = rorApiPrefix + ROR_API_V2_ORGANIZATIONS_PREFIX + UrlUtil.urlEncode(rorId);
 
     HttpResponse proxyResponse = ProxyUtil.proxyGet(url, new HashMap<>());
     int statusCode = proxyResponse.getStatusLine().getStatusCode();
@@ -83,7 +83,7 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
       orgNameFragment = orgNameFragment + "*";
     }
 
-    String url = ROR_API_PREFIX + ROR_API_V2_ORGANIZATION_SEARCH_PREFIX + UrlUtil.urlEncode(orgNameFragment);
+    String url = rorApiPrefix + ROR_API_V2_ORGANIZATION_SEARCH_PREFIX + UrlUtil.urlEncode(orgNameFragment);
 
     HttpResponse proxyResponse = ProxyUtil.proxyGet(url, new HashMap<>());
     int statusCode = proxyResponse.getStatusLine().getStatusCode();
