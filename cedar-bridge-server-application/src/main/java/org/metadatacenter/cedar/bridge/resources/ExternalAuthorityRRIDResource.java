@@ -28,15 +28,14 @@ import static org.metadatacenter.constant.CedarQueryParameters.QP_Q;
 @Produces(MediaType.APPLICATION_JSON)
 public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
 
+  private static String SCICRUNCH_API_PREFIX = "https://api.scicrunch.io/elastic/v1/*_pr/_search";
   private static String IDENTIFIERS_ORG_RRID_PREFIX = "https://identifiers.org/RRID:";
   private static String SCICRUNCH_RESOLVER_API = "https://scicrunch.org/resolver/";
 
-  private static String rridApiPrefix;
   private static String rridApiKey;
 
   public ExternalAuthorityRRIDResource(CedarConfig cedarConfig) {
     super(cedarConfig);
-    rridApiPrefix = cedarConfig.getExternalAuthorities().getRrid().getApiPrefix();
     rridApiKey = cedarConfig.getExternalAuthorities().getRrid().getApiKey();
   }
 
@@ -112,7 +111,7 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
     headers.put("apikey", rridApiKey);
 
     try {
-      HttpResponse proxyResponse = ProxyUtil.proxyPost(rridApiPrefix, headers, requestBody);
+      HttpResponse proxyResponse = ProxyUtil.proxyPost(SCICRUNCH_API_PREFIX, headers, requestBody);
       int statusCode = proxyResponse.getStatusLine().getStatusCode();
       String responseString = EntityUtils.toString(proxyResponse.getEntity());
       JsonNode apiResponseNode = JsonMapper.MAPPER.readTree(responseString);
