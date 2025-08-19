@@ -11,10 +11,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 
@@ -39,7 +36,7 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
     if (!substanceRegistry.isLoaded())
       return buildNotReadyResponse();
 
-    Map<String, String> substances = substanceRegistry.getSubstancesByDtxsid();
+    Map<String, Substance> substances = substanceRegistry.getSubstanceInfoByDtxsid();
     Map<String, Object> myResponse = new HashMap<>();
 
     // Normalize: extract ctxsid if full IRI, otherwise treat as fragment
@@ -53,7 +50,7 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
     if (substances.containsKey(ctxsid)) {
       myResponse.put("found", true);
       myResponse.put("id", fullSubstanceIri);
-      myResponse.put("name", substances.get(ctxsid));
+      myResponse.put("name", substances.get(ctxsid).getPreferredName());
       return CedarResponse.ok().entity(myResponse).build();
     } else {
       myResponse.put("found", false);
@@ -83,7 +80,7 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
           .build();
     }
 
-    Map<String, String> substances = substanceRegistry.getSubstancesByDtxsid();
+    Map<String, Substance> substances = substanceRegistry.getSubstanceInfoByDtxsid();
     Map<String, Object> myResponse = new HashMap<>();
     Map<String, Map<String, Object>> results = new LinkedHashMap<>();
 
@@ -98,9 +95,9 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
     final String fragmentLower = searchTerm.toLowerCase();
 
     // Collect matching entries
-    java.util.List<Map.Entry<String, String>> matches = new java.util.ArrayList<>();
-    for (Map.Entry<String, String> e : substances.entrySet()) {
-      String preferredName = e.getValue();
+    List<Map.Entry<String, Substance>> matches = new ArrayList<>();
+    for (Map.Entry<String, Substance> e : substances.entrySet()) {
+      String preferredName = e.getValue().getPreferredName();
       if (preferredName != null && preferredName.toLowerCase().contains(fragmentLower)) {
         matches.add(e);
       }
@@ -108,8 +105,8 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
 
     // Deterministic order: sort by preferred name (case-insensitive), then by DTXSID
     matches.sort((a, b) -> {
-      String na = (a.getValue() == null) ? "" : a.getValue();
-      String nb = (b.getValue() == null) ? "" : b.getValue();
+      String na = (a.getValue() == null) ? "" : a.getValue().getDtxsid();
+      String nb = (b.getValue() == null) ? "" : b.getValue().getPreferredName();
       int cmp = na.compareToIgnoreCase(nb);
       if (cmp != 0) return cmp;
       return a.getKey().compareTo(b.getKey());
@@ -119,14 +116,14 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
     int fromIndex = pageVal * pageSizeVal;
     if (fromIndex < matches.size()) {
       int toIndex = Math.min(fromIndex + pageSizeVal, matches.size());
-      for (Map.Entry<String, String> entry : matches.subList(fromIndex, toIndex)) {
+      for (Map.Entry<String, Substance> entry : matches.subList(fromIndex, toIndex)) {
         String dtxsid = entry.getKey();
-        String preferredName = entry.getValue();
+        Substance s = entry.getValue();
         String substanceIri = SUBSTANCE_IRI_BASE + dtxsid;
 
         Map<String, Object> substanceResultObject = new HashMap<>();
-        substanceResultObject.put("name", preferredName);
-        substanceResultObject.put("details", null);
+        substanceResultObject.put("name", s.getPreferredName());
+        substanceResultObject.put("details", buildCompToxDetails(s));
 
         results.put(substanceIri, substanceResultObject);
       }
@@ -137,6 +134,30 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
     myResponse.put("pageSize", pageSizeVal);
 
     return CedarResponse.ok().entity(myResponse).build();
+  }
+
+  private static String buildCompToxDetails(Substance s) {
+    if (s == null) return null;
+
+    StringBuilder sb = new StringBuilder();
+
+    // TODO
+
+    return sb.length() == 0 ? null : sb.toString();
+  }
+
+  private static void append(StringBuilder sb, String key, String value) {
+    if (value == null || value.isBlank()) return;
+    if (sb.length() > 0) sb.append("; ");
+    sb.append(key).append('=').append(value);
+  }
+
+  private static boolean notBlank(String s) {
+    return s != null && !s.isBlank();
+  }
+
+  private static String stripZeros(Double d) {
+    return java.math.BigDecimal.valueOf(d).stripTrailingZeros().toPlainString();
   }
 
   private Response buildNotReadyResponse() {

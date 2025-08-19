@@ -1,6 +1,9 @@
 package org.metadatacenter.cedar.bridge.resources;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Substance {
   private String dtxsid;
   private String preferredName;

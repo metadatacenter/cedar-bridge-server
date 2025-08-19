@@ -55,6 +55,8 @@ public class BridgeServerApplication extends CedarMicroserviceApplication<Bridge
     final ExternalAuthorityCompToxResource extAuthCompTox = new ExternalAuthorityCompToxResource(cedarConfig, substanceRegistry);
     environment.jersey().register(extAuthCompTox);
 
+    environment.healthChecks().register("comp-tox", new CompToxHealthCheck(substanceRegistry));
+
     final BridgeServerHealthCheck healthCheck = new BridgeServerHealthCheck();
     environment.healthChecks().register("message", healthCheck);
 
