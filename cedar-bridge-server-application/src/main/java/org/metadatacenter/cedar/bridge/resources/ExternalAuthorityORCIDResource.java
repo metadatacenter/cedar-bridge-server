@@ -53,6 +53,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
   private static final ReentrantLock lock = new ReentrantLock();
 
   private static String ORCID_ID_PREFIX;
+  private static final int DEFAULT_PAGE_SIZE = 100;
 
   public ExternalAuthorityORCIDResource(CedarConfig cedarConfig) {
     super(cedarConfig);
@@ -101,49 +102,70 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
   @GET
   @Timed
   @Path("/search-by-name")
-  public Response searchByName(@QueryParam(QP_Q) String searchTerm) throws CedarException {
-    String searchTermEncoded = UrlUtil.urlEncode(searchTerm);
+  public Response searchByName(@QueryParam(QP_Q) String searchTerm,
+                               @QueryParam("page") Integer page,
+                               @QueryParam("pageSize") Integer pageSize) throws CedarException {
 
+    final int pageVal = (page != null) ? page.intValue() : 0;
+    final int pageSizeVal = (pageSize != null) ? pageSize.intValue() : DEFAULT_PAGE_SIZE;
+
+    // Validation -> plain-text 400 (no JSON)
+    if (pageVal < 0 || pageSizeVal <= 1) {
+      return CedarResponse.status(CedarResponseStatus.BAD_REQUEST)
+          .entity("Invalid pagination parameters: page must be >= 0 and pageSize must be > 1")
+          .build();
+    }
+
+    Map<String, Object> myResponse = new HashMap<>();
+
+    if (searchTerm == null || searchTerm.trim().isEmpty()) {
+      myResponse.put("found", false);
+      myResponse.put("results", Collections.emptyMap());
+      myResponse.put("page", pageVal);
+      myResponse.put("pageSize", pageSizeVal);
+      return CedarResponse.ok().entity(myResponse).build();
+    }
+
+    // Build the Solr EDisMax query
     String solrQuery = String.format(
-        "{!edismax qf=\"given-and-family-names^50.0 family-name^10.0 given-names^10.0 credit-name^10.0 other-names^5" +
-            ".0 text^1.0\" " +
+        "{!edismax qf=\"given-and-family-names^50.0 family-name^10.0 given-names^10.0 credit-name^10.0 other-names^5.0 text^1.0\" " +
             "pf=\"given-and-family-names^50.0\" " +
-            "bq=\"current-institution-affiliation-name:[* TO *]^100.0 past-institution-affiliation-name:[* TO *]^70\"" +
-            " mm=1}%s",
+            "bq=\"current-institution-affiliation-name:[* TO *]^100.0 past-institution-affiliation-name:[* TO *]^70\" " +
+            "mm=1}%s",
         searchTerm
     );
 
+    // Backend pagination
+    int start = pageVal * pageSizeVal;
     String url = String.format(
         ORCID_API_PREFIX + ORCID_API_V3_EXPANDED_SEARCH_PREFIX,
         UrlUtil.urlEncode(solrQuery)
-    ) + "&start=0&rows=50";
-
-    System.out.println(url);
+    ) + "&start=" + start + "&rows=" + pageSizeVal;
 
     HttpResponse proxyResponse = ProxyUtil.proxyGet(url, getAdditionalHeadersMap());
     int statusCode = proxyResponse.getStatusLine().getStatusCode();
 
     JsonNode apiResponseNode;
-
-    HttpEntity entity = proxyResponse.getEntity();
     try {
-      String apiResponseString = EntityUtils.toString(entity, CharEncoding.UTF_8);
+      String apiResponseString = EntityUtils.toString(proxyResponse.getEntity(), CharEncoding.UTF_8);
       apiResponseNode = JsonMapper.MAPPER.readTree(apiResponseString);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    Map<String, Object> myResponse = new HashMap<>();
-    //myResponse.put("rawResponse", apiResponseNode);
 
-    Map<String, Map<String, String>> orcidSearchNames = new HashMap<>();
+    Map<String, Map<String, String>> orcidSearchNames;
     if (statusCode == HttpConstants.OK) {
-      orcidSearchNames = getORCIDSearchNames(apiResponseNode);
+      orcidSearchNames = getORCIDSearchNames(apiResponseNode); // preserves API order
       myResponse.put("found", !orcidSearchNames.isEmpty());
     } else {
       myResponse.put("found", false);
       myResponse.put("errors", getORCIDErrors(apiResponseNode));
+      orcidSearchNames = Collections.emptyMap();
     }
+
     myResponse.put("results", orcidSearchNames);
+    myResponse.put("page", pageVal);
+    myResponse.put("pageSize", pageSizeVal);
 
     return CedarResponse.status(CedarResponseStatus.fromStatusCode(statusCode)).entity(myResponse).build();
   }
@@ -381,6 +403,4 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     }
     return null;
   }
-
-
 }
