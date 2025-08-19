@@ -24,6 +24,7 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
 
   private static final String SUBSTANCE_IRI_BASE = "https://comptox.epa.gov/dashboard/chemical/details/";
   private final SubstanceRegistry substanceRegistry;
+  private static final int DEFAULT_PAGE_SIZE = 100;
 
   public ExternalAuthorityCompToxResource(CedarConfig cedarConfig, SubstanceRegistry substanceRegistry) {
     super(cedarConfig);
@@ -64,9 +65,23 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
   @Timed
   @Path("/search-by-name")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response searchByName(@QueryParam("q") String searchTerm) throws CedarException {
-    if (!substanceRegistry.isLoaded())
+  public Response searchByName(@QueryParam("q") String searchTerm,
+                               @QueryParam("page") Integer page,
+                               @QueryParam("pageSize") Integer pageSize) throws CedarException {
+    if (!substanceRegistry.isLoaded()) {
       return buildNotReadyResponse();
+    }
+
+    // Defaults with safe unboxing
+    final int pageVal = (page != null) ? page.intValue() : 0;
+    final int pageSizeVal = (pageSize != null) ? pageSize.intValue() : DEFAULT_PAGE_SIZE;
+
+    // Validation -> plain-text 400 (no JSON)
+    if (pageVal < 0 || pageSizeVal <= 1) {
+      return CedarResponse.status(CedarResponseStatus.BAD_REQUEST)
+          .entity("Invalid pagination parameters: page must be >= 0 and pageSize must be > 1")
+          .build();
+    }
 
     Map<String, String> substances = substanceRegistry.getSubstancesByDtxsid();
     Map<String, Object> myResponse = new HashMap<>();
@@ -75,17 +90,40 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
     if (searchTerm == null || searchTerm.trim().isEmpty()) {
       myResponse.put("found", false);
       myResponse.put("results", results);
+      myResponse.put("page", pageVal);
+      myResponse.put("pageSize", pageSizeVal);
       return CedarResponse.ok().entity(myResponse).build();
     }
 
-    String fragmentLower = searchTerm.toLowerCase();
+    final String fragmentLower = searchTerm.toLowerCase();
 
-    for (Map.Entry<String, String> entry : substances.entrySet()) {
-      String dtxsid = entry.getKey();
-      String preferredName = entry.getValue();
-
+    // Collect matching entries
+    java.util.List<Map.Entry<String, String>> matches = new java.util.ArrayList<>();
+    for (Map.Entry<String, String> e : substances.entrySet()) {
+      String preferredName = e.getValue();
       if (preferredName != null && preferredName.toLowerCase().contains(fragmentLower)) {
+        matches.add(e);
+      }
+    }
+
+    // Deterministic order: sort by preferred name (case-insensitive), then by DTXSID
+    matches.sort((a, b) -> {
+      String na = (a.getValue() == null) ? "" : a.getValue();
+      String nb = (b.getValue() == null) ? "" : b.getValue();
+      int cmp = na.compareToIgnoreCase(nb);
+      if (cmp != 0) return cmp;
+      return a.getKey().compareTo(b.getKey());
+    });
+
+    // Paginate
+    int fromIndex = pageVal * pageSizeVal;
+    if (fromIndex < matches.size()) {
+      int toIndex = Math.min(fromIndex + pageSizeVal, matches.size());
+      for (Map.Entry<String, String> entry : matches.subList(fromIndex, toIndex)) {
+        String dtxsid = entry.getKey();
+        String preferredName = entry.getValue();
         String substanceIri = SUBSTANCE_IRI_BASE + dtxsid;
+
         Map<String, Object> substanceResultObject = new HashMap<>();
         substanceResultObject.put("name", preferredName);
         substanceResultObject.put("details", null);
@@ -93,9 +131,10 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
         results.put(substanceIri, substanceResultObject);
       }
     }
-
     myResponse.put("found", !results.isEmpty());
     myResponse.put("results", results);
+    myResponse.put("page", pageVal);
+    myResponse.put("pageSize", pageSizeVal);
 
     return CedarResponse.ok().entity(myResponse).build();
   }
