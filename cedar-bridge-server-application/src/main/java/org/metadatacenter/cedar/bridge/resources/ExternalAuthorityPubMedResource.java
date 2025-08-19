@@ -33,6 +33,7 @@ public class ExternalAuthorityPubMedResource extends CedarMicroserviceResource {
   private static final String EUTILS_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
   private static final String ESEARCH = EUTILS_BASE + "esearch.fcgi?db=pubmed&retmode=json";
   private static final String ESUMMARY = EUTILS_BASE + "esummary.fcgi?db=pubmed&retmode=json";
+  private static final int DEFAULT_PAGE_SIZE = 100;
 
   private static String ncbiApiKey;
   private static String ncbiTool;
@@ -88,47 +89,60 @@ public class ExternalAuthorityPubMedResource extends CedarMicroserviceResource {
   @GET
   @Timed
   @Path("/search-by-name")
-  public Response searchByName(@QueryParam("q") String nameFragment) throws CedarException {
+  public Response searchByName(@QueryParam("q") String nameFragment,
+                               @QueryParam("page") Integer page,
+                               @QueryParam("pageSize") Integer pageSize) throws CedarException {
+
+    final int pageVal = (page != null) ? page.intValue() : 0;
+    final int pageSizeVal = (pageSize != null) ? pageSize.intValue() : DEFAULT_PAGE_SIZE;
+
+    // Validation
+    if (pageVal < 0 || pageSizeVal <= 1) {
+      return CedarResponse.status(CedarResponseStatus.BAD_REQUEST)
+          .entity("Invalid pagination parameters: page must be >= 0 and pageSize must be > 1")
+          .build();
+    }
+
     Map<String, Object> response = new HashMap<>();
     if (nameFragment == null || nameFragment.isBlank()) {
       response.put("found", false);
       response.put("results", Collections.emptyMap());
+      response.put("page", pageVal);
+      response.put("pageSize", pageSizeVal);
       return CedarResponse.ok().entity(response).build();
     }
 
     final String q = nameFragment.trim();
     final boolean looksLikePMID = q.chars().allMatch(Character::isDigit);
 
-    // Run both paths in parallel: ID lookup (if numeric) and title search
     CompletableFuture<Map<String, Object>> idLookupFut =
         looksLikePMID ? CompletableFuture.supplyAsync(() -> lookupById(q))
             : CompletableFuture.completedFuture(Collections.emptyMap());
 
     CompletableFuture<Map<String, Object>> titleSearchFut =
-        CompletableFuture.supplyAsync(() -> searchByTitle(q));
+        CompletableFuture.supplyAsync(() -> searchByTitle(q, pageVal, pageSizeVal));
 
     Map<String, Object> mergedResults;
-    int httpStatus = HttpConstants.OK;
-
     try {
       Map<String, Object> idResults = idLookupFut.join();
       Map<String, Object> titleResults = titleSearchFut.join();
 
-      // Merge with ID results first, then title results (preserve insertion order)
       mergedResults = new LinkedHashMap<>();
       idResults.forEach(mergedResults::put);
       titleResults.forEach((k, v) -> mergedResults.putIfAbsent(k, v));
-
     } catch (Exception e) {
-      // If either future threw, return safe empty result with 502
       response.put("found", false);
       response.put("results", Collections.emptyMap());
+      response.put("page", pageVal);
+      response.put("pageSize", pageSizeVal);
       return CedarResponse.status(CedarResponseStatus.fromStatusCode(502)).entity(response).build();
     }
 
-    response.put("found", true);
+    response.put("found", !mergedResults.isEmpty());
     response.put("results", mergedResults);
-    return CedarResponse.status(CedarResponseStatus.fromStatusCode(httpStatus)).entity(response).build();
+    response.put("page", pageVal);
+    response.put("pageSize", pageSizeVal);
+    return CedarResponse.ok().entity(response).build();
   }
 
   private Map<String, Object> lookupById(String pmid) {
@@ -163,17 +177,18 @@ public class ExternalAuthorityPubMedResource extends CedarMicroserviceResource {
     }
   }
 
-  private Map<String, Object> searchByTitle(String raw) {
+  private Map<String, Object> searchByTitle(String raw, int page, int pageSize) {
     Map<String, Object> results = new LinkedHashMap<>();
 
     // Only add wildcard if length >= 3 and the user didn’t supply one
     String term = raw;
     if (!raw.endsWith("*") && raw.length() >= 3) term = raw + "*";
 
-    String esearchUrl = ESEARCH
-        + "&retmax=10"
-        + "&term=" + url(term) + "[Title]"
-        + addNcbiOptParams();
+    // retstart/retmax for backend pagination
+    int retstart = page * pageSize;
+
+    String esearchUrl = ESEARCH + "&retstart=" + retstart + "&retmax=" + pageSize
+        + "&term=" + url(term) + "[Title]" + addNcbiOptParams();
 
     try {
       HttpResponse sResp = ProxyUtil.proxyGet(esearchUrl, defaultHeaders());
@@ -210,7 +225,6 @@ public class ExternalAuthorityPubMedResource extends CedarMicroserviceResource {
         results.put(key, entry);
       }
       return results;
-
     } catch (CedarProcessingException | IOException e) {
       throw new RuntimeException(e);
     }
@@ -219,7 +233,7 @@ public class ExternalAuthorityPubMedResource extends CedarMicroserviceResource {
   private static String buildDetails(String title, String journal, String pubdate, String pmid) {
     String j = (journal == null || journal.isBlank()) ? "journal article" : ("a " + journal + " article");
     String y = (pubdate == null) ? "" : " (" + pubdate + ")";
-    return String.format("%s is %s%s. PMID %s.", title, j, y, pmid);
+    return String.format("%s Is %s%s; PMID %s", title, j, y, pmid);
   }
 
   private static String extractPMID(String any) {
