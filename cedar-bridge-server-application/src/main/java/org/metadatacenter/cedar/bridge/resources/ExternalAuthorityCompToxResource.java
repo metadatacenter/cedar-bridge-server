@@ -138,14 +138,45 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
 
   private static String buildCompToxDetails(Substance s) {
     if (s == null) return null;
-
     StringBuilder sb = new StringBuilder();
 
-    // TODO
+    // Core identifiers
+    if (notBlank(s.getCasrn())) {
+      append(sb, "CAS", s.getCasrn());
+    }
+    if (notBlank(s.getDsstoxCompoundId())) {
+      append(sb, "DSSToxCID", s.getDsstoxCompoundId());
+    }
+
+    // Chemistry
+    if (notBlank(s.getMolecularFormula())) {
+      append(sb, "Formula", s.getMolecularFormula());
+    }
+    if (s.getMolecularWeight() != null) {
+      append(sb, "MW", stripZeros(s.getMolecularWeight()) + " g/mol");
+    }
+    if (notBlank(s.getSmiles())) {
+      append(sb, "SMILES", s.getSmiles());
+    }
+    if (notBlank(s.getInchi())) {
+      append(sb, "InChI", s.getInchi());
+    }
+    if (notBlank(s.getInchiKey())) {
+      append(sb, "InChIKey", s.getInchiKey());
+    }
+
+    // Metadata
+    if (s.getSynonymCount() != null && s.getSynonymCount() > 0) {
+      append(sb, "Synonyms", String.valueOf(s.getSynonymCount()));
+    }
+    if (notBlank(s.getQcLevel())) {
+      append(sb, "QCLevel", s.getQcLevel());
+    }
 
     return sb.length() == 0 ? null : sb.toString();
   }
 
+  // --- helpers ---
   private static void append(StringBuilder sb, String key, String value) {
     if (value == null || value.isBlank()) return;
     if (sb.length() > 0) sb.append("; ");
