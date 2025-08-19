@@ -2,6 +2,8 @@ package org.metadatacenter.cedar.bridge.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
@@ -31,6 +33,7 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
   private static String SCICRUNCH_API_PREFIX = "https://api.scicrunch.io/elastic/v1/*_pr/_search";
   private static String IDENTIFIERS_ORG_RRID_PREFIX = "https://identifiers.org/RRID:";
   private static String SCICRUNCH_RESOLVER_API = "https://scicrunch.org/resolver/";
+  private static final int DEFAULT_PAGE_SIZE = 100;
 
   private static String rridApiKey;
 
@@ -91,20 +94,63 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
   @GET
   @Timed
   @Path("/search-by-name")
-  public Response searchByName(@QueryParam(QP_Q) String nameFragment) throws CedarException {
+  public Response searchByName(@QueryParam(QP_Q) String nameFragment,
+                               @QueryParam("page") Integer page,
+                               @QueryParam("pageSize") Integer pageSize) throws CedarException {
 
-    String requestBody = "{\n" +
-        "  \"size\": 10,\n" +
-        "  \"query\": {\n" +
-        "    \"bool\": {\n" +
-        "      \"should\": [\n" +
-        "        { \"term\": { \"item.name.aggregate\": { \"value\": \"" + nameFragment + "\", \"boost\": 100 } } },\n" +
-        "        { \"prefix\": { \"item.name.aggregate\": { \"value\": \"" + nameFragment + "\", \"boost\": 10 } } },\n" +
-        "        { \"wildcard\": { \"item.name.aggregate\": { \"value\": \"*" + nameFragment + "*\", \"boost\": 1 } } }\n" +
-        "      ]\n" +
-        "    }\n" +
-        "  }\n" +
-        "}";
+    if (page == null) page = 0;
+    if (pageSize == null) pageSize = DEFAULT_PAGE_SIZE;
+
+    if (page < 0 || pageSize <= 1) {
+      return CedarResponse.status(CedarResponseStatus.BAD_REQUEST)
+          .entity("Invalid pagination parameters: page must be >= 0 and pageSize must be > 1")
+          .build();
+    }
+
+    final int from = page * pageSize;
+    final String q = (nameFragment == null) ? "" : nameFragment;
+
+    // Build ES query body with pagination
+    ObjectNode root = JsonMapper.MAPPER.createObjectNode();
+    root.put("from", from);
+    root.put("size", pageSize);
+
+    ObjectNode query = root.putObject("query").putObject("bool");
+    ArrayNode should = query.putArray("should");
+
+    ObjectNode termVal = JsonMapper.MAPPER.createObjectNode();
+    termVal.put("value", q);
+    termVal.put("boost", 100);
+    ObjectNode termField = JsonMapper.MAPPER.createObjectNode();
+    termField.set("item.name.aggregate", termVal);
+    ObjectNode term = JsonMapper.MAPPER.createObjectNode();
+    term.set("term", termField);
+    should.add(term);
+
+    ObjectNode prefixVal = JsonMapper.MAPPER.createObjectNode();
+    prefixVal.put("value", q);
+    prefixVal.put("boost", 10);
+    ObjectNode prefixField = JsonMapper.MAPPER.createObjectNode();
+    prefixField.set("item.name.aggregate", prefixVal);
+    ObjectNode prefix = JsonMapper.MAPPER.createObjectNode();
+    prefix.set("prefix", prefixField);
+    should.add(prefix);
+
+    ObjectNode wildcardVal = JsonMapper.MAPPER.createObjectNode();
+    wildcardVal.put("value", "*" + q + "*");
+    wildcardVal.put("boost", 1);
+    ObjectNode wildcardField = JsonMapper.MAPPER.createObjectNode();
+    wildcardField.set("item.name.aggregate", wildcardVal);
+    ObjectNode wildcard = JsonMapper.MAPPER.createObjectNode();
+    wildcard.set("wildcard", wildcardField);
+    should.add(wildcard);
+
+    String requestBody;
+    try {
+      requestBody = JsonMapper.MAPPER.writeValueAsString(root);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to serialize SciCrunch query body", e);
+    }
 
     Map<String, String> headers = new HashMap<>();
     headers.put("Content-Type", MediaType.APPLICATION_JSON);
@@ -117,28 +163,36 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
       JsonNode apiResponseNode = JsonMapper.MAPPER.readTree(responseString);
 
       Map<String, Object> response = new HashMap<>();
-      response.put("found", statusCode == HttpConstants.OK);
+      response.put("page", page);
+      response.put("pageSize", pageSize);
 
-      Map<String, Object> results = new HashMap<>();
-      JsonNode hits = apiResponseNode.path("hits").path("hits");
+      if (statusCode == HttpConstants.OK) {
+        JsonNode hits = apiResponseNode.path("hits").path("hits");
 
-      for (JsonNode hit : hits) {
-        JsonNode itemNode = hit.path("_source").path("item");
-        String identifier = itemNode.path("identifier").asText(null);
-        String name = itemNode.path("name").asText(null);
-        String details = buildDetails(itemNode);
+        Map<String, Object> results = new java.util.LinkedHashMap<>();
+        if (hits.isArray()) {
+          for (JsonNode hit : hits) {
+            JsonNode itemNode = hit.path("_source").path("item");
+            String identifier = itemNode.path("identifier").asText(null);
+            String name = itemNode.path("name").asText(null);
+            String details = buildDetails(itemNode);
 
-        if (identifier != null && name != null) {
-          String rridUrl = IDENTIFIERS_ORG_RRID_PREFIX + identifier;
+            if (identifier != null && name != null) {
+              String rridUrl = IDENTIFIERS_ORG_RRID_PREFIX + identifier;
+              Map<String, Object> entry = new HashMap<>();
+              entry.put("name", name);
+              entry.put("details", details);
 
-          Map<String, Object> entry = new HashMap<>();
-          entry.put("name", name);
-          entry.put("details", details);
-
-          results.put(rridUrl, entry);
+              results.put(rridUrl, entry);
+            }
+          }
         }
+        response.put("results", results);
+        response.put("found", !results.isEmpty());
+      } else {
+        response.put("found", false);
+        response.put("results", new HashMap<>());
       }
-      response.put("results", results);
       return CedarResponse.status(CedarResponseStatus.fromStatusCode(statusCode)).entity(response).build();
     } catch (IOException e) {
       throw new RuntimeException(e);
