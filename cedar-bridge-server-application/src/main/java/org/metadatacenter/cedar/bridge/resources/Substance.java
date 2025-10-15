@@ -90,12 +90,12 @@ public class Substance {
     this.inchi = inchi;
   }
 
-  @JsonProperty("inchiKey")
+  @JsonProperty("inchikey")
   public String getInchiKey() {
     return inchiKey;
   }
 
-  @JsonProperty("inchiKey")
+  @JsonProperty("inchikey")
   public void setInchiKey(String inchiKey) {
     this.inchiKey = inchiKey;
   }

@@ -19,13 +19,35 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Loads PFASSTRUCTV5 membership and minimal chemical details from the
+ * new CTX Chemical API into an in-memory map keyed by DTXSID.
+ *
+ * This preserves your existing pattern:
+ *  1) GET list -> array of DTXSIDs
+ *  2) POST batch -> array of detail objects (mapped to Substance)
+ *
+ * Configure in CedarConfig:
+ *   externalAuthorities.epaCompTox.apiPrefix = "https://comptox.epa.gov/ctx-api/"
+ *   externalAuthorities.epaCompTox.apiKey    = "<YOUR_NEW_CTX_KEY>"
+ */
 public class SubstanceRegistry {
 
   private static final Logger log = LoggerFactory.getLogger(SubstanceRegistry.class);
 
-  private static final String PFASSTRUCT_URL_SUFFIX = "chemical/list/chemicals/search/by-listname/PFASSTRUCT";
-  private static final String DTXSID_BATCH_LOOKUP_URL_SUFFIX = "chemical/detail/search/by-dtxsid/";
-  private static final String DASHBOARD_DETAILS_BASE = "https://comptox.epa.gov/dashboard/chemical/details/";
+  /** Returns JSON array of DTXSIDs for the PFAS structure list (V5). */
+  private static final String PFASSTRUCT_URL_SUFFIX =
+      "chemical/list/chemicals/search/by-listname/PFASSTRUCTV5";
+  // If your server expects query form instead of path segment, use:
+  // "chemical/list/chemicals/search/by-listname?list_name=PFASSTRUCTV5"
+
+  /** Batch details by DTXSID (POST body: ["DTXSID...", ...]) */
+  private static final String DTXSID_BATCH_LOOKUP_URL_SUFFIX =
+      "chemical/detail/search/by-dtxsid/";
+
+  @SuppressWarnings("unused")
+  private static final String DASHBOARD_DETAILS_BASE =
+      "https://comptox.epa.gov/dashboard/chemical/details/";
 
   private static final int BATCH_SIZE = 1000;
 
@@ -59,6 +81,11 @@ public class SubstanceRegistry {
     loaded = false;
   }
 
+  /**
+   * Loads PFASSTRUCTV5 into memory.
+   * Step 1: GET list to retrieve all DTXSIDs.
+   * Step 2: POST batches of DTXSIDs to fetch details (projection defaults to chemicaldetailstandard).
+   */
   public void loadSubstances() throws Exception {
     final Map<String, String> headers = new HashMap<>();
     headers.put("Accept", MediaType.APPLICATION_JSON);
@@ -66,23 +93,23 @@ public class SubstanceRegistry {
       headers.put("x-api-key", apiKey);
     }
 
-    // 1) Fetch PFASSTRUCT DTXSIDs
+    // ---- 1) Fetch PFASSTRUCTV5 DTXSIDs ----
     HttpResponse proxyResponse = ProxyUtil.proxyGet(pfasStructUrl, headers);
     int statusCode = proxyResponse.getStatusLine().getStatusCode();
     if (statusCode != HttpConstants.OK) {
-      throw new RuntimeException("Failed to fetch PFASSTRUCT list from EPA CompTox API: HTTP " + statusCode);
+      throw new RuntimeException("Failed to fetch PFASSTRUCTV5 list from EPA CTX API: HTTP " + statusCode);
     }
 
     HttpEntity entity = proxyResponse.getEntity();
     if (entity == null) {
-      throw new RuntimeException("PFASSTRUCT response entity from EPA CompTox API is null");
+      throw new RuntimeException("PFASSTRUCTV5 response entity from EPA CTX API is null");
     }
 
     ObjectMapper mapper = new ObjectMapper();
     String json = EntityUtils.toString(entity, CharEncoding.UTF_8);
     List<String> dtxsids = mapper.readValue(json, new TypeReference<List<String>>() {});
 
-    // 2) Batch-lookup details for those DTXSIDs
+    // ---- 2) Batch-lookup details for those DTXSIDs ----
     headers.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
 
     for (int i = 0; i < dtxsids.size(); i += BATCH_SIZE) {
@@ -107,16 +134,13 @@ public class SubstanceRegistry {
 
       String detailJson = EntityUtils.toString(detailEntity, CharEncoding.UTF_8);
 
-      // The endpoint returns an array of detail objects with keys that match your Substance POJO
-      // (at least for dtxsid/preferredName). Unknown fields will be ignored.
+      // Endpoint returns an array of detail objects; unknown fields ignored by Substance
       List<Substance> subs = mapper.readValue(detailJson, new TypeReference<List<Substance>>() {});
 
       for (Substance s : subs) {
-        // Guard against malformed entries
         if (s == null || s.getDtxsid() == null) {
           continue;
         }
-
         substanceInfoByDtxsid.put(s.getDtxsid(), s);
       }
     }

@@ -105,11 +105,13 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
 
     // Deterministic order: sort by preferred name (case-insensitive), then by DTXSID
     matches.sort((a, b) -> {
-      String na = (a.getValue() == null) ? "" : a.getValue().getDtxsid();
+      String na = (a.getValue() == null) ? "" : a.getValue().getPreferredName();
       String nb = (b.getValue() == null) ? "" : b.getValue().getPreferredName();
       int cmp = na.compareToIgnoreCase(nb);
       if (cmp != 0) return cmp;
-      return a.getKey().compareTo(b.getKey());
+      String ida = (a.getValue() == null) ? a.getKey() : a.getValue().getDtxsid();
+      String idb = (b.getValue() == null) ? b.getKey() : b.getValue().getDtxsid();
+      return ida.compareTo(idb);
     });
 
     // Paginate
@@ -197,5 +199,4 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
         .entity(Map.of("message", "Substance data is still loading from EPA CompTox API."))
         .build();
   }
-
 }
