@@ -51,6 +51,9 @@ public class BridgeServerApplication extends CedarMicroserviceApplication<Bridge
     final ExternalAuthorityDOIResource extAuthDOI = new ExternalAuthorityDOIResource(cedarConfig);
     environment.jersey().register(extAuthDOI);
 
+    final ExternalAuthorityNIHGrantResource extAuthNIHGrant = new ExternalAuthorityNIHGrantResource(cedarConfig);
+    environment.jersey().register(extAuthNIHGrant);
+
     final SubstanceRegistry substanceRegistry = new SubstanceRegistry(cedarConfig);
 
     environment.lifecycle().manage(new SubstanceRegistryLoader(substanceRegistry));
