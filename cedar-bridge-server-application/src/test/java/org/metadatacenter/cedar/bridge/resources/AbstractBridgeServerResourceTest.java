@@ -1,13 +1,13 @@
 package org.metadatacenter.cedar.bridge.resources;
 
+import io.dropwizard.testing.DropwizardTestSupport;
 import io.dropwizard.testing.ResourceHelpers;
-import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.glassfish.jersey.client.ClientProperties;
 import io.dropwizard.client.JerseyClientBuilder;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.metadatacenter.cedar.bridge.BridgeServerApplicationTest;
 import org.metadatacenter.cedar.bridge.BridgeServerConfiguration;
 import org.metadatacenter.config.CedarConfig;
@@ -45,13 +45,14 @@ public abstract class AbstractBridgeServerResourceTest
     log = LoggerFactory.getLogger("Cedar Bridge Server Test");
   }
 
-  @ClassRule
-  public static final DropwizardAppRule<BridgeServerConfiguration> RULE =
-    new DropwizardAppRule<>(BridgeServerApplicationTest.class, ResourceHelpers.resourceFilePath("test-config" +
+  protected static final DropwizardTestSupport<BridgeServerConfiguration> SERVER =
+    new DropwizardTestSupport<>(BridgeServerApplicationTest.class, ResourceHelpers.resourceFilePath("test-config" +
       ".yml"));
 
-  @BeforeClass
-  public static void oneTimeSetUpAbstract() {
+  @BeforeAll
+  public static void oneTimeSetUpAbstract() throws Exception {
+
+    SERVER.before();
 
     SystemComponent systemComponent = SystemComponent.SERVER_BRIDGE;
     Map<String, String> environment = CedarEnvironmentVariableProvider.getFor(systemComponent);
@@ -59,7 +60,7 @@ public abstract class AbstractBridgeServerResourceTest
 
     AbstractBridgeServerResourceTest.cedarConfig = cedarConfig;
 
-    client = new JerseyClientBuilder(RULE.getEnvironment()).build("Bridge server endpoint client");
+    client = new JerseyClientBuilder(SERVER.getEnvironment()).build("Bridge server endpoint client");
     client.property(ClientProperties.CONNECT_TIMEOUT, 3000);
     client.property(ClientProperties.READ_TIMEOUT, 30000);
 
@@ -71,15 +72,20 @@ public abstract class AbstractBridgeServerResourceTest
 //    authHeader2 = TestAuthUtil.getTestUser2AuthHeader(cedarConfig);
     authHeaderAdmin = TestAuthUtil.getAdminUserAuthHeader(cedarConfig);
 
-    baseUrlGetDoiMetadata = BASE_URL + ":" + RULE.getLocalPort() + "/datacite/get-doi-metadata/";
-    baseUrlCreateDoi = BASE_URL + ":" + RULE.getLocalPort() + "/datacite/create-doi";
+    baseUrlGetDoiMetadata = BASE_URL + ":" + SERVER.getLocalPort() + "/datacite/get-doi-metadata/";
+    baseUrlCreateDoi = BASE_URL + ":" + SERVER.getLocalPort() + "/datacite/create-doi";
   }
 
-  @Before
+  @AfterAll
+  public static void oneTimeTearDownAbstract() {
+    SERVER.after();
+  }
+
+  @BeforeEach
   public void setUpAbstract() {
   }
 
-  @After
+  @AfterEach
   public void tearDownAbstract() {
   }
 
