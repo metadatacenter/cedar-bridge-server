@@ -69,6 +69,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-test-support-library</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
     </dependency>
