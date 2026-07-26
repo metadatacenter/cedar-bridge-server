@@ -3,9 +3,10 @@ package org.metadatacenter.cedar.bridge.resources;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.CharEncoding;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.util.http.ProxyUtil;
@@ -94,8 +95,8 @@ public class SubstanceRegistry {
     }
 
     // ---- 1) Fetch PFASSTRUCTV5 DTXSIDs ----
-    HttpResponse proxyResponse = ProxyUtil.proxyGet(pfasStructUrl, headers);
-    int statusCode = proxyResponse.getStatusLine().getStatusCode();
+    ClassicHttpResponse proxyResponse = ProxyUtil.proxyGet(pfasStructUrl, headers);
+    int statusCode = proxyResponse.getCode();
     if (statusCode != HttpConstants.OK) {
       throw new RuntimeException("Failed to fetch PFASSTRUCTV5 list from EPA CTX API: HTTP " + statusCode);
     }
@@ -116,8 +117,8 @@ public class SubstanceRegistry {
       List<String> batch = dtxsids.subList(i, Math.min(i + BATCH_SIZE, dtxsids.size()));
       String payloadJson = mapper.writeValueAsString(batch);
 
-      HttpResponse detailResponse = ProxyUtil.proxyPost(dtxsidBatchLookupUrl, headers, payloadJson);
-      int detailStatus = detailResponse.getStatusLine().getStatusCode();
+      ClassicHttpResponse detailResponse = ProxyUtil.proxyPost(dtxsidBatchLookupUrl, headers, payloadJson);
+      int detailStatus = detailResponse.getCode();
 
       if (detailStatus != HttpConstants.OK) {
         log.warn("CompTox batch starting at {} failed: HTTP {}", i, detailStatus);

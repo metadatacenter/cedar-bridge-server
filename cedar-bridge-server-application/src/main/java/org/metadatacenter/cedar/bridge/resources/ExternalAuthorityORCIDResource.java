@@ -3,9 +3,10 @@ package org.metadatacenter.cedar.bridge.resources;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.codec.CharEncoding;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.constant.HttpConstants;
@@ -71,8 +72,8 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     String extractedOrcId = orcId.contains("/") ? orcId.substring(orcId.lastIndexOf('/') + 1) : orcId;
     String url = ORCID_API_PREFIX + ORCID_V3_PREFIX + UrlUtil.urlEncode(extractedOrcId) + ORCID_API_V3_RECORD_SUFFIX;
 
-    HttpResponse proxyResponse = ProxyUtil.proxyGet(url, getAdditionalHeadersMap());
-    int statusCode = proxyResponse.getStatusLine().getStatusCode();
+    ClassicHttpResponse proxyResponse = ProxyUtil.proxyGet(url, getAdditionalHeadersMap());
+    int statusCode = proxyResponse.getCode();
 
     JsonNode apiResponseNode;
 
@@ -80,7 +81,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     try {
       String apiResponseString = EntityUtils.toString(entity, CharEncoding.UTF_8);
       apiResponseNode = JsonMapper.MAPPER.readTree(apiResponseString);
-    } catch (IOException e) {
+    } catch (IOException | ParseException e) {
       throw new RuntimeException(e);
     }
     Map<String, Object> myResponse = new HashMap<>();
@@ -142,14 +143,14 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
         UrlUtil.urlEncode(solrQuery)
     ) + "&start=" + start + "&rows=" + pageSizeVal;
 
-    HttpResponse proxyResponse = ProxyUtil.proxyGet(url, getAdditionalHeadersMap());
-    int statusCode = proxyResponse.getStatusLine().getStatusCode();
+    ClassicHttpResponse proxyResponse = ProxyUtil.proxyGet(url, getAdditionalHeadersMap());
+    int statusCode = proxyResponse.getCode();
 
     JsonNode apiResponseNode;
     try {
       String apiResponseString = EntityUtils.toString(proxyResponse.getEntity(), CharEncoding.UTF_8);
       apiResponseNode = JsonMapper.MAPPER.readTree(apiResponseString);
-    } catch (IOException e) {
+    } catch (IOException | ParseException e) {
       throw new RuntimeException(e);
     }
 
@@ -187,7 +188,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     String url = ORCID_API_PREFIX + ORCID_API_V3_SIMPLE_SEARCH_PREFIX + "stanford";
 
     try {
-      HttpResponse response = ProxyUtil.proxyGet(url, getAdditionalHeadersMap());
+      ClassicHttpResponse response = ProxyUtil.proxyGet(url, getAdditionalHeadersMap());
       String responseString = EntityUtils.toString(response.getEntity(), CharEncoding.UTF_8);
       JsonNode jsonResponse = JsonMapper.MAPPER.readTree(responseString);
       JsonNode firstResult = jsonResponse.path("result").path(0);
@@ -201,7 +202,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
       } else {
         throw new RuntimeException("Could not determine ORCID ID prefix.");
       }
-    } catch (IOException | CedarException e) {
+    } catch (IOException | ParseException | CedarException e) {
       throw new RuntimeException("Error retrieving ORCID ID prefix", e);
     }
   }
@@ -359,8 +360,8 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     String url = ORCID_TOKEN_PREFIX + ORCID_TOKEN_SUFFIX;
 
     try {
-      HttpResponse response = ProxyUtil.proxyPost(url, headers, body);
-      int statusCode = response.getStatusLine().getStatusCode();
+      ClassicHttpResponse response = ProxyUtil.proxyPost(url, headers, body);
+      int statusCode = response.getCode();
 
       if (statusCode != 200) {
         throw new RuntimeException("Failed to retrieve token. HTTP status: " + statusCode);
@@ -373,7 +374,7 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
       long expiresIn = jsonResponse.get("expires_in").asLong();
       expiryTime = System.currentTimeMillis() + (expiresIn * 1000);
 
-    } catch (IOException | CedarProcessingException e) {
+    } catch (IOException | ParseException | CedarProcessingException e) {
       throw new RuntimeException("Error while fetching access token", e);
     }
   }

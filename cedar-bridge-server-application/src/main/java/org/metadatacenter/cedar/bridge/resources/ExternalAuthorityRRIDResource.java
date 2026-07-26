@@ -4,9 +4,10 @@ import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.constant.HttpConstants;
@@ -58,8 +59,8 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
     headers.put("apikey", rridApiKey);
 
     try {
-      HttpResponse proxyResponse = ProxyUtil.proxyGet(sciCrunchResolverUrl, headers);
-      int statusCode = proxyResponse.getStatusLine().getStatusCode();
+      ClassicHttpResponse proxyResponse = ProxyUtil.proxyGet(sciCrunchResolverUrl, headers);
+      int statusCode = proxyResponse.getCode();
 
       if (statusCode == HttpConstants.OK) {
         HttpEntity entity = proxyResponse.getEntity();
@@ -86,7 +87,7 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
         myResponse.put("found", false);
       }
       return CedarResponse.ok().entity(myResponse).build();
-    } catch (IOException e) {
+    } catch (IOException | ParseException e) {
       throw new RuntimeException(e);
     }
   }
@@ -157,8 +158,8 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
     headers.put("apikey", rridApiKey);
 
     try {
-      HttpResponse proxyResponse = ProxyUtil.proxyPost(SCICRUNCH_API_PREFIX, headers, requestBody);
-      int statusCode = proxyResponse.getStatusLine().getStatusCode();
+      ClassicHttpResponse proxyResponse = ProxyUtil.proxyPost(SCICRUNCH_API_PREFIX, headers, requestBody);
+      int statusCode = proxyResponse.getCode();
       String responseString = EntityUtils.toString(proxyResponse.getEntity());
       JsonNode apiResponseNode = JsonMapper.MAPPER.readTree(responseString);
 
@@ -194,7 +195,7 @@ public class ExternalAuthorityRRIDResource extends CedarMicroserviceResource {
         response.put("results", new HashMap<>());
       }
       return CedarResponse.status(CedarResponseStatus.fromStatusCode(statusCode)).entity(response).build();
-    } catch (IOException e) {
+    } catch (IOException | ParseException e) {
       throw new RuntimeException(e);
     }
   }
