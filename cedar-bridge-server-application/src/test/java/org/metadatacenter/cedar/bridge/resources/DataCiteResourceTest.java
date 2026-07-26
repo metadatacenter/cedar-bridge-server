@@ -16,10 +16,10 @@ import org.metadatacenter.cedar.bridge.GenerateMetadataInstanceTests;
 import org.metadatacenter.cedar.bridge.resource.datacite.form.DataCiteSchema;
 import org.metadatacenter.http.CedarResponseStatus;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
