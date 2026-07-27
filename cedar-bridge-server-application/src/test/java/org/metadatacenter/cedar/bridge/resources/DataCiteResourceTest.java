@@ -483,7 +483,7 @@ public class DataCiteResourceTest extends AbstractBridgeServerResourceTest {
         .request(MediaType.APPLICATION_XML)
         .header("Authorization", authHeaderAdmin)
         .post(Entity.text(""));
-    Assertions.assertEquals(CedarResponseStatus.HTTP_VERSION_NOT_SUPPORTED.getStatusCode(), createDoiResponse.getStatus());
+    Assertions.assertEquals(CedarResponseStatus.UNSUPPORTED_MEDIA_TYPE.getStatusCode(), createDoiResponse.getStatus());
   }
 
   @Test
