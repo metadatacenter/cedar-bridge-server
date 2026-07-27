@@ -2,8 +2,9 @@ package org.metadatacenter.cedar.bridge.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.http.HttpResponse;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.constant.HttpConstants;
@@ -13,9 +14,9 @@ import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.ProxyUtil;
 import org.metadatacenter.util.json.JsonMapper;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.*;
 
@@ -47,8 +48,8 @@ public class ExternalAuthorityNIHGrantResource extends CedarMicroserviceResource
     String body = String.format("{\"criteria\":{\"project_nums\":[\"%s\"]}}", grantId);
 
     try {
-      HttpResponse r = ProxyUtil.proxyPost(NIH_REPORTER_API, defaultHeaders(), body);
-      int code = r.getStatusLine().getStatusCode();
+      ClassicHttpResponse r = ProxyUtil.proxyPost(NIH_REPORTER_API, defaultHeaders(), body);
+      int code = r.getCode();
 
       if (code == HttpConstants.OK) {
         String respBody = EntityUtils.toString(r.getEntity());
@@ -80,7 +81,7 @@ public class ExternalAuthorityNIHGrantResource extends CedarMicroserviceResource
         out.put("found", false);
       }
       return CedarResponse.ok().entity(out).build();
-    } catch (IOException e) {
+    } catch (IOException | ParseException e) {
       throw new RuntimeException(e);
     }
   }
@@ -119,8 +120,8 @@ public class ExternalAuthorityNIHGrantResource extends CedarMicroserviceResource
         query, nihOffset, nihLimit);
 
     try {
-      HttpResponse r = ProxyUtil.proxyPost(NIH_REPORTER_API, defaultHeaders(), body);
-      int code = r.getStatusLine().getStatusCode();
+      ClassicHttpResponse r = ProxyUtil.proxyPost(NIH_REPORTER_API, defaultHeaders(), body);
+      int code = r.getCode();
 
       List<Map.Entry<String, Map<String, Object>>> filtered = new ArrayList<>();
       if (code == HttpConstants.OK) {
@@ -167,7 +168,7 @@ public class ExternalAuthorityNIHGrantResource extends CedarMicroserviceResource
       response.put("page", pageVal);
       response.put("pageSize", pageSizeVal);
       return CedarResponse.status(CedarResponseStatus.fromStatusCode(code)).entity(response).build();
-    } catch (IOException e) {
+    } catch (IOException | ParseException e) {
       throw new RuntimeException(e);
     }
   }

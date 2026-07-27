@@ -10,8 +10,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.commons.codec.CharEncoding;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.http.HttpEntity;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance;
 import org.metadatacenter.cedar.bridge.resource.datacite.*;
@@ -41,9 +42,9 @@ import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.ProxyUtil;
 import org.metadatacenter.util.json.JsonMapper;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -200,7 +201,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     if (doiName != null) {
       String hasDoiError = String.format("The %s(%s) already has a DOI: %s", sourceArtifactResourceId.getType().getValue(), sourceArtifactId, doiName);
       return CedarResponse
-          .badRequest()
+          .conflict()
           .errorMessage(hasDoiError)
           .errorKey(CedarErrorKey.DOI_ALREADY_EXISTS)
           .parameter("doi", doiName)
@@ -274,7 +275,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     if (findableDoiName != null) {
       String hasDoiError = String.format("The %s(%s) already has a DOI: %s", sourceArtifactResourceId.getType().getValue(), sourceArtifactId, findableDoiName);
       return CedarResponse
-          .badRequest()
+          .conflict()
           .errorKey(CedarErrorKey.DOI_ALREADY_EXISTS)
           .parameter("doi", findableDoiName)
           .errorMessage(hasDoiError)
@@ -344,7 +345,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
             commandContent.put(LinkedData.ID, sourceArtifactId);
             commandContent.put(DataciteConstants.DOI, doiName);
             // TODO: handle put response here
-            org.apache.http.HttpResponse putResponse = ProxyUtil.proxyPost(urlResource, c, JsonMapper.MAPPER.writeValueAsString(commandContent));
+            org.apache.hc.core5.http.ClassicHttpResponse putResponse = ProxyUtil.proxyPost(urlResource, c, JsonMapper.MAPPER.writeValueAsString(commandContent));
           }
           return CedarResponse
               .created(uri)
@@ -579,7 +580,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       HttpEntity currentTemplateEntity = ProxyUtil.proxyGet(artifactServerUrl, c).getEntity();
       String currentTemplateEntityContent = EntityUtils.toString(currentTemplateEntity, CharEncoding.UTF_8);
       return JsonMapper.MAPPER.readTree(currentTemplateEntityContent);
-    } catch (IOException | CedarProcessingException e) {
+    } catch (IOException | ParseException | CedarProcessingException e) {
       throw new RuntimeException(e);
     }
   }

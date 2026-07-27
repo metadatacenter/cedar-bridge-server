@@ -7,10 +7,10 @@ import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.http.CedarResponseStatus;
 import org.metadatacenter.util.http.CedarResponse;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.util.*;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;

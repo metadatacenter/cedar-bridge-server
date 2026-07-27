@@ -3,9 +3,10 @@ package org.metadatacenter.cedar.bridge.resources;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.codec.CharEncoding;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.constant.HttpConstants;
@@ -16,9 +17,9 @@ import org.metadatacenter.util.http.ProxyUtil;
 import org.metadatacenter.util.http.UrlUtil;
 import org.metadatacenter.util.json.JsonMapper;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,8 +49,8 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
   public Response getRORDetails(@PathParam(PP_ID) String rorId) throws CedarException {
     String url = rorApiPrefix + ROR_API_V2_ORGANIZATIONS_PREFIX + UrlUtil.urlEncode(rorId);
 
-    HttpResponse proxyResponse = ProxyUtil.proxyGet(url, new HashMap<>());
-    int statusCode = proxyResponse.getStatusLine().getStatusCode();
+    ClassicHttpResponse proxyResponse = ProxyUtil.proxyGet(url, new HashMap<>());
+    int statusCode = proxyResponse.getCode();
 
     JsonNode apiResponseNode;
 
@@ -57,7 +58,7 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
     try {
       String apiResponseString = EntityUtils.toString(entity, CharEncoding.UTF_8);
       apiResponseNode = JsonMapper.MAPPER.readTree(apiResponseString);
-    } catch (IOException e) {
+    } catch (IOException | ParseException e) {
       throw new RuntimeException(e);
     }
     Map<String, Object> myResponse = new HashMap<>();
@@ -97,13 +98,13 @@ public class ExternalAuthorityRORResource extends CedarMicroserviceResource {
 
     String url = rorApiPrefix + ROR_API_V2_ORGANIZATION_SEARCH_PREFIX + UrlUtil.urlEncode(orgNameFragment);
 
-    HttpResponse proxyResponse = ProxyUtil.proxyGet(url, new HashMap<>());
-    int statusCode = proxyResponse.getStatusLine().getStatusCode();
+    ClassicHttpResponse proxyResponse = ProxyUtil.proxyGet(url, new HashMap<>());
+    int statusCode = proxyResponse.getCode();
     JsonNode apiResponseNode;
     try {
       String apiResponseString = EntityUtils.toString(proxyResponse.getEntity(), CharEncoding.UTF_8);
       apiResponseNode = JsonMapper.MAPPER.readTree(apiResponseString);
-    } catch (IOException e) {
+    } catch (IOException | ParseException e) {
       throw new RuntimeException(e);
     }
 

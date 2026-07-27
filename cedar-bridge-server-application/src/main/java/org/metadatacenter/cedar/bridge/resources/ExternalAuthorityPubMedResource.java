@@ -2,8 +2,9 @@ package org.metadatacenter.cedar.bridge.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.http.HttpResponse;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.constant.HttpConstants;
@@ -14,9 +15,9 @@ import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.ProxyUtil;
 import org.metadatacenter.util.json.JsonMapper;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -61,8 +62,8 @@ public class ExternalAuthorityPubMedResource extends CedarMicroserviceResource {
 
     String url = ESUMMARY + "&id=" + url(pmid) + addNcbiOptParams();
     try {
-      HttpResponse r = ProxyUtil.proxyGet(url, defaultHeaders());
-      int code = r.getStatusLine().getStatusCode();
+      ClassicHttpResponse r = ProxyUtil.proxyGet(url, defaultHeaders());
+      int code = r.getCode();
 
       if (code == HttpConstants.OK) {
         String body = EntityUtils.toString(r.getEntity());
@@ -81,7 +82,7 @@ public class ExternalAuthorityPubMedResource extends CedarMicroserviceResource {
         out.put("found", false);
       }
       return CedarResponse.ok().entity(out).build();
-    } catch (IOException e) {
+    } catch (IOException | ParseException e) {
       throw new RuntimeException(e);
     }
   }
@@ -150,8 +151,8 @@ public class ExternalAuthorityPubMedResource extends CedarMicroserviceResource {
     String esumUrl = ESUMMARY + "&id=" + url(pmid) + addNcbiOptParams();
 
     try {
-      HttpResponse eResp = ProxyUtil.proxyGet(esumUrl, defaultHeaders());
-      if (eResp.getStatusLine().getStatusCode() != HttpConstants.OK) {
+      ClassicHttpResponse eResp = ProxyUtil.proxyGet(esumUrl, defaultHeaders());
+      if (eResp.getCode() != HttpConstants.OK) {
         return results;
       }
 
@@ -172,7 +173,7 @@ public class ExternalAuthorityPubMedResource extends CedarMicroserviceResource {
       results.put(key, entry);
       return results;
 
-    } catch (CedarProcessingException | IOException e) {
+    } catch (CedarProcessingException | IOException | ParseException e) {
       throw new RuntimeException(e);
     }
   }
@@ -191,8 +192,8 @@ public class ExternalAuthorityPubMedResource extends CedarMicroserviceResource {
         + "&term=" + url(term) + "[Title]" + addNcbiOptParams();
 
     try {
-      HttpResponse sResp = ProxyUtil.proxyGet(esearchUrl, defaultHeaders());
-      if (sResp.getStatusLine().getStatusCode() != HttpConstants.OK) return results;
+      ClassicHttpResponse sResp = ProxyUtil.proxyGet(esearchUrl, defaultHeaders());
+      if (sResp.getCode() != HttpConstants.OK) return results;
 
       String sBody = EntityUtils.toString(sResp.getEntity());
       JsonNode sRoot = JsonMapper.MAPPER.readTree(sBody);
@@ -203,8 +204,8 @@ public class ExternalAuthorityPubMedResource extends CedarMicroserviceResource {
       idList.forEach(n -> pmids.add(n.asText()));
 
       String esumUrl = ESUMMARY + "&id=" + url(String.join(",", pmids)) + addNcbiOptParams();
-      HttpResponse eResp = ProxyUtil.proxyGet(esumUrl, defaultHeaders());
-      if (eResp.getStatusLine().getStatusCode() != HttpConstants.OK) return results;
+      ClassicHttpResponse eResp = ProxyUtil.proxyGet(esumUrl, defaultHeaders());
+      if (eResp.getCode() != HttpConstants.OK) return results;
 
       String eBody = EntityUtils.toString(eResp.getEntity());
       JsonNode eRoot = JsonMapper.MAPPER.readTree(eBody).path("result");
@@ -225,7 +226,7 @@ public class ExternalAuthorityPubMedResource extends CedarMicroserviceResource {
         results.put(key, entry);
       }
       return results;
-    } catch (CedarProcessingException | IOException e) {
+    } catch (CedarProcessingException | IOException | ParseException e) {
       throw new RuntimeException(e);
     }
   }
