@@ -201,7 +201,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     if (doiName != null) {
       String hasDoiError = String.format("The %s(%s) already has a DOI: %s", sourceArtifactResourceId.getType().getValue(), sourceArtifactId, doiName);
       return CedarResponse
-          .badRequest()
+          .conflict()
           .errorMessage(hasDoiError)
           .errorKey(CedarErrorKey.DOI_ALREADY_EXISTS)
           .parameter("doi", doiName)
@@ -275,7 +275,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     if (findableDoiName != null) {
       String hasDoiError = String.format("The %s(%s) already has a DOI: %s", sourceArtifactResourceId.getType().getValue(), sourceArtifactId, findableDoiName);
       return CedarResponse
-          .badRequest()
+          .conflict()
           .errorKey(CedarErrorKey.DOI_ALREADY_EXISTS)
           .parameter("doi", findableDoiName)
           .errorMessage(hasDoiError)
