@@ -4,6 +4,7 @@ import io.dropwizard.testing.DropwizardTestSupport;
 import io.dropwizard.testing.ResourceHelpers;
 import org.glassfish.jersey.client.ClientProperties;
 import io.dropwizard.client.JerseyClientBuilder;
+import io.dropwizard.client.JerseyClientConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.metadatacenter.cedar.bridge.BridgeServerApplicationTest;
 import org.metadatacenter.cedar.bridge.BridgeServerConfiguration;
 import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.config.environment.CedarEnvironmentSource;
 import org.metadatacenter.config.environment.CedarEnvironmentVariableProvider;
 import org.metadatacenter.model.SystemComponent;
 import org.metadatacenter.util.test.TestAuthUtil;
@@ -18,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jakarta.ws.rs.client.Client;
+import java.util.HashMap;
 import java.util.Map;
 
 public abstract class AbstractBridgeServerResourceTest
@@ -43,6 +46,14 @@ public abstract class AbstractBridgeServerResourceTest
 
   static {
     log = LoggerFactory.getLogger("Cedar Bridge Server Test");
+    // Alternate server ports so the test never collides with a running dev bridge server, which owns
+    // 9015. The connector port is driven by CEDAR_BRIDGE_HTTP_PORT (it overrides the test config's
+    // literal port), so redirect it here before the test support boots the server.
+    Map<String, String> environment = new HashMap<>(CedarEnvironmentSource.getAll());
+    environment.put("CEDAR_BRIDGE_HTTP_PORT", "19015");
+    environment.put("CEDAR_BRIDGE_ADMIN_PORT", "19115");
+    environment.put("CEDAR_BRIDGE_STOP_PORT", "19215");
+    CedarEnvironmentSource.setOverride(environment);
   }
 
   protected static final DropwizardTestSupport<BridgeServerConfiguration> SERVER =
@@ -60,7 +71,12 @@ public abstract class AbstractBridgeServerResourceTest
 
     AbstractBridgeServerResourceTest.cedarConfig = cedarConfig;
 
-    client = new JerseyClientBuilder(SERVER.getEnvironment()).build("Bridge server endpoint client");
+    // Default client gzip makes it try to gunzip non-gzip responses (ZipException: Not in GZIP format
+    // at readEntity()); the tests do not need compression, so disable it.
+    JerseyClientConfiguration clientConfig = new JerseyClientConfiguration();
+    clientConfig.setGzipEnabled(false);
+    clientConfig.setGzipEnabledForRequests(false);
+    client = new JerseyClientBuilder(SERVER.getEnvironment()).using(clientConfig).build("Bridge server endpoint client");
     client.property(ClientProperties.CONNECT_TIMEOUT, 3000);
     client.property(ClientProperties.READ_TIMEOUT, 30000);
 

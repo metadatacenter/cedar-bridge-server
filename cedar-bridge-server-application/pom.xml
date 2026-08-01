@@ -111,6 +111,20 @@
 
     <plugins>
 
+      <!--
+        DataCiteResourceTest (tagged "datacite") calls the live DataCite REST API to mint and read
+        DOIs; it needs network access and DataCite credentials, so it is excluded from the default
+        build. Run it with -DexcludedGroups= to clear the exclusion when DataCite is reachable.
+        CedarConfigRepoTest is untagged and always runs.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludedGroups>datacite</excludedGroups>
+        </configuration>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>

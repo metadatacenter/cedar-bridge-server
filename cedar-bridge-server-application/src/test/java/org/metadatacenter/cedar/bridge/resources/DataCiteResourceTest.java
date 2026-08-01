@@ -7,6 +7,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.metadatacenter.cedar.bridge.CompareValues;
@@ -28,6 +29,7 @@ import java.util.UUID;
 
 import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance;
 
+@Tag("datacite")
 public class DataCiteResourceTest extends AbstractBridgeServerResourceTest {
   @RegisterExtension
   public ObjectMapperExtension objectMapperExtension = new ObjectMapperExtension();
