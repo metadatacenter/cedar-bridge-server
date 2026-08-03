@@ -74,8 +74,15 @@ public class DataCiteResource extends CedarMicroserviceResource {
   private final String basicAuth = Base64.getEncoder().encodeToString((repositoryID + ":" + password).getBytes(StandardCharsets.UTF_8));
 
 
+  protected final org.metadatacenter.bridge.CedarDataServices dataServices;
+
   public DataCiteResource(CedarConfig cedarConfig) {
+    this(cedarConfig, org.metadatacenter.bridge.CedarDataServices.getInstance());
+  }
+
+  public DataCiteResource(CedarConfig cedarConfig, org.metadatacenter.bridge.CedarDataServices dataServices) {
     super(cedarConfig);
+    this.dataServices = dataServices;
   }
 
   @GET
@@ -159,7 +166,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     JsonNode sourceArtifactProxyJson = ProxyUtil.proxyGetBodyAsJsonNode(url2, c);
 
     // Check if user has write permission to the source artifact
-    ResourcePermissionServiceSession permissionSession = CedarDataServices.getResourcePermissionServiceSession(c);
+    ResourcePermissionServiceSession permissionSession = dataServices.getResourcePermissionServiceSession(c);
     boolean hasWriteAccess = permissionSession.userHasWriteAccessToResource(sourceArtifactIdTyped);
     if (!hasWriteAccess) {
       return CedarResponse
@@ -171,7 +178,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     }
 
     // Check if the source artifact is open
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+    FolderServiceSession folderSession = dataServices.getFolderServiceSession(c);
     FolderServerArtifact folderServerResource = folderSession.findArtifactById(sourceArtifactIdTyped);
     if (folderServerResource == null) {
       return CedarResponse
