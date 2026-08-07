@@ -69,6 +69,11 @@ public class SubstanceRegistryLoader implements Managed {
     } catch (Exception e) {
       int n = attempts.incrementAndGet();
       long backoff = Math.min(MAX_BACKOFF_MS, INITIAL_BACKOFF_MS << Math.min(n - 1, 16));
+      // Publish why, and when we will try again. The health check needs this to
+      // tell a thirty-second warm-up from a third-party outage that has been
+      // running for days, and the CompTox resource needs it to put a truthful
+      // Retry-After on the 503 it returns meanwhile.
+      substanceRegistry.recordLoadFailure(n, e.getMessage(), backoff, System.currentTimeMillis() + backoff);
       log.warn("CompTox: load attempt {} failed: {}. Retrying in {}s",
           n, e.getMessage(), backoff / 1000, e);
       schedule(backoff);

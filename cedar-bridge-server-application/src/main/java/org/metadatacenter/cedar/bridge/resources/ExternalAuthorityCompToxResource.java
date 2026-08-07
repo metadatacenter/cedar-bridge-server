@@ -23,6 +23,9 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
   private final SubstanceRegistry substanceRegistry;
   private static final int DEFAULT_PAGE_SIZE = 100;
 
+  /** Used only before the loader has scheduled a retry, i.e. while the first load is in flight. */
+  private static final long DEFAULT_RETRY_AFTER_SECONDS = 30L;
+
   public ExternalAuthorityCompToxResource(CedarConfig cedarConfig, SubstanceRegistry substanceRegistry) {
     super(cedarConfig);
     this.substanceRegistry = substanceRegistry;
@@ -193,9 +196,19 @@ public class ExternalAuthorityCompToxResource extends CedarMicroserviceResource 
     return java.math.BigDecimal.valueOf(d).stripTrailingZeros().toPlainString();
   }
 
+  /**
+   * Tell the caller to come back when there is a point in coming back.
+   *
+   * <p>This was a fixed 30 seconds, which is a fair guess while the first load is in flight but
+   * wrong once the loader has backed off — its interval grows to ten minutes, and an EPA outage can
+   * run for days. Deriving the value from the loader's next scheduled attempt means a client that
+   * honours {@code Retry-After} stops re-asking a question whose answer cannot have changed.
+   */
   private Response buildNotReadyResponse() {
+    SubstanceRegistry.LoadStatus status = substanceRegistry.getLoadStatus();
+    long retryAfterSeconds = status.retryAfterSeconds(System.currentTimeMillis()).orElse(DEFAULT_RETRY_AFTER_SECONDS);
     return CedarResponse.status(CedarResponseStatus.SERVICE_UNAVAILABLE)
-        .header(HttpHeaders.RETRY_AFTER, "30")
+        .header(HttpHeaders.RETRY_AFTER, Long.toString(retryAfterSeconds))
         .entity(Map.of("message", "Substance data is still loading from EPA CompTox API."))
         .build();
   }

@@ -62,6 +62,51 @@ public class SubstanceRegistry {
 
   private volatile boolean loaded = false;
 
+  // Why the registry is in the state it is in. Written by SubstanceRegistryLoader,
+  // read by the health check (to describe the condition) and by the CompTox
+  // resource (to tell a caller when it is worth trying again).
+  private volatile int failedAttempts = 0;
+  private volatile String lastError = null;
+  private volatile long backoffMs = 0L;
+  private volatile long nextAttemptAtMs = 0L;
+
+  /**
+   * A consistent snapshot of what the loader has managed so far.
+   *
+   * @param loaded          whether PFAS lookups can be served
+   * @param substanceCount  how many substances are held
+   * @param failedAttempts  consecutive failures; 0 before the first attempt finishes
+   * @param lastError       the most recent failure's message, or null if none
+   * @param backoffMs       the wait the loader applied after the last failure
+   * @param nextAttemptAtMs epoch millis of the next scheduled retry, or 0 if none is scheduled
+   */
+  public record LoadStatus(boolean loaded, int substanceCount, int failedAttempts, String lastError,
+                           long backoffMs, long nextAttemptAtMs) {
+
+    /** Whether the loader is still waiting, as opposed to having an attempt due or in flight. */
+    public boolean waitingToRetry(long nowMs) {
+      return nextAttemptAtMs > nowMs;
+    }
+
+    /**
+     * How long a caller should wait before asking again, in seconds, or empty when no retry is
+     * scheduled at all.
+     *
+     * <p>While the loader is waiting, that is the remaining wait. Once the attempt is due it is the
+     * backoff interval instead, because the attempt is running and, if it fails as the last one
+     * did, that interval is what follows. Reporting the remaining wait in that state collapses to
+     * "1 second" — which is what a failing attempt that takes longer than its own backoff produces,
+     * and it would invite a client to hammer an endpoint whose answer cannot change for minutes.
+     */
+    public java.util.OptionalLong retryAfterSeconds(long nowMs) {
+      if (nextAttemptAtMs <= 0L) {
+        return java.util.OptionalLong.empty();
+      }
+      long millis = waitingToRetry(nowMs) ? nextAttemptAtMs - nowMs : backoffMs;
+      return java.util.OptionalLong.of(Math.max(1L, (millis + 999L) / 1000L));
+    }
+  }
+
   public SubstanceRegistry(CedarConfig cedarConfig) {
     this.apiKey = cedarConfig.getExternalAuthorities().getEpaCompTox().getApiKey();
     this.apiPrefix = cedarConfig.getExternalAuthorities().getEpaCompTox().getApiPrefix();
@@ -77,9 +122,26 @@ public class SubstanceRegistry {
     return loaded;
   }
 
+  public LoadStatus getLoadStatus() {
+    return new LoadStatus(loaded, substanceInfoByDtxsid.size(), failedAttempts, lastError, backoffMs,
+        nextAttemptAtMs);
+  }
+
+  /** Called by the loader after a failed attempt, with the backoff it is about to apply. */
+  public void recordLoadFailure(int failedAttempts, String lastError, long backoffMs, long nextAttemptAtMs) {
+    this.failedAttempts = failedAttempts;
+    this.lastError = lastError;
+    this.backoffMs = backoffMs;
+    this.nextAttemptAtMs = nextAttemptAtMs;
+  }
+
   public void clearSubstances() {
     substanceInfoByDtxsid.clear();
     loaded = false;
+    failedAttempts = 0;
+    lastError = null;
+    backoffMs = 0L;
+    nextAttemptAtMs = 0L;
   }
 
   /**
@@ -146,5 +208,9 @@ public class SubstanceRegistry {
       }
     }
     loaded = true;
+    failedAttempts = 0;
+    lastError = null;
+    backoffMs = 0L;
+    nextAttemptAtMs = 0L;
   }
 }
