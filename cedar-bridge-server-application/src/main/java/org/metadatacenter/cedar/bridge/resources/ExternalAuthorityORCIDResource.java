@@ -62,7 +62,6 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
     ORCID_API_PREFIX = cedarConfig.getExternalAuthorities().getOrcid().getApiPrefix();
     CLIENT_ID = cedarConfig.getExternalAuthorities().getOrcid().getClientId();
     CLIENT_SECRET = cedarConfig.getExternalAuthorities().getOrcid().getClientSecret();
-    ensureOrcidIdPrefixInitialized();
   }
 
   @GET
@@ -251,6 +250,12 @@ public class ExternalAuthorityORCIDResource extends CedarMicroserviceResource {
   }
 
   private Map<String, Map<String, String>> getORCIDSearchNames(JsonNode apiResponseNode) {
+    // The prefix is discovered from ORCID itself, so it is resolved on the first search
+    // rather than when the resource is constructed: asking for it at construction time
+    // makes the whole server's startup depend on ORCID being reachable and on the
+    // credentials being valid.
+    ensureOrcidIdPrefixInitialized();
+
     Map<String, Map<String, String>> idToInfoMap = new LinkedHashMap<>(); // Preserve response order
 
     JsonNode expandedResultNode = apiResponseNode.get("expanded-result");
