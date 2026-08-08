@@ -73,6 +73,14 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- CedarInstanceParser reads the DOI prefix and the OpenView base through deep config chains;
+         the tests stub those rather than build a whole CedarConfig. -->
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.metadatacenter</groupId>
       <artifactId>cedar-test-support-library</artifactId>
