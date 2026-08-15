@@ -3,6 +3,8 @@ package org.metadatacenter.cedar.bridge;
 import io.dropwizard.core.setup.Bootstrap;
 import io.dropwizard.core.setup.Environment;
 import org.metadatacenter.cedar.bridge.resources.*;
+import org.metadatacenter.cedar.bridge.resources.extauth.ExternalAuthorityResource;
+import org.metadatacenter.cedar.bridge.resources.extauth.PfasAuthority;
 import org.metadatacenter.cedar.util.dw.CedarDefaultHealthCheck;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.config.CedarConfig;
@@ -58,8 +60,13 @@ public class BridgeServerApplication extends CedarMicroserviceApplication<Bridge
 
     environment.lifecycle().manage(new SubstanceRegistryLoader(substanceRegistry));
 
-    final ExternalAuthorityCompToxResource extAuthCompTox = new ExternalAuthorityCompToxResource(cedarConfig, substanceRegistry);
-    environment.jersey().register(extAuthCompTox);
+    // One route for every external authority. An entry answers for one registry and says nothing
+    // about routing, parameters, pagination or the envelope, which the resource owns and writes
+    // once. The six resources above are being moved onto it one at a time; a resource declaring
+    // its own literal path still wins over this one's template, so the two coexist meanwhile.
+    final ExternalAuthorityResource extAuth = new ExternalAuthorityResource(cedarConfig,
+        java.util.List.of(new PfasAuthority(substanceRegistry)));
+    environment.jersey().register(extAuth);
 
     environment.healthChecks().register("comp-tox", new CompToxHealthCheck(substanceRegistry));
 

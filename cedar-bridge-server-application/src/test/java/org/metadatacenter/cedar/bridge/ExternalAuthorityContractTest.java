@@ -45,24 +45,26 @@ public class ExternalAuthorityContractTest {
       List.of("orcid", "ror", "comp-tox", "pmid", "rrid", "nih-grant", "doi");
 
   /**
-   * The one authority that answers from a local registry rather than by proxying.
+   * The authority that answers from a local registry rather than by proxying.
    *
-   * <p>It reports "still loading" before it reads the request at all, so while the registry is
-   * cold — which it always is under test, since nothing populates it — every request to it is
-   * answered 503 whether or not the request was valid. The others reject a bad request first.
+   * <p>While the registry is cold — which it always is under test, since nothing populates it — it
+   * has nothing to say about any request. It used to say so before reading the request, so a
+   * malformed request during the loading window was answered 503; on the shared route the
+   * pagination rules run first, so that request is now answered 400 like any other malformed one
+   * and the 503 is what a well-formed request gets.
    */
   private static final String LOCAL_REGISTRY_AUTHORITY = "comp-tox";
 
   /**
-   * The one authority that answers a rejected request in CEDAR's own error shape.
+   * The authorities whose rejection is CEDAR's own error object rather than a bare string.
    *
-   * <p>Six build the 400 from a bare string, so a JSON API answers {@code text/plain}; ROR uses
-   * {@code CedarResponse.badRequest().errorMessage(…)}, which is the framework's structured error
-   * object. Its wording drifted with it — a comma where the others have "and". Neither difference
-   * was anyone's decision; they are what seven copies of one method turn into. Recorded as it
-   * stands so that unifying them is a visible change to this file rather than a silent one.
+   * <p>Six built the 400 from a bare string, so a JSON API answered {@code text/plain}; ROR used
+   * {@code CedarResponse.badRequest().errorMessage(…)}, the framework's structured error, and its
+   * wording had drifted with it — a comma where the others have "and". Neither difference was
+   * anyone's decision; they are what seven copies of one method turn into. The structured form
+   * wins, and an authority joins this list as it moves onto the shared route.
    */
-  private static final String STRUCTURED_ERROR_AUTHORITY = "ror";
+  private static final List<String> STRUCTURED_ERROR_AUTHORITIES = List.of("ror", LOCAL_REGISTRY_AUTHORITY);
 
   private static final int BAD_REQUEST = 400;
   private static final int SERVICE_UNAVAILABLE = 503;
@@ -103,20 +105,20 @@ public class ExternalAuthorityContractTest {
     return AUTHORITIES.stream();
   }
 
-  static Stream<String> proxyingAuthorities() {
-    return AUTHORITIES.stream().filter(authority -> !LOCAL_REGISTRY_AUTHORITY.equals(authority));
+  /** Every authority whose rejection is a bare string: the ones not yet on the shared route. */
+  static Stream<String> plainTextRejectingAuthorities() {
+    return AUTHORITIES.stream().filter(authority -> !STRUCTURED_ERROR_AUTHORITIES.contains(authority));
   }
 
-  /** Every authority whose rejection is a bare string, which is six of the seven. */
-  static Stream<String> plainTextRejectingAuthorities() {
-    return proxyingAuthorities().filter(authority -> !STRUCTURED_ERROR_AUTHORITY.equals(authority));
+  static Stream<String> structuredRejectingAuthorities() {
+    return STRUCTURED_ERROR_AUTHORITIES.stream();
   }
 
   /** What a rejected request said, whichever of the two shapes it arrived in. */
   private static void assertRejectedForPagination(String authority, HttpResponse<String> response) {
     assertEquals(BAD_REQUEST, response.statusCode(), authority + " did not reject the request");
-    String expected =
-        STRUCTURED_ERROR_AUTHORITY.equals(authority) ? PAGINATION_ERROR_STRUCTURED : PAGINATION_ERROR;
+    String expected = STRUCTURED_ERROR_AUTHORITIES.contains(authority)
+        ? PAGINATION_ERROR_STRUCTURED : PAGINATION_ERROR;
     assertTrue(response.body().contains(expected),
         authority + " worded the pagination error differently: " + response.body());
   }
@@ -150,7 +152,7 @@ public class ExternalAuthorityContractTest {
   }
 
   @ParameterizedTest(name = "{0} rejects a negative page")
-  @MethodSource("proxyingAuthorities")
+  @MethodSource("authorities")
   public void everyAuthorityRejectsANegativePage(String authority) {
     assertRejectedForPagination(authority, get("/ext-auth/" + authority + "/search-by-name?q=x&page=-1"));
   }
@@ -161,48 +163,65 @@ public class ExternalAuthorityContractTest {
    * "fix" it into a behaviour change nobody asked for.
    */
   @ParameterizedTest(name = "{0} rejects a page size of one")
-  @MethodSource("proxyingAuthorities")
+  @MethodSource("authorities")
   public void everyAuthorityRejectsAPageSizeOfOne(String authority) {
     assertRejectedForPagination(authority, get("/ext-auth/" + authority + "/search-by-name?q=x&pageSize=1"));
   }
 
   /**
-   * The rejection body, which six of the seven answer as text from a JSON endpoint.
+   * The rejection body, as text from a JSON endpoint.
    *
-   * <p>Split from the status assertions so the divergence is a named fact with a failing test
-   * attached to each side, rather than a branch buried in a helper.
+   * <p>Split from the status assertions so the divergence is a named fact with a test attached to
+   * each side, rather than a branch buried in a helper. An authority leaves this test and joins
+   * the one below as it moves onto the shared route, and when the list is empty this one goes.
    */
   @ParameterizedTest(name = "{0} rejects with a bare string")
   @MethodSource("plainTextRejectingAuthorities")
-  public void mostAuthoritiesRejectWithABareString(String authority) {
+  public void anAuthorityNotYetSharedRejectsWithABareString(String authority) {
     assertEquals(PAGINATION_ERROR, get("/ext-auth/" + authority + "/search-by-name?q=x&page=-1").body(),
         authority + " no longer answers a bare string");
   }
 
-  @Test
-  public void oneAuthorityRejectsWithCedarsOwnErrorObject() {
-    String body = get("/ext-auth/" + STRUCTURED_ERROR_AUTHORITY + "/search-by-name?q=x&page=-1").body();
+  @ParameterizedTest(name = "{0} rejects with a CEDAR error object")
+  @MethodSource("structuredRejectingAuthorities")
+  public void anAuthorityOnTheSharedRouteRejectsWithCedarsOwnErrorObject(String authority) {
+    String body = get("/ext-auth/" + authority + "/search-by-name?q=x&page=-1").body();
 
     assertTrue(body.contains("\"statusCode\":400"),
-        STRUCTURED_ERROR_AUTHORITY + " no longer answers a CEDAR error object: " + body);
+        authority + " did not answer a CEDAR error object: " + body);
     assertTrue(body.contains(PAGINATION_ERROR_STRUCTURED),
-        STRUCTURED_ERROR_AUTHORITY + " reworded its pagination error: " + body);
+        authority + " reworded its pagination error: " + body);
   }
 
   /**
-   * The local registry answers before it validates, so its reply says "come back later" rather
-   * than "that request was malformed". Pinned as it stands rather than asserted to match the
-   * other six: this is the one place the seven genuinely differ, and a test that hid it would
-   * make the difference harder to find, not easier.
+   * The local registry says "come back later", and says when.
+   *
+   * <p>Asked with a well-formed request, since the shared route validates before any authority is
+   * consulted. That ordering is the change: this used to answer 503 even to a malformed request,
+   * because the readiness check came first.
    */
   @Test
-  public void theLocalRegistryReportsItIsNotReadyBeforeItValidates() {
-    HttpResponse<String> response =
-        get("/ext-auth/" + LOCAL_REGISTRY_AUTHORITY + "/search-by-name?q=x&page=-1");
+  public void theLocalRegistryReportsItIsNotReadyAndWhenToRetry() {
+    HttpResponse<String> response = get("/ext-auth/" + LOCAL_REGISTRY_AUTHORITY + "/search-by-name?q=x");
 
     assertEquals(SERVICE_UNAVAILABLE, response.statusCode(),
         LOCAL_REGISTRY_AUTHORITY + " did not report an unloaded registry");
     assertTrue(response.headers().firstValue("Retry-After").isPresent(),
         "a 503 from " + LOCAL_REGISTRY_AUTHORITY + " must say when to come back");
+  }
+
+  /**
+   * A segment no authority is registered under.
+   *
+   * <p>Jersey answered this with a bare 404 when no resource declared the path. The shared route
+   * matches every segment, so the 404 is now the resource's own and can name what does exist.
+   */
+  @Test
+  public void anUnknownAuthorityIsNamedRatherThanJustRefused() {
+    HttpResponse<String> response = get("/ext-auth/not-an-authority/search-by-name?q=x");
+
+    assertEquals(404, response.statusCode(), "an unknown authority was not refused");
+    assertTrue(response.body().contains(LOCAL_REGISTRY_AUTHORITY),
+        "the refusal does not say which authorities exist: " + response.body());
   }
 }
