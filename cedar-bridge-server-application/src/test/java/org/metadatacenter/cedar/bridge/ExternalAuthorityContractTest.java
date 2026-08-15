@@ -55,24 +55,20 @@ public class ExternalAuthorityContractTest {
    */
   private static final String LOCAL_REGISTRY_AUTHORITY = "comp-tox";
 
-  /**
-   * The authorities whose rejection is CEDAR's own error object rather than a bare string.
-   *
-   * <p>Six built the 400 from a bare string, so a JSON API answered {@code text/plain}; ROR used
-   * {@code CedarResponse.badRequest().errorMessage(…)}, the framework's structured error, and its
-   * wording had drifted with it — a comma where the others have "and". Neither difference was
-   * anyone's decision; they are what seven copies of one method turn into. The structured form
-   * wins, and an authority joins this list as it moves onto the shared route.
-   */
-  private static final List<String> STRUCTURED_ERROR_AUTHORITIES = List.of("ror", LOCAL_REGISTRY_AUTHORITY);
-
   private static final int BAD_REQUEST = 400;
+  private static final int NOT_FOUND = 404;
   private static final int SERVICE_UNAVAILABLE = 503;
 
+  /**
+   * The rejection, worded once.
+   *
+   * <p>Six of the seven built this from a bare string, so a JSON API answered {@code text/plain};
+   * ROR used {@code CedarResponse.badRequest().errorMessage(…)}, the framework's structured error,
+   * and its wording had drifted with it — a comma where the others had "and". Neither difference
+   * was anyone's decision; they are what seven copies of one method turn into. ROR's form is the
+   * one that survived, since these routes declare they produce JSON.
+   */
   private static final String PAGINATION_ERROR =
-      "Invalid pagination parameters: page must be >= 0 and pageSize must be > 1";
-
-  private static final String PAGINATION_ERROR_STRUCTURED =
       "Invalid pagination parameters: page must be >= 0, pageSize must be > 1";
 
   private static final HttpClient CLIENT = HttpClient.newHttpClient();
@@ -105,21 +101,11 @@ public class ExternalAuthorityContractTest {
     return AUTHORITIES.stream();
   }
 
-  /** Every authority whose rejection is a bare string: the ones not yet on the shared route. */
-  static Stream<String> plainTextRejectingAuthorities() {
-    return AUTHORITIES.stream().filter(authority -> !STRUCTURED_ERROR_AUTHORITIES.contains(authority));
-  }
-
-  static Stream<String> structuredRejectingAuthorities() {
-    return STRUCTURED_ERROR_AUTHORITIES.stream();
-  }
-
-  /** What a rejected request said, whichever of the two shapes it arrived in. */
   private static void assertRejectedForPagination(String authority, HttpResponse<String> response) {
     assertEquals(BAD_REQUEST, response.statusCode(), authority + " did not reject the request");
-    String expected = STRUCTURED_ERROR_AUTHORITIES.contains(authority)
-        ? PAGINATION_ERROR_STRUCTURED : PAGINATION_ERROR;
-    assertTrue(response.body().contains(expected),
+    assertTrue(response.body().contains("\"statusCode\":400"),
+        authority + " did not answer a CEDAR error object: " + response.body());
+    assertTrue(response.body().contains(PAGINATION_ERROR),
         authority + " worded the pagination error differently: " + response.body());
   }
 
@@ -169,31 +155,6 @@ public class ExternalAuthorityContractTest {
   }
 
   /**
-   * The rejection body, as text from a JSON endpoint.
-   *
-   * <p>Split from the status assertions so the divergence is a named fact with a test attached to
-   * each side, rather than a branch buried in a helper. An authority leaves this test and joins
-   * the one below as it moves onto the shared route, and when the list is empty this one goes.
-   */
-  @ParameterizedTest(name = "{0} rejects with a bare string")
-  @MethodSource("plainTextRejectingAuthorities")
-  public void anAuthorityNotYetSharedRejectsWithABareString(String authority) {
-    assertEquals(PAGINATION_ERROR, get("/ext-auth/" + authority + "/search-by-name?q=x&page=-1").body(),
-        authority + " no longer answers a bare string");
-  }
-
-  @ParameterizedTest(name = "{0} rejects with a CEDAR error object")
-  @MethodSource("structuredRejectingAuthorities")
-  public void anAuthorityOnTheSharedRouteRejectsWithCedarsOwnErrorObject(String authority) {
-    String body = get("/ext-auth/" + authority + "/search-by-name?q=x&page=-1").body();
-
-    assertTrue(body.contains("\"statusCode\":400"),
-        authority + " did not answer a CEDAR error object: " + body);
-    assertTrue(body.contains(PAGINATION_ERROR_STRUCTURED),
-        authority + " reworded its pagination error: " + body);
-  }
-
-  /**
    * The local registry says "come back later", and says when.
    *
    * <p>Asked with a well-formed request, since the shared route validates before any authority is
@@ -220,7 +181,7 @@ public class ExternalAuthorityContractTest {
   public void anUnknownAuthorityIsNamedRatherThanJustRefused() {
     HttpResponse<String> response = get("/ext-auth/not-an-authority/search-by-name?q=x");
 
-    assertEquals(404, response.statusCode(), "an unknown authority was not refused");
+    assertEquals(NOT_FOUND, response.statusCode(), "an unknown authority was not refused");
     assertTrue(response.body().contains(LOCAL_REGISTRY_AUTHORITY),
         "the refusal does not say which authorities exist: " + response.body());
   }
