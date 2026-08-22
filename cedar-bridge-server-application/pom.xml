@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.metadatacenter</groupId>
     <artifactId>cedar-bridge-server</artifactId>
-    <version>2.9.1</version>
+    <version>2.9.2</version>
   </parent>
 
   <groupId>org.metadatacenter</groupId>
@@ -73,6 +73,14 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- CedarInstanceParser reads the DOI prefix and the OpenView base through deep config chains;
+         the tests stub those rather than build a whole CedarConfig. -->
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.metadatacenter</groupId>
       <artifactId>cedar-test-support-library</artifactId>
@@ -110,6 +118,20 @@
   <build>
 
     <plugins>
+
+      <!--
+        DataCiteResourceTest (tagged "datacite") calls the live DataCite REST API to mint and read
+        DOIs; it needs network access and DataCite credentials, so it is excluded from the default
+        build. Run it with -DexcludedGroups= to clear the exclusion when DataCite is reachable.
+        CedarConfigRepoTest is untagged and always runs.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludedGroups>datacite</excludedGroups>
+        </configuration>
+      </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

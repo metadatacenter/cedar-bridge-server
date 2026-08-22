@@ -1,4 +1,7 @@
 # cedar-bridge-server
+
+[![CI](https://github.com/metadatacenter/cedar-bridge-server/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/metadatacenter/cedar-bridge-server/actions/workflows/ci.yml)
+
 Microservice to access outside resources. Currently, it serves as the backend for requesting Digital Object Identifiers (DOIs) for templates and instances.
 It accepts a CEDAR DataCite template, transforms it into a DataCite-conformant format, and then submits it to the DataCite REST APIs.
 
