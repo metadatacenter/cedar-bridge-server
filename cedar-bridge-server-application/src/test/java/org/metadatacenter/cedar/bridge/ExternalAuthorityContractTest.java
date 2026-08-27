@@ -1,5 +1,6 @@
 package org.metadatacenter.cedar.bridge;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.dropwizard.testing.DropwizardTestSupport;
 import io.dropwizard.testing.ResourceHelpers;
 import org.junit.jupiter.api.AfterAll;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.metadatacenter.config.environment.CedarEnvironmentSource;
+import org.metadatacenter.util.json.JsonMapper;
 
 import java.io.IOException;
 import java.net.URI;
@@ -80,6 +82,7 @@ public class ExternalAuthorityContractTest {
     environment.put("CEDAR_BRIDGE_HTTP_PORT", "19029");
     environment.put("CEDAR_BRIDGE_ADMIN_PORT", "19129");
     environment.put("CEDAR_BRIDGE_STOP_PORT", "19229");
+    environment.put("CEDAR_ROR_API_PREFIX", "http://127.0.0.1:1/");
     CedarEnvironmentSource.setOverride(environment);
   }
 
@@ -169,6 +172,25 @@ public class ExternalAuthorityContractTest {
         LOCAL_REGISTRY_AUTHORITY + " did not report an unloaded registry");
     assertTrue(response.headers().firstValue("Retry-After").isPresent(),
         "a 503 from " + LOCAL_REGISTRY_AUTHORITY + " must say when to come back");
+  }
+
+  /** The bridge owns this upstream HTTP boundary, so a transport outage must be a safe 503. */
+  @Test
+  public void anUnavailableExternalAuthorityIsServiceUnavailable() throws Exception {
+    HttpResponse<String> response = get("/ext-auth/ror/search-by-name?q=x");
+
+    assertEquals(SERVICE_UNAVAILABLE, response.statusCode(), response.body());
+    JsonNode error = JsonMapper.MAPPER.readTree(response.body());
+    assertEquals("SERVICE_UNAVAILABLE", error.path("status").asText(), response.body());
+    assertEquals("Downstream service is unavailable", error.path("message").asText(), response.body());
+    assertTrue(error.path("originalException").isMissingNode()
+            || error.path("originalException").isNull(),
+        "The response must not serialize the transport exception: " + response.body());
+    assertTrue(error.path("sourceException").isMissingNode()
+            || error.path("sourceException").isNull(),
+        "The response must not serialize the transport stack: " + response.body());
+    assertTrue(!response.body().contains("127.0.0.1"),
+        "The response must not expose the authority URL: " + response.body());
   }
 
   /**
