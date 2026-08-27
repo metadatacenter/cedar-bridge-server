@@ -165,42 +165,10 @@ public class DataCiteResource extends CedarMicroserviceResource {
     String url2 = microserviceUrlUtil.getArtifact().getArtifactTypeWithId(sourceArtifactResourceId.getType(), sourceArtifactIdTyped);
     JsonNode sourceArtifactProxyJson = ProxyUtil.proxyGetBodyAsJsonNode(url2, c);
 
-    // Check if user has write permission to the source artifact
-    ResourcePermissionServiceSession permissionSession = dataServices.getResourcePermissionServiceSession(c);
-    boolean hasWriteAccess = permissionSession.userHasWriteAccessToResource(sourceArtifactIdTyped);
-    if (!hasWriteAccess) {
-      return CedarResponse
-          .unauthorized()
-          .errorKey(CedarErrorKey.NO_WRITE_ACCESS_TO_ARTIFACT)
-          .errorMessage("You do not have write access to the artifact")
-          .parameter(DataciteConstants.RESOURCE_ID, sourceArtifactIdTyped)
-          .build();
-    }
-
-    // Check if the source artifact is open
-    FolderServiceSession folderSession = dataServices.getFolderServiceSession(c);
-    FolderServerArtifact folderServerResource = folderSession.findArtifactById(sourceArtifactIdTyped);
-    if (folderServerResource == null) {
-      return CedarResponse
-          .notFound()
-          .errorMessage("The source artifact is not found")
-          .id(sourceArtifactIdTyped)
-          .build();
-    } else if (!(folderServerResource.isOpen() || folderSession.isArtifactOpenImplicitly(sourceArtifactIdTyped))) {
-      return CedarResponse
-          .badRequest()
-          .errorMessage("Please make the " + sourceArtifactResourceId.getType().getValue().toLowerCase() + " open to create a DOI")
-          .build();
-    }
-
-    // Check if the source artifact is published (version) - if it is a template
-    if (sourceArtifactResourceId.getType() == CedarResourceType.TEMPLATE) {
-      if (!Objects.equals(sourceArtifactProxyJson.get(ModelNodeNames.BIBO_STATUS).asText(), BiboStatus.PUBLISHED.getValue())) {
-        return CedarResponse
-            .badRequest()
-            .errorMessage("Please make the template publish to create a DOI")
-            .build();
-      }
+    Response eligibilityError = validateSourceArtifactForDoi(c, sourceArtifactResourceId.getType(),
+        sourceArtifactIdTyped, sourceArtifactProxyJson);
+    if (eligibilityError != null) {
+      return eligibilityError;
     }
 
     //Check if the source artifact has a DOI
@@ -271,6 +239,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
           .build();
     }
 
+    c.must(c.user()).have(CedarPermission.TEMPLATE_READ);
+
     //Check if the source artifact has a DOI
     CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
     CedarResourceType sourceArtifactType = sourceArtifactResourceId.getType();
@@ -278,6 +248,11 @@ public class DataCiteResource extends CedarMicroserviceResource {
     String url = microserviceUrlUtil.getArtifact().getArtifactTypeWithId(sourceArtifactType,
         sourceArtifactIdTyped);
     JsonNode sourceArtifactProxyJson = ProxyUtil.proxyGetBodyAsJsonNode(url, c);
+    Response eligibilityError = validateSourceArtifactForDoi(c, sourceArtifactType, sourceArtifactIdTyped,
+        sourceArtifactProxyJson);
+    if (eligibilityError != null) {
+      return eligibilityError;
+    }
     String findableDoiName = getFindableDoi(sourceArtifactProxyJson);
     if (findableDoiName != null) {
       String hasDoiError = String.format("The %s(%s) already has a DOI: %s", sourceArtifactResourceId.getType().getValue(), sourceArtifactId, findableDoiName);
@@ -401,6 +376,47 @@ public class DataCiteResource extends CedarMicroserviceResource {
           .errorMessage(e.getMessage())
           .build();
     }
+  }
+
+  Response validateSourceArtifactForDoi(CedarRequestContext context, CedarResourceType sourceArtifactType,
+                                        CedarArtifactId sourceArtifactId, JsonNode sourceArtifactJson)
+      throws CedarException {
+    ResourcePermissionServiceSession permissionSession = dataServices.getResourcePermissionServiceSession(context);
+    if (!permissionSession.userHasWriteAccessToResource(sourceArtifactId)) {
+      return CedarResponse
+          .unauthorized()
+          .errorKey(CedarErrorKey.NO_WRITE_ACCESS_TO_ARTIFACT)
+          .errorMessage("You do not have write access to the artifact")
+          .parameter(DataciteConstants.RESOURCE_ID, sourceArtifactId)
+          .build();
+    }
+
+    FolderServiceSession folderSession = dataServices.getFolderServiceSession(context);
+    FolderServerArtifact folderServerResource = folderSession.findArtifactById(sourceArtifactId);
+    if (folderServerResource == null) {
+      return CedarResponse
+          .notFound()
+          .errorMessage("The source artifact is not found")
+          .id(sourceArtifactId)
+          .build();
+    }
+    if (!(folderServerResource.isOpen() || folderSession.isArtifactOpenImplicitly(sourceArtifactId))) {
+      return CedarResponse
+          .badRequest()
+          .errorMessage("Please make the " + sourceArtifactType.getValue().toLowerCase() + " open to create a DOI")
+          .build();
+    }
+
+    JsonNode publicationStatus = sourceArtifactJson.get(ModelNodeNames.BIBO_STATUS);
+    if (sourceArtifactType == CedarResourceType.TEMPLATE
+        && (publicationStatus == null
+        || !Objects.equals(publicationStatus.asText(), BiboStatus.PUBLISHED.getValue()))) {
+      return CedarResponse
+          .badRequest()
+          .errorMessage("Please publish the template to create a DOI")
+          .build();
+    }
+    return null;
   }
 
   /**
