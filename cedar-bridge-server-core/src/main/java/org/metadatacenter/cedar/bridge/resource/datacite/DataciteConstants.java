@@ -14,6 +14,7 @@ public class DataciteConstants {
   public static final String DOI_ID = "doiId";
   public static final String DOI_NAME = "doiName";
   public static final String DOI_PREFIX = "https://doi.org/";
+  public static final String DRAFT = "draft";
   public static final String EXISTING_DATACITE_METADATA = "existingDataCiteMetadata";
   public static final String DRAFT_METADATA = "draftMetadata";
   public static final String HAS_DRAFT_DOI = "hasDraftDoi";
