@@ -46,13 +46,13 @@ public abstract class AbstractBridgeServerResourceTest
 
   static {
     log = LoggerFactory.getLogger("Cedar Bridge Server Test");
-    // Alternate server ports so the test never collides with a running dev bridge server, which owns
+    // OS-assigned server ports so the test never collides with a running dev bridge server, which owns
     // 9015. The connector port is driven by CEDAR_BRIDGE_HTTP_PORT (it overrides the test config's
     // literal port), so redirect it here before the test support boots the server.
     Map<String, String> environment = new HashMap<>(CedarEnvironmentSource.getAll());
-    environment.put("CEDAR_BRIDGE_HTTP_PORT", "19015");
-    environment.put("CEDAR_BRIDGE_ADMIN_PORT", "19115");
-    environment.put("CEDAR_BRIDGE_STOP_PORT", "19215");
+    environment.put("CEDAR_BRIDGE_HTTP_PORT", "0");
+    environment.put("CEDAR_BRIDGE_ADMIN_PORT", "0");
+    environment.put("CEDAR_BRIDGE_STOP_PORT", "0");
     CedarEnvironmentSource.setOverride(environment);
   }
 

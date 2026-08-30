@@ -30,11 +30,11 @@ public class BridgeRoutesRespondTest {
 
   static {
     // Must run before the test support boots the server, which reads the port env vars. Ports are
-    // distinct from the dev server and from every other booting test class.
+    // assigned by the OS, so they cannot collide with the dev server or another test.
     Map<String, String> environment = new HashMap<>(CedarEnvironmentSource.getAll());
-    environment.put("CEDAR_BRIDGE_HTTP_PORT", "19028");
-    environment.put("CEDAR_BRIDGE_ADMIN_PORT", "19128");
-    environment.put("CEDAR_BRIDGE_STOP_PORT", "19228");
+    environment.put("CEDAR_BRIDGE_HTTP_PORT", "0");
+    environment.put("CEDAR_BRIDGE_ADMIN_PORT", "0");
+    environment.put("CEDAR_BRIDGE_STOP_PORT", "0");
     CedarEnvironmentSource.setOverride(environment);
   }
 
