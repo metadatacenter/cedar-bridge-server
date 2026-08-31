@@ -131,11 +131,15 @@ paths:
       - DOIs
   /ext-auth/{authority}/search-by-name:
     get:
-      description: "Search one external authority for entries matching a name, and\
-        \ return them with the paging that produced them. The status is the authority's\
-        \ own, so an upstream refusal is reported as that authority reported it. An\
-        \ authority that has not finished loading answers 503 with Retry-After rather\
-        \ than an empty result."
+      description: "These routes take no credentials. Neither builds a request context,\
+        \ so anyone who can reach this host can use them, and three of the seven authorities\
+        \ behind them spend credentials the deployment holds. Recorded here because\
+        \ a spec that claimed otherwise would be worse than one that says so. Search\
+        \ one external authority for entries matching a name, and return them with\
+        \ the paging that produced them. The status is the authority's own, so an\
+        \ upstream refusal is reported as that authority reported it. An authority\
+        \ that has not finished loading answers 503 with Retry-After rather than an\
+        \ empty result."
       operationId: searchByName
       parameters:
       - description: "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`,\
@@ -176,18 +180,20 @@ paths:
         "503":
           description: The authority is not ready yet; Retry-After says when to try
             again
-      security:
-      - api_key: []
       summary: Search an external registry by name
       tags:
       - External authorities
   /ext-auth/{authority}/{id}:
     get:
-      description: "Look one identifier up in an external authority and return what\
-        \ it holds, with `found` saying whether it resolved and `requestedId` echoing\
-        \ what was asked. The status is the authority's own. This path and the search\
-        \ path both match two segments; the literal `search-by-name` wins, so no authority\
-        \ can have an entry by that name."
+      description: "These routes take no credentials. Neither builds a request context,\
+        \ so anyone who can reach this host can use them, and three of the seven authorities\
+        \ behind them spend credentials the deployment holds. Recorded here because\
+        \ a spec that claimed otherwise would be worse than one that says so. Look\
+        \ one identifier up in an external authority and return what it holds, with\
+        \ `found` saying whether it resolved and `requestedId` echoing what was asked.\
+        \ The status is the authority's own. This path and the search path both match\
+        \ two segments; the literal `search-by-name` wins, so no authority can have\
+        \ an entry by that name."
       operationId: details
       parameters:
       - description: "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`,\
@@ -215,8 +221,6 @@ paths:
         "503":
           description: The authority is not ready yet; Retry-After says when to try
             again
-      security:
-      - api_key: []
       summary: Resolve an identifier against an external registry
       tags:
       - External authorities

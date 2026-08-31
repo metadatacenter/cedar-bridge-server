@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -47,7 +46,6 @@ import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 @Path("/ext-auth/{authority}")
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "External authorities")
-@SecurityRequirement(name = "api_key")
 public class ExternalAuthorityResource extends CedarMicroserviceResource {
 
   /**
@@ -82,7 +80,7 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   @Timed
   @Path("/search-by-name")
   @Operation(summary = "Search an external registry by name",
-      description = "Search one external authority for entries matching a name, and return them with "
+      description = "These routes take no credentials. Neither builds a request context, so anyone who can reach this host can use them, and three of the seven authorities behind them spend credentials the deployment holds. Recorded here because a spec that claimed otherwise would be worse than one that says so. Search one external authority for entries matching a name, and return them with "
           + "the paging that produced them. The status is the authority's own, so an upstream refusal "
           + "is reported as that authority reported it. An authority that has not finished loading "
           + "answers 503 with Retry-After rather than an empty result.")
@@ -139,7 +137,7 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   @Timed
   @Path("/{id}")
   @Operation(summary = "Resolve an identifier against an external registry",
-      description = "Look one identifier up in an external authority and return what it holds, with "
+      description = "These routes take no credentials. Neither builds a request context, so anyone who can reach this host can use them, and three of the seven authorities behind them spend credentials the deployment holds. Recorded here because a spec that claimed otherwise would be worse than one that says so. Look one identifier up in an external authority and return what it holds, with "
           + "`found` saying whether it resolved and `requestedId` echoing what was asked. The status "
           + "is the authority's own. This path and the search path both match two segments; the "
           + "literal `search-by-name` wins, so no authority can have an entry by that name.")
