@@ -75,16 +75,19 @@ public class BridgeRoutesRespondTest {
       List.of(DataCiteResource.class, CedarServerInsightReportResource.class);
 
   /**
-   * Resource classes reachable with no credential, pending a decision.
+   * Resource classes that answer a caller holding no credential, by decision.
    *
-   * <p>{@link ExternalAuthorityResource} carries no {@code @SecurityRequirement}, and neither of its
-   * two methods calls {@code buildRequestContext}. Three of the seven authorities behind it reach a
-   * third party on the deployment's own credentials, so this is not the considered exemption the
-   * public registries have: it is an open finding on the backend roadmap. Closing it changes what an
-   * existing client receives, which is why the class sits here rather than in {@link #AUTHENTICATED}.
-   * Move it up when the routes start asserting a login.
+   * <p>{@link ExternalAuthorityResource} resolves no user on either route. That is deliberate: the
+   * registries behind it are public and third-party deployments of the embeddable editor reach it
+   * without a CEDAR session, which is also why the seven classes it replaced were open.
+   *
+   * <p>It is listed rather than merely absent because the choice has a price that is easy to miss.
+   * Three of the seven authorities reach their registry on credentials the deployment holds, so an
+   * anonymous caller spends CEDAR's ORCID, PubMed and RRID quota. The class javadoc carries the
+   * detail; the roadmap carries the standing item. A class belongs here only when someone has
+   * decided it should answer anonymously, not when nobody has looked.
    */
-  private static final List<Class<?>> UNAUTHENTICATED_PENDING_DECISION =
+  private static final List<Class<?>> INTENTIONALLY_ANONYMOUS =
       List.of(ExternalAuthorityResource.class);
 
   @Test
@@ -116,7 +119,7 @@ public class BridgeRoutesRespondTest {
             .collect(Collectors.toCollection(LinkedHashSet::new));
 
     Set<Class<?>> classified = new LinkedHashSet<>(AUTHENTICATED);
-    classified.addAll(UNAUTHENTICATED_PENDING_DECISION);
+    classified.addAll(INTENTIONALLY_ANONYMOUS);
 
     Assertions.assertFalse(registered.isEmpty(),
         "No resource classes were found on the booted application, so this test asserts nothing");
@@ -125,7 +128,7 @@ public class BridgeRoutesRespondTest {
     unclassified.removeAll(classified);
     Assertions.assertTrue(unclassified.isEmpty(),
         "The bridge server registers resource classes this test does not classify, so nothing probes "
-            + "their routes. Add each to AUTHENTICATED or UNAUTHENTICATED_PENDING_DECISION: "
+            + "their routes. Add each to AUTHENTICATED or INTENTIONALLY_ANONYMOUS: "
             + unclassified.stream().map(Class::getName).sorted().toList());
 
     Set<Class<?>> stale = new LinkedHashSet<>(classified);

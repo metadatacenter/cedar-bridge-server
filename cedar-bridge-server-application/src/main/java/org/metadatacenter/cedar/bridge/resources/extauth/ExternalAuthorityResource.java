@@ -42,6 +42,26 @@ import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
  * <p>{@code /{authority}/search-by-name} and {@code /{authority}/{id}} both match a two-segment
  * path; JAX-RS prefers the literal, so the search route wins where it applies. That is how each of
  * the seven already worked, one path down.
+ *
+ * <h2>These routes are anonymous on purpose, and they are not free</h2>
+ *
+ * <p>Neither method resolves a user. That is deliberate and inherited: all seven classes this
+ * replaced were open, because the registries behind them are public, and third-party deployments of
+ * the embeddable editor reach them without a CEDAR session. {@code DataCiteResource}, registered in
+ * the same application, asserts {@code LoggedIn} on every route, so the difference is a choice
+ * rather than an omission.
+ *
+ * <p>What a reader should not assume is that a public registry makes the route free. Three of the
+ * seven authorities reach their registry on credentials the deployment holds:
+ * {@code RridAuthority} sends the configured {@code apikey} header, {@code PubMedAuthority} appends
+ * the configured {@code api_key} parameter, and {@code OrcidAuthority} uses the configured client
+ * credentials. An anonymous caller therefore spends CEDAR's quota at ORCID, PubMed and RRID, and can
+ * use this service as an unauthenticated relay to them.
+ *
+ * <p>The cost is bounded by whatever those three registries allow the deployment per period, and
+ * nothing here bounds it further: there is no rate limit, no per-caller accounting, and no way to
+ * tell one caller from another. An operator setting quotas should size them for the open internet
+ * rather than for CEDAR's user count.
  */
 @Path("/ext-auth/{authority}")
 @Produces(MediaType.APPLICATION_JSON)
