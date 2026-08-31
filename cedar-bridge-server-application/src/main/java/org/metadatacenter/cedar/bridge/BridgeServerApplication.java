@@ -5,7 +5,6 @@ import io.dropwizard.core.setup.Environment;
 import org.metadatacenter.cedar.bridge.resources.*;
 import org.metadatacenter.cedar.bridge.resources.extauth.*;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceIndexResource;
-import org.metadatacenter.cedar.util.dw.CedarDefaultHealthCheck;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.model.ServerName;
@@ -61,8 +60,6 @@ public class BridgeServerApplication extends CedarMicroserviceApplication<Bridge
 
     environment.healthChecks().register("comp-tox", new CompToxHealthCheck(substanceRegistry));
 
-    final CedarDefaultHealthCheck healthCheck = new CedarDefaultHealthCheck();
-    environment.healthChecks().register("message", healthCheck);
 
   }
 }
