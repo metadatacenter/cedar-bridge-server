@@ -1,4 +1,14 @@
-// Generated code.  Do not edit by hand.
+// A Java view of the DataCite CEDAR template, generated from that template by a tool that does not
+// live in this repository: no plugin in either pom builds it, and no script under ops/ reproduces it.
+//
+// It has been edited by hand since. Some commits regenerated it against a newer template, which is
+// why the schema property IRIs have changed wholesale more than once; others changed it directly,
+// notably pav:createdOn and pav:lastUpdatedOn from Instant to String so that validation accepts what
+// the template actually carries.
+//
+// So edit it here, and keep it consistent with the template it mirrors. The header this replaces said
+// "Do not edit by hand", which named a regeneration path that would discard those edits and that
+// nobody in this repository can run.
 package org.metadatacenter.cedar.bridge.resource.datacite;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
