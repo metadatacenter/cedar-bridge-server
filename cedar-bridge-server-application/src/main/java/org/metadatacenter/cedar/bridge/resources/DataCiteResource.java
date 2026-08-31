@@ -1,6 +1,12 @@
 package org.metadatacenter.cedar.bridge.resources;
 
 import com.codahale.metrics.annotation.Timed;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,6 +71,8 @@ import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/datacite")
 @Produces(MediaType.APPLICATION_JSON)
+@Tag(name = "DOIs")
+@SecurityRequirement(name = "api_key")
 public class DataCiteResource extends CedarMicroserviceResource {
 
   private static final Logger log = LoggerFactory.getLogger(DataCiteResource.class);
@@ -105,7 +113,22 @@ public class DataCiteResource extends CedarMicroserviceResource {
   @GET
   @Timed
   @Path("/get-doi-metadata/{id}")
-  public Response getDOIMetadata(@PathParam(PP_ID) String doiIdUrl) throws CedarException {
+  @Operation(summary = "Get a DOI's metadata from DataCite",
+      description = "Fetch what DataCite holds for a DOI, including affiliation detail. The status "
+          + "is DataCite's own, so a DOI DataCite does not know comes back as its 404 rather than "
+          + "this server's. DataCite integration can be switched off by configuration, and every route here answers 400 when it is.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "The DOI's metadata, as DataCite returned it"),
+      @ApiResponse(responseCode = "400", description = "DataCite integration is disabled"),
+      @ApiResponse(responseCode = "401", description = "Unauthorized"),
+      @ApiResponse(responseCode = "404", description = "DataCite holds no such DOI"),
+      @ApiResponse(responseCode = "502", description = "DataCite could not be reached"),
+      @ApiResponse(responseCode = "500", description = "Internal server error")
+  })
+  public Response getDOIMetadata(
+      @Parameter(description = "The DOI as a URL. Example: https://doi.org/10.82658/abcd-1234",
+          required = true)
+      @PathParam(PP_ID) String doiIdUrl) throws CedarException {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
@@ -158,7 +181,23 @@ public class DataCiteResource extends CedarMicroserviceResource {
   @Produces(MediaType.APPLICATION_JSON)
   @Timed
   @Path("/create-doi")
-  public Response createDOIStart(@QueryParam(QP_SOURCE_ARTIFACT_ID) String sourceArtifactId) throws CedarException {
+  @Operation(summary = "Begin minting a DOI for an artifact",
+      description = "Return everything the workbench needs to open the DOI form for one artifact: "
+          + "the DataCite metadata template, the source artifact, and either the draft DOI already "
+          + "started for it or a metadata instance pre-filled with what can be derived. Reads only; "
+          + "nothing is minted here. DataCite integration can be switched off by configuration, and every route here answers 400 when it is.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "The template, the artifact, and the draft or pre-filled metadata"),
+      @ApiResponse(responseCode = "400", description = "DataCite integration is disabled, or the artifact is not eligible for a DOI"),
+      @ApiResponse(responseCode = "401", description = "Unauthorized"),
+      @ApiResponse(responseCode = "403", description = "The caller lacks the template read permission"),
+      @ApiResponse(responseCode = "409", description = "The artifact already has a findable DOI"),
+      @ApiResponse(responseCode = "502", description = "DataCite could not be reached"),
+      @ApiResponse(responseCode = "500", description = "Internal server error")
+  })
+  public Response createDOIStart(
+      @Parameter(description = "Identifier of the artifact the DOI is for.", required = true)
+      @QueryParam(QP_SOURCE_ARTIFACT_ID) String sourceArtifactId) throws CedarException {
     CedarRequestContext c = buildRequestContext();
     String userID = c.getCedarUser().getId();
     c.must(c.user()).be(LoggedIn);
@@ -248,8 +287,30 @@ public class DataCiteResource extends CedarMicroserviceResource {
   @Produces(MediaType.APPLICATION_JSON)
   @Timed
   @Path("/create-doi")
-  public Response createDOI(@QueryParam(QP_SOURCE_ARTIFACT_ID) String sourceArtifactId, @QueryParam("state") String state, JsonNode dataCiteInstance) throws CedarException, IOException,
-      InterruptedException {
+  @Operation(summary = "Mint a DOI for an artifact",
+      description = "Register a DOI with DataCite from the metadata instance in the body, and record "
+          + "it on the artifact. `state` chooses between a draft, which can still be changed, and a "
+          + "published DOI, which is findable and permanent. The metadata is validated against the "
+          + "DataCite template first, and a failure is returned rather than half-registered. "
+          + "DataCite integration can be switched off by configuration, and every route here answers 400 when it is.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "The DOI, as registered"),
+      @ApiResponse(responseCode = "400",
+          description = "DataCite integration is disabled, `state` is neither draft nor publish, the "
+              + "artifact is not eligible, or the metadata failed validation"),
+      @ApiResponse(responseCode = "401", description = "Unauthorized"),
+      @ApiResponse(responseCode = "403", description = "The caller lacks the template read permission"),
+      @ApiResponse(responseCode = "409", description = "The artifact already has a findable DOI"),
+      @ApiResponse(responseCode = "502", description = "DataCite could not be reached"),
+      @ApiResponse(responseCode = "500", description = "Internal server error")
+  })
+  public Response createDOI(
+      @Parameter(description = "Identifier of the artifact the DOI is for.", required = true)
+      @QueryParam(QP_SOURCE_ARTIFACT_ID) String sourceArtifactId,
+      @Parameter(description = "`draft` for a DOI that can still be changed, `publish` for a "
+          + "findable and permanent one.", required = true)
+      @QueryParam("state") String state,
+      JsonNode dataCiteInstance) throws CedarException, IOException, InterruptedException {
     CedarRequestContext c = buildRequestContext();
 
     c.must(c.user()).be(LoggedIn);

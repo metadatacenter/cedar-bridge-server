@@ -1,0 +1,23 @@
+# Base OpenAPI document merged into the generated spec by io.swagger.core.v3:swagger-maven-plugin.
+# It seeds the info block (version stamped from the POM via resource filtering) and the api_key
+# security scheme that every resource class references with @SecurityRequirement(name = "api_key").
+openapi: 3.0.1
+info:
+  title: CEDAR Bridge Server API
+  description: |
+    Better Metadata - Better Science
+
+    The bridge server is CEDAR's connection to registries outside it. It mints DOIs through DataCite
+    so a CEDAR artifact can be cited, and it resolves and searches identifiers held by seven external
+    authorities: DOI, NIH grants, ORCID, CompTox, PubMed, ROR and RRID.
+    
+    Where an answer comes from outside, the status comes from outside with it: an upstream refusal is
+    reported as that registry reported it, rather than flattened into a 500.
+  version: ${project.version}
+components:
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: Authorization
+      in: header
+      description: "Your CEDAR API key, using the format 'apiKey <yourApiKey>'"

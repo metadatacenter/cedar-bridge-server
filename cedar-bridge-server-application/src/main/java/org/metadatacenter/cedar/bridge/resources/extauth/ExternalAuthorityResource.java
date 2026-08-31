@@ -1,6 +1,12 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
 import com.codahale.metrics.annotation.Timed;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -40,6 +46,8 @@ import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
  */
 @Path("/ext-auth/{authority}")
 @Produces(MediaType.APPLICATION_JSON)
+@Tag(name = "External authorities")
+@SecurityRequirement(name = "api_key")
 public class ExternalAuthorityResource extends CedarMicroserviceResource {
 
   /**
@@ -73,10 +81,28 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   @GET
   @Timed
   @Path("/search-by-name")
-  public Response searchByName(@PathParam("authority") String segment,
-                               @QueryParam("q") String query,
-                               @QueryParam("page") Integer page,
-                               @QueryParam("pageSize") Integer pageSize) throws CedarException {
+  @Operation(summary = "Search an external registry by name",
+      description = "Search one external authority for entries matching a name, and return them with "
+          + "the paging that produced them. The status is the authority's own, so an upstream refusal "
+          + "is reported as that authority reported it. An authority that has not finished loading "
+          + "answers 503 with Retry-After rather than an empty result.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "Matching entries, with `found`, `page` and `pageSize`"),
+      @ApiResponse(responseCode = "400",
+          description = "`page` is negative or `pageSize` is not greater than one"),
+      @ApiResponse(responseCode = "401", description = "Unauthorized"),
+      @ApiResponse(responseCode = "404", description = "No authority is served under this path segment"),
+      @ApiResponse(responseCode = "503", description = "The authority is not ready yet; Retry-After says when to try again")
+  })
+  public Response searchByName(
+      @Parameter(description = "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`, `pmid`, `ror`, `rrid`. A segment no authority is registered under answers 404 naming the ones that are.", required = true)
+      @PathParam("authority") String segment,
+      @Parameter(description = "The name to search for.")
+      @QueryParam("q") String query,
+      @Parameter(description = "Zero-based page number. Defaults to 0.")
+      @QueryParam("page") Integer page,
+      @Parameter(description = "Entries per page. Defaults to 100, and must be greater than one.")
+      @QueryParam("pageSize") Integer pageSize) throws CedarException {
 
     ExternalAuthority authority = authoritiesBySegment.get(segment);
     if (authority == null) {
@@ -112,8 +138,24 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   @GET
   @Timed
   @Path("/{id}")
-  public Response details(@PathParam("authority") String segment,
-                          @PathParam(PP_ID) String id) throws CedarException {
+  @Operation(summary = "Resolve an identifier against an external registry",
+      description = "Look one identifier up in an external authority and return what it holds, with "
+          + "`found` saying whether it resolved and `requestedId` echoing what was asked. The status "
+          + "is the authority's own. This path and the search path both match two segments; the "
+          + "literal `search-by-name` wins, so no authority can have an entry by that name.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "What the authority holds for the identifier"),
+      @ApiResponse(responseCode = "401", description = "Unauthorized"),
+      @ApiResponse(responseCode = "404",
+          description = "No authority is served under this path segment, or the authority does not "
+              + "hold this identifier"),
+      @ApiResponse(responseCode = "503", description = "The authority is not ready yet; Retry-After says when to try again")
+  })
+  public Response details(
+      @Parameter(description = "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`, `pmid`, `ror`, `rrid`. A segment no authority is registered under answers 404 naming the ones that are.", required = true)
+      @PathParam("authority") String segment,
+      @Parameter(description = "The identifier to resolve, as that registry spells it.", required = true)
+      @PathParam(PP_ID) String id) throws CedarException {
 
     ExternalAuthority authority = authoritiesBySegment.get(segment);
     if (authority == null) {
