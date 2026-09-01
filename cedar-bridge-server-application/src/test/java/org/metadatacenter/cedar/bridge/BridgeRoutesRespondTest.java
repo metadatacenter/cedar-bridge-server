@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.metadatacenter.cedar.bridge.resources.DataCiteResource;
 import org.metadatacenter.cedar.bridge.resources.extauth.ExternalAuthorityResource;
+import org.metadatacenter.cedar.util.dw.CedarHealthCheckResource;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceIndexResource;
 import org.metadatacenter.cedar.util.dw.CedarServerInsightReportResource;
 import org.metadatacenter.config.environment.CedarEnvironmentSource;
@@ -67,12 +68,14 @@ public class BridgeRoutesRespondTest {
   /**
    * Resource classes that require a credential on every route.
    *
-   * <p>{@link CedarServerInsightReportResource} is registered by the shared bootstrap rather than by
-   * {@code BridgeServerApplication}, which is why reading the application alone would miss it. It
-   * asserts {@code LoggedIn} on every route, so it is probed here like any other.
+   * <p>{@link CedarServerInsightReportResource} and {@link CedarHealthCheckResource} are registered
+   * by the shared bootstrap rather than by {@code BridgeServerApplication}, which is why reading the
+   * application alone would miss them. Both assert {@code LoggedIn} on every route, so they are
+   * probed here like any other.
    */
   private static final List<Class<?>> AUTHENTICATED =
-      List.of(DataCiteResource.class, CedarServerInsightReportResource.class);
+      List.of(DataCiteResource.class, CedarServerInsightReportResource.class,
+          CedarHealthCheckResource.class);
 
   /**
    * Resource classes that answer a caller holding no credential, by decision.
