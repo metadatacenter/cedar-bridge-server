@@ -77,11 +77,11 @@ public class ExternalAuthorityContractTest {
 
   static {
     // Must run before the test support boots the server, which reads the port env vars. Ports are
-    // distinct from the dev server and from every other booting test class.
+    // assigned by the OS, so they cannot collide with the dev server or another test.
     Map<String, String> environment = new HashMap<>(CedarEnvironmentSource.getAll());
-    environment.put("CEDAR_BRIDGE_HTTP_PORT", "19029");
-    environment.put("CEDAR_BRIDGE_ADMIN_PORT", "19129");
-    environment.put("CEDAR_BRIDGE_STOP_PORT", "19229");
+    environment.put("CEDAR_BRIDGE_HTTP_PORT", "0");
+    environment.put("CEDAR_BRIDGE_ADMIN_PORT", "0");
+    environment.put("CEDAR_BRIDGE_STOP_PORT", "0");
     environment.put("CEDAR_ROR_API_PREFIX", "http://127.0.0.1:1/");
     CedarEnvironmentSource.setOverride(environment);
   }

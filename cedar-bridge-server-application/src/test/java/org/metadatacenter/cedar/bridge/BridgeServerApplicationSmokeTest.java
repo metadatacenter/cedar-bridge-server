@@ -26,12 +26,12 @@ public class BridgeServerApplicationSmokeTest {
 
   static {
     // Must run before the test support boots the server, which reads the port env vars.
-    // Alternate server ports, so the test instance never collides with a running dev server,
+    // OS-assigned server ports, so the test instance never collides with a running dev server,
     // and distinct from the other booting test class in this module.
     Map<String, String> environment = new HashMap<>(CedarEnvironmentSource.getAll());
-    environment.put("CEDAR_BRIDGE_HTTP_PORT", "19015");
-    environment.put("CEDAR_BRIDGE_ADMIN_PORT", "19115");
-    environment.put("CEDAR_BRIDGE_STOP_PORT", "19215");
+    environment.put("CEDAR_BRIDGE_HTTP_PORT", "0");
+    environment.put("CEDAR_BRIDGE_ADMIN_PORT", "0");
+    environment.put("CEDAR_BRIDGE_STOP_PORT", "0");
     CedarEnvironmentSource.setOverride(environment);
   }
 

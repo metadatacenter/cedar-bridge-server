@@ -1,6 +1,11 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
 import com.codahale.metrics.annotation.Timed;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -37,9 +42,30 @@ import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
  * <p>{@code /{authority}/search-by-name} and {@code /{authority}/{id}} both match a two-segment
  * path; JAX-RS prefers the literal, so the search route wins where it applies. That is how each of
  * the seven already worked, one path down.
+ *
+ * <h2>These routes are anonymous on purpose, and they are not free</h2>
+ *
+ * <p>Neither method resolves a user. That is deliberate and inherited: all seven classes this
+ * replaced were open, because the registries behind them are public, and third-party deployments of
+ * the embeddable editor reach them without a CEDAR session. {@code DataCiteResource}, registered in
+ * the same application, asserts {@code LoggedIn} on every route, so the difference is a choice
+ * rather than an omission.
+ *
+ * <p>What a reader should not assume is that a public registry makes the route free. Three of the
+ * seven authorities reach their registry on credentials the deployment holds:
+ * {@code RridAuthority} sends the configured {@code apikey} header, {@code PubMedAuthority} appends
+ * the configured {@code api_key} parameter, and {@code OrcidAuthority} uses the configured client
+ * credentials. An anonymous caller therefore spends CEDAR's quota at ORCID, PubMed and RRID, and can
+ * use this service as an unauthenticated relay to them.
+ *
+ * <p>The cost is bounded by whatever those three registries allow the deployment per period, and
+ * nothing here bounds it further: there is no rate limit, no per-caller accounting, and no way to
+ * tell one caller from another. An operator setting quotas should size them for the open internet
+ * rather than for CEDAR's user count.
  */
 @Path("/ext-auth/{authority}")
 @Produces(MediaType.APPLICATION_JSON)
+@Tag(name = "External authorities")
 public class ExternalAuthorityResource extends CedarMicroserviceResource {
 
   /**
@@ -73,10 +99,28 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   @GET
   @Timed
   @Path("/search-by-name")
-  public Response searchByName(@PathParam("authority") String segment,
-                               @QueryParam("q") String query,
-                               @QueryParam("page") Integer page,
-                               @QueryParam("pageSize") Integer pageSize) throws CedarException {
+  @Operation(summary = "Search an external registry by name",
+      description = "These routes take no credentials. Neither builds a request context, so anyone who can reach this host can use them, and three of the seven authorities behind them spend credentials the deployment holds. Recorded here because a spec that claimed otherwise would be worse than one that says so. Search one external authority for entries matching a name, and return them with "
+          + "the paging that produced them. The status is the authority's own, so an upstream refusal "
+          + "is reported as that authority reported it. An authority that has not finished loading "
+          + "answers 503 with Retry-After rather than an empty result.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "Matching entries, with `found`, `page` and `pageSize`"),
+      @ApiResponse(responseCode = "400",
+          description = "`page` is negative or `pageSize` is not greater than one"),
+      @ApiResponse(responseCode = "401", description = "Unauthorized"),
+      @ApiResponse(responseCode = "404", description = "No authority is served under this path segment"),
+      @ApiResponse(responseCode = "503", description = "The authority is not ready yet; Retry-After says when to try again")
+  })
+  public Response searchByName(
+      @Parameter(description = "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`, `pmid`, `ror`, `rrid`. A segment no authority is registered under answers 404 naming the ones that are.", required = true)
+      @PathParam("authority") String segment,
+      @Parameter(description = "The name to search for.")
+      @QueryParam("q") String query,
+      @Parameter(description = "Zero-based page number. Defaults to 0.")
+      @QueryParam("page") Integer page,
+      @Parameter(description = "Entries per page. Defaults to 100, and must be greater than one.")
+      @QueryParam("pageSize") Integer pageSize) throws CedarException {
 
     ExternalAuthority authority = authoritiesBySegment.get(segment);
     if (authority == null) {
@@ -112,8 +156,24 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   @GET
   @Timed
   @Path("/{id}")
-  public Response details(@PathParam("authority") String segment,
-                          @PathParam(PP_ID) String id) throws CedarException {
+  @Operation(summary = "Resolve an identifier against an external registry",
+      description = "These routes take no credentials. Neither builds a request context, so anyone who can reach this host can use them, and three of the seven authorities behind them spend credentials the deployment holds. Recorded here because a spec that claimed otherwise would be worse than one that says so. Look one identifier up in an external authority and return what it holds, with "
+          + "`found` saying whether it resolved and `requestedId` echoing what was asked. The status "
+          + "is the authority's own. This path and the search path both match two segments; the "
+          + "literal `search-by-name` wins, so no authority can have an entry by that name.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "What the authority holds for the identifier"),
+      @ApiResponse(responseCode = "401", description = "Unauthorized"),
+      @ApiResponse(responseCode = "404",
+          description = "No authority is served under this path segment, or the authority does not "
+              + "hold this identifier"),
+      @ApiResponse(responseCode = "503", description = "The authority is not ready yet; Retry-After says when to try again")
+  })
+  public Response details(
+      @Parameter(description = "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`, `pmid`, `ror`, `rrid`. A segment no authority is registered under answers 404 naming the ones that are.", required = true)
+      @PathParam("authority") String segment,
+      @Parameter(description = "The identifier to resolve, as that registry spells it.", required = true)
+      @PathParam(PP_ID) String id) throws CedarException {
 
     ExternalAuthority authority = authoritiesBySegment.get(segment);
     if (authority == null) {

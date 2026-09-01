@@ -1,0 +1,236 @@
+openapi: 3.0.1
+info:
+  description: |
+    Better Metadata - Better Science
+
+    The bridge server is CEDAR's connection to registries outside it. It mints DOIs through DataCite
+    so a CEDAR artifact can be cited, and it resolves and searches identifiers held by seven external
+    authorities: DOI, NIH grants, ORCID, CompTox, PubMed, ROR and RRID.
+
+    Where an answer comes from outside, the status comes from outside with it: an upstream refusal is
+    reported as that registry reported it, rather than flattened into a 500.
+  title: CEDAR Bridge Server API
+  version: 2.9.4
+paths:
+  /datacite/create-doi:
+    get:
+      description: "Return everything the workbench needs to open the DOI form for\
+        \ one artifact: the DataCite metadata template, the source artifact, and either\
+        \ the draft DOI already started for it or a metadata instance pre-filled with\
+        \ what can be derived. Reads only; nothing is minted here. DataCite integration\
+        \ can be switched off by configuration, and every route here answers 400 when\
+        \ it is."
+      operationId: createDOIStart
+      parameters:
+      - description: Identifier of the artifact the DOI is for.
+        in: query
+        name: source_artifact_id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "The template, the artifact, and the draft or pre-filled metadata"
+        "400":
+          description: "DataCite integration is disabled, or the artifact is not eligible\
+            \ for a DOI"
+        "401":
+          description: Unauthorized
+        "403":
+          description: The caller lacks the template read permission
+        "409":
+          description: The artifact already has a findable DOI
+        "500":
+          description: Internal server error
+        "502":
+          description: DataCite could not be reached
+      security:
+      - api_key: []
+      summary: Begin minting a DOI for an artifact
+      tags:
+      - DOIs
+    post:
+      description: "Register a DOI with DataCite from the metadata instance in the\
+        \ body, and record it on the artifact. `state` chooses between a draft, which\
+        \ can still be changed, and a published DOI, which is findable and permanent.\
+        \ The metadata is validated against the DataCite template first, and a failure\
+        \ is returned rather than half-registered. DataCite integration can be switched\
+        \ off by configuration, and every route here answers 400 when it is."
+      operationId: createDOI
+      parameters:
+      - description: Identifier of the artifact the DOI is for.
+        in: query
+        name: source_artifact_id
+        required: true
+        schema:
+          type: string
+      - description: "`draft` for a DOI that can still be changed, `publish` for a\
+          \ findable and permanent one."
+        in: query
+        name: state
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JsonNode"
+      responses:
+        "200":
+          description: "The DOI, as registered"
+        "400":
+          description: "DataCite integration is disabled, `state` is neither draft\
+            \ nor publish, the artifact is not eligible, or the metadata failed validation"
+        "401":
+          description: Unauthorized
+        "403":
+          description: The caller lacks the template read permission
+        "409":
+          description: The artifact already has a findable DOI
+        "500":
+          description: Internal server error
+        "502":
+          description: DataCite could not be reached
+      security:
+      - api_key: []
+      summary: Mint a DOI for an artifact
+      tags:
+      - DOIs
+  /datacite/get-doi-metadata/{id}:
+    get:
+      description: "Fetch what DataCite holds for a DOI, including affiliation detail.\
+        \ The status is DataCite's own, so a DOI DataCite does not know comes back\
+        \ as its 404 rather than this server's. DataCite integration can be switched\
+        \ off by configuration, and every route here answers 400 when it is."
+      operationId: getDOIMetadata
+      parameters:
+      - description: "The DOI as a URL. Example: https://doi.org/10.82658/abcd-1234"
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "The DOI's metadata, as DataCite returned it"
+        "400":
+          description: DataCite integration is disabled
+        "401":
+          description: Unauthorized
+        "404":
+          description: DataCite holds no such DOI
+        "500":
+          description: Internal server error
+        "502":
+          description: DataCite could not be reached
+      security:
+      - api_key: []
+      summary: Get a DOI's metadata from DataCite
+      tags:
+      - DOIs
+  /ext-auth/{authority}/search-by-name:
+    get:
+      description: "These routes take no credentials. Neither builds a request context,\
+        \ so anyone who can reach this host can use them, and three of the seven authorities\
+        \ behind them spend credentials the deployment holds. Recorded here because\
+        \ a spec that claimed otherwise would be worse than one that says so. Search\
+        \ one external authority for entries matching a name, and return them with\
+        \ the paging that produced them. The status is the authority's own, so an\
+        \ upstream refusal is reported as that authority reported it. An authority\
+        \ that has not finished loading answers 503 with Retry-After rather than an\
+        \ empty result."
+      operationId: searchByName
+      parameters:
+      - description: "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`,\
+          \ `pmid`, `ror`, `rrid`. A segment no authority is registered under answers\
+          \ 404 naming the ones that are."
+        in: path
+        name: authority
+        required: true
+        schema:
+          type: string
+      - description: The name to search for.
+        in: query
+        name: q
+        schema:
+          type: string
+      - description: Zero-based page number. Defaults to 0.
+        in: query
+        name: page
+        schema:
+          type: integer
+          format: int32
+      - description: "Entries per page. Defaults to 100, and must be greater than\
+          \ one."
+        in: query
+        name: pageSize
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: "Matching entries, with `found`, `page` and `pageSize`"
+        "400":
+          description: '`page` is negative or `pageSize` is not greater than one'
+        "401":
+          description: Unauthorized
+        "404":
+          description: No authority is served under this path segment
+        "503":
+          description: The authority is not ready yet; Retry-After says when to try
+            again
+      summary: Search an external registry by name
+      tags:
+      - External authorities
+  /ext-auth/{authority}/{id}:
+    get:
+      description: "These routes take no credentials. Neither builds a request context,\
+        \ so anyone who can reach this host can use them, and three of the seven authorities\
+        \ behind them spend credentials the deployment holds. Recorded here because\
+        \ a spec that claimed otherwise would be worse than one that says so. Look\
+        \ one identifier up in an external authority and return what it holds, with\
+        \ `found` saying whether it resolved and `requestedId` echoing what was asked.\
+        \ The status is the authority's own. This path and the search path both match\
+        \ two segments; the literal `search-by-name` wins, so no authority can have\
+        \ an entry by that name."
+      operationId: details
+      parameters:
+      - description: "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`,\
+          \ `pmid`, `ror`, `rrid`. A segment no authority is registered under answers\
+          \ 404 naming the ones that are."
+        in: path
+        name: authority
+        required: true
+        schema:
+          type: string
+      - description: "The identifier to resolve, as that registry spells it."
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: What the authority holds for the identifier
+        "401":
+          description: Unauthorized
+        "404":
+          description: "No authority is served under this path segment, or the authority\
+            \ does not hold this identifier"
+        "503":
+          description: The authority is not ready yet; Retry-After says when to try
+            again
+      summary: Resolve an identifier against an external registry
+      tags:
+      - External authorities
+components:
+  schemas:
+    JsonNode:
+      type: object
+  securitySchemes:
+    api_key:
+      description: "Your CEDAR API key, using the format 'apiKey <yourApiKey>'"
+      in: header
+      name: Authorization
+      type: apiKey

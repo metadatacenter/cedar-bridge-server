@@ -2,37 +2,25 @@
 
 [![CI](https://github.com/metadatacenter/cedar-bridge-server/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/metadatacenter/cedar-bridge-server/actions/workflows/ci.yml)
 
-Microservice to access outside resources. Currently, it serves as the backend for requesting Digital Object Identifiers (DOIs) for templates and instances.
-It accepts a CEDAR DataCite template, transforms it into a DataCite-conformant format, and then submits it to the DataCite REST APIs.
+CEDAR's integration service for external identifiers and authorities. Its DataCite API transforms CEDAR
+metadata into DataCite records, mints DOIs, and retrieves DOI metadata. Its external-authority API
+normalizes search and detail lookups across ORCID, ROR, PFAS/CompTox, PubMed, RRID, NIH grants, and
+DOI providers.
 
-## Two essential API calls
-### Request a new DOI. 
-Generate a new DOI by providing the CEDAR DataCite instance.
-Endpoint URL:  https://bridge.metadatacenter.orgx/datacite/create-doi
-### Get metadata for an existing DOI
-Retrieve metadata information as a CEDAR DataCite instance for an existing DOI.  
-Endpoint URL: https://bridge.metadatacenter.orgx/datacite/get-doi-metadata/{id}
+The reactor contains `cedar-bridge-server-core` for DataCite model and transformation logic and
+`cedar-bridge-server-application` for the deployable Dropwizard service and external-authority adapters.
 
-## Prerequisites
-1. Build and install [cedar-parent](https://github.com/metadatacenter/cedar-parent)
-2. Build and install [cedar-libraries](https://github.com/metadatacenter/cedar-libraries)
+## Development
 
-## Getting started
-Clone the project:
+CEDAR backend development uses Java 17. From a configured CEDAR workspace:
 
-    git clone https://github.com/metadatacenter/cedar-bridge-server.git
+```bash
+export CEDAR_HOME="$HOME/CEDAR"
+CEDAR_PROFILE=develop source "$CEDAR_HOME/cedar-development/bin/templates/cedar-profile-native.sh"
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+./mvnw test
+```
 
-Navigate to the cedar-bridge-server directory:
-
-
-    cd cedar-bridge-server
-
-Then build it with Maven:
-
-    mcit
-
-## Questions
-
-If you have questions about this repository, please subscribe to the [CEDAR Developer Support
-mailing list](https://mailman.stanford.edu/mailman/listinfo/cedar-developers).
-After subscribing, send messages to cedar-developers at lists.stanford.edu.
+Use `cedar-development/ops/cedar-services.sh` to run the service with the rest of the native stack.
+The canonical setup, build, test, dependency, and runtime instructions are in the
+[CEDAR backend runbook](https://github.com/metadatacenter/cedar-development/blob/develop/ops/BACKEND-RUNBOOK.md).
