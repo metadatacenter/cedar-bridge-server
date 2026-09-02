@@ -3,7 +3,7 @@
   "info" : {
     "description" : "Better Metadata - Better Science\n\nThe bridge server is CEDAR's connection to registries outside it. It mints DOIs through DataCite\nso a CEDAR artifact can be cited, and it resolves and searches identifiers held by seven external\nauthorities: DOI, NIH grants, ORCID, CompTox, PubMed, ROR and RRID.\n\nWhere an answer comes from outside, the status comes from outside with it: an upstream refusal is\nreported as that registry reported it, rather than flattened into a 500.\n",
     "title" : "CEDAR Bridge Server API",
-    "version" : "2.9.5"
+    "version" : "2.9.6"
   },
   "paths" : {
     "/datacite/create-doi" : {
