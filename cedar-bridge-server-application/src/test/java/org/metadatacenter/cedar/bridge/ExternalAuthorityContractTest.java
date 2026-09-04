@@ -114,7 +114,7 @@ public class ExternalAuthorityContractTest {
 
   private static HttpResponse<String> get(String path) {
     HttpRequest request = HttpRequest.newBuilder()
-        .uri(URI.create("http://localhost:" + SERVER.getLocalPort() + path))
+        .uri(URI.create("http://127.0.0.1:" + SERVER.getLocalPort() + path))
         .GET()
         .build();
     try {

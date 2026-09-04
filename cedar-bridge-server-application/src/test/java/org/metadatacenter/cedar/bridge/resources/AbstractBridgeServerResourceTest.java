@@ -35,7 +35,7 @@ public abstract class AbstractBridgeServerResourceTest
   protected static String baseUrlCreateDoi;
   protected static Logger log;
 
-  protected static final String BASE_URL = "http://localhost";
+  protected static final String BASE_URL = "http://127.0.0.1";
 
   protected static final String FILE_BASE_PATH = "TestJsonFiles/";
   protected static final String DISPLAY_AFFILIATION = "?affiliation=true";

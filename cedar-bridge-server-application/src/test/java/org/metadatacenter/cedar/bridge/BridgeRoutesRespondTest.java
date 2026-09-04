@@ -97,7 +97,7 @@ public class BridgeRoutesRespondTest {
   @Test
   public void everyAuthenticatedRouteRejectsAnUnauthenticatedRequest() {
     RouteSurface.assertEveryRouteAnswers(
-        "http://localhost:" + SERVER.getLocalPort(),
+        "http://127.0.0.1:" + SERVER.getLocalPort(),
         RouteSurface.endpoints(AUTHENTICATED),
         401);
   }

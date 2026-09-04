@@ -53,7 +53,7 @@ public class BridgeServerApplicationSmokeTest {
 
   private HttpResponse<String> get(String path) throws Exception {
     HttpRequest request = HttpRequest.newBuilder()
-        .uri(URI.create("http://localhost:" + SERVER.getLocalPort() + path))
+        .uri(URI.create("http://127.0.0.1:" + SERVER.getLocalPort() + path))
         .GET()
         .build();
     return CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
