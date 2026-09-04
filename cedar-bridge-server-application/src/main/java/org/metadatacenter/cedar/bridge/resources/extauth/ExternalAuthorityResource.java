@@ -3,6 +3,8 @@ package org.metadatacenter.cedar.bridge.resources.extauth;
 import com.codahale.metrics.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,6 +16,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.metadatacenter.util.http.CedarError;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarException;
@@ -106,9 +109,9 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
           + "answers 503 with Retry-After rather than an empty result.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "Matching entries, with `found`, `page` and `pageSize`"),
-      @ApiResponse(responseCode = "400",
+      @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = CedarError.class)),
           description = "`page` is negative or `pageSize` is not greater than one"),
-      @ApiResponse(responseCode = "401", description = "Unauthorized"),
+      @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
       @ApiResponse(responseCode = "404", description = "No authority is served under this path segment"),
       @ApiResponse(responseCode = "503", description = "The authority is not ready yet; Retry-After says when to try again")
   })
@@ -163,7 +166,7 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
           + "literal `search-by-name` wins, so no authority can have an entry by that name.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "What the authority holds for the identifier"),
-      @ApiResponse(responseCode = "401", description = "Unauthorized"),
+      @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
       @ApiResponse(responseCode = "404",
           description = "No authority is served under this path segment, or the authority does not "
               + "hold this identifier"),
