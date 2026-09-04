@@ -12,6 +12,7 @@ import org.metadatacenter.cedar.bridge.resources.extauth.ExternalAuthorityResour
 import org.metadatacenter.cedar.util.dw.CedarHealthCheckResource;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceIndexResource;
 import org.metadatacenter.cedar.util.dw.CedarServerInsightReportResource;
+import org.metadatacenter.cedar.util.dw.CedarServerReportResource;
 import org.metadatacenter.config.environment.CedarEnvironmentSource;
 import org.metadatacenter.util.test.RouteSurface;
 
@@ -68,13 +69,13 @@ public class BridgeRoutesRespondTest {
   /**
    * Resource classes that require a credential on every route.
    *
-   * <p>{@link CedarServerInsightReportResource} and {@link CedarHealthCheckResource} are registered
-   * by the shared bootstrap rather than by {@code BridgeServerApplication}, which is why reading the
-   * application alone would miss them. Both assert {@code LoggedIn} on every route, so they are
-   * probed here like any other.
+   * <p>{@link CedarServerInsightReportResource}, {@link CedarServerReportResource}, and
+   * {@link CedarHealthCheckResource} are registered by the shared bootstrap rather than by
+   * {@code BridgeServerApplication}, which is why reading the application alone would miss them.
+   * All assert {@code LoggedIn} on every route, so they are probed here like any other.
    */
   private static final List<Class<?>> AUTHENTICATED =
-      List.of(DataCiteResource.class, CedarServerInsightReportResource.class,
+      List.of(DataCiteResource.class, CedarServerInsightReportResource.class, CedarServerReportResource.class,
           CedarHealthCheckResource.class);
 
   /**
