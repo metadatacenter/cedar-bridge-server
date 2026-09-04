@@ -10,7 +10,7 @@ info:
     Where an answer comes from outside, the status comes from outside with it: an upstream refusal is
     reported as that registry reported it, rather than flattened into a 500.
   title: CEDAR Bridge Server API
-  version: 2.9.7-SNAPSHOT
+  version: 2.9.7
 paths:
   /datacite/create-doi:
     get:
