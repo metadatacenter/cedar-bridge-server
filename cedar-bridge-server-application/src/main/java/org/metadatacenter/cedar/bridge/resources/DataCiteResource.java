@@ -3,6 +3,8 @@ package org.metadatacenter.cedar.bridge.resources;
 import com.codahale.metrics.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -20,6 +22,7 @@ import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.metadatacenter.util.http.CedarError;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance;
 import org.metadatacenter.cedar.bridge.resource.datacite.*;
@@ -119,11 +122,11 @@ public class DataCiteResource extends CedarMicroserviceResource {
           + "this server's. DataCite integration can be switched off by configuration, and every route here answers 400 when it is.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "The DOI's metadata, as DataCite returned it"),
-      @ApiResponse(responseCode = "400", description = "DataCite integration is disabled"),
-      @ApiResponse(responseCode = "401", description = "Unauthorized"),
-      @ApiResponse(responseCode = "404", description = "DataCite holds no such DOI"),
-      @ApiResponse(responseCode = "502", description = "DataCite could not be reached"),
-      @ApiResponse(responseCode = "500", description = "Internal server error")
+      @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite integration is disabled"),
+      @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
+      @ApiResponse(responseCode = "404", description = "DataCite holds no such DOI; the body is DataCite's own"),
+      @ApiResponse(responseCode = "502", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite could not be reached"),
+      @ApiResponse(responseCode = "500", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Internal server error")
   })
   public Response getDOIMetadata(
       @Parameter(description = "The DOI as a URL. Example: https://doi.org/10.82658/abcd-1234",
@@ -188,12 +191,12 @@ public class DataCiteResource extends CedarMicroserviceResource {
           + "nothing is minted here. DataCite integration can be switched off by configuration, and every route here answers 400 when it is.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "The template, the artifact, and the draft or pre-filled metadata"),
-      @ApiResponse(responseCode = "400", description = "DataCite integration is disabled, or the artifact is not eligible for a DOI"),
-      @ApiResponse(responseCode = "401", description = "Unauthorized"),
-      @ApiResponse(responseCode = "403", description = "The caller lacks the template read permission"),
-      @ApiResponse(responseCode = "409", description = "The artifact already has a findable DOI"),
-      @ApiResponse(responseCode = "502", description = "DataCite could not be reached"),
-      @ApiResponse(responseCode = "500", description = "Internal server error")
+      @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite integration is disabled, or the artifact is not eligible for a DOI"),
+      @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
+      @ApiResponse(responseCode = "403", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The caller lacks the template read permission"),
+      @ApiResponse(responseCode = "409", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The artifact already has a findable DOI"),
+      @ApiResponse(responseCode = "502", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite could not be reached"),
+      @ApiResponse(responseCode = "500", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Internal server error")
   })
   public Response createDOIStart(
       @Parameter(description = "Identifier of the artifact the DOI is for.", required = true)
@@ -295,14 +298,14 @@ public class DataCiteResource extends CedarMicroserviceResource {
           + "DataCite integration can be switched off by configuration, and every route here answers 400 when it is.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "The DOI, as registered"),
-      @ApiResponse(responseCode = "400",
+      @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = CedarError.class)),
           description = "DataCite integration is disabled, `state` is neither draft nor publish, the "
               + "artifact is not eligible, or the metadata failed validation"),
-      @ApiResponse(responseCode = "401", description = "Unauthorized"),
-      @ApiResponse(responseCode = "403", description = "The caller lacks the template read permission"),
-      @ApiResponse(responseCode = "409", description = "The artifact already has a findable DOI"),
-      @ApiResponse(responseCode = "502", description = "DataCite could not be reached"),
-      @ApiResponse(responseCode = "500", description = "Internal server error")
+      @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
+      @ApiResponse(responseCode = "403", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The caller lacks the template read permission"),
+      @ApiResponse(responseCode = "409", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The artifact already has a findable DOI"),
+      @ApiResponse(responseCode = "502", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite could not be reached"),
+      @ApiResponse(responseCode = "500", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Internal server error")
   })
   public Response createDOI(
       @Parameter(description = "Identifier of the artifact the DOI is for.", required = true)
