@@ -46,9 +46,12 @@ public abstract class AbstractBridgeServerResourceTest
 
   static {
     log = LoggerFactory.getLogger("Cedar Bridge Server Test");
+    redirectEnvironment();
+  }
+
+  private static void redirectEnvironment() {
     // OS-assigned server ports so the test never collides with a running dev bridge server, which owns
-    // 9015. The connector port is driven by CEDAR_BRIDGE_HTTP_PORT (it overrides the test config's
-    // literal port), so redirect it here before the test support boots the server.
+    // 9015. The connector port is driven by CEDAR_BRIDGE_HTTP_PORT, so redirect it before boot.
     Map<String, String> environment = new HashMap<>(CedarEnvironmentSource.getAll());
     environment.put("CEDAR_BRIDGE_HTTP_PORT", "0");
     environment.put("CEDAR_BRIDGE_ADMIN_PORT", "0");
@@ -62,7 +65,8 @@ public abstract class AbstractBridgeServerResourceTest
 
   @BeforeAll
   public static void oneTimeSetUpAbstract() throws Exception {
-
+    // Concrete subclasses share this abstract harness, so restore its redirect for each class.
+    redirectEnvironment();
     SERVER.before();
 
     SystemComponent systemComponent = SystemComponent.SERVER_BRIDGE;
