@@ -360,6 +360,7 @@ components:
           - noWriteAccessToTemplateInstance
           - noReadAccessToArtifact
           - noWriteAccessToArtifact
+          - noReadAccessToCategory
           - noWriteAccessToCategory
           - folderNotFound
           - artifactNotFound
@@ -412,6 +413,7 @@ components:
           - groupAlreadyPresent
           - groupCanBeModifiedOnlyByGroupAdmin
           - groupCanBeDeletedOnlyByGroupAdmin
+          - groupRequiresAdministrator
           - groupUsersNotUpdated
           - specialGroupCanNotBeDeleted
           - folderPermissionsCanNotBeChanged
