@@ -48,6 +48,7 @@ import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.ResourcePermissionServiceSession;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
+import org.metadatacenter.server.security.model.permission.resource.ResourceCapability;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.ProxyUtil;
 import org.metadatacenter.util.json.JsonMapper;
@@ -553,11 +554,11 @@ public class DataCiteResource extends CedarMicroserviceResource {
                                         CedarArtifactId sourceArtifactId, JsonNode sourceArtifactJson)
       throws CedarException {
     ResourcePermissionServiceSession permissionSession = dataServices.getResourcePermissionServiceSession(context);
-    if (!permissionSession.userHasWriteAccessToResource(sourceArtifactId)) {
+    if (!permissionSession.userHasCapability(sourceArtifactId, ResourceCapability.UPDATE_RESOURCE)) {
       return CedarResponse
           .unauthorized()
           .errorKey(CedarErrorKey.NO_WRITE_ACCESS_TO_ARTIFACT)
-          .errorMessage("You do not have write access to the artifact")
+          .errorMessage("You do not have permission to edit the artifact")
           .parameter(DataciteConstants.RESOURCE_ID, sourceArtifactId)
           .build();
     }
