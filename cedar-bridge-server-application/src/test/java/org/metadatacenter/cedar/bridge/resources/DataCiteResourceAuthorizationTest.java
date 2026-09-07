@@ -14,6 +14,7 @@ import org.metadatacenter.model.folderserver.basic.FolderServerArtifact;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.ResourcePermissionServiceSession;
+import org.metadatacenter.server.security.model.permission.resource.ResourceCapability;
 
 import jakarta.ws.rs.core.Response;
 import java.util.UUID;
@@ -49,7 +50,7 @@ class DataCiteResourceAuthorizationTest {
 
   @Test
   void rejectsAUserWithoutWriteAccessBeforeCheckingArtifactState() throws Exception {
-    when(permissionSession.userHasWriteAccessToResource(templateId)).thenReturn(false);
+    when(permissionSession.userHasCapability(templateId, ResourceCapability.UPDATE_RESOURCE)).thenReturn(false);
 
     Response response = resource.validateSourceArtifactForDoi(
         context, CedarResourceType.TEMPLATE, templateId, publishedTemplate);
@@ -95,7 +96,7 @@ class DataCiteResourceAuthorizationTest {
   }
 
   private void allowWriteAndReturnArtifact() throws Exception {
-    when(permissionSession.userHasWriteAccessToResource(templateId)).thenReturn(true);
+    when(permissionSession.userHasCapability(templateId, ResourceCapability.UPDATE_RESOURCE)).thenReturn(true);
     when(dataServices.getFolderServiceSession(context)).thenReturn(folderSession);
     when(folderSession.findArtifactById(templateId)).thenReturn(artifact);
   }
