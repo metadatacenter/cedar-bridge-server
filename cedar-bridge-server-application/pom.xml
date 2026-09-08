@@ -186,6 +186,7 @@
         <configuration>
           <resourcePackages>
             <package>org.metadatacenter.cedar.bridge.resources</package>
+            <package>org.metadatacenter.cedar.util.dw</package>
           </resourcePackages>
         </configuration>
       </plugin>
