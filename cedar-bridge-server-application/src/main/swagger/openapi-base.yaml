@@ -15,6 +15,175 @@ info:
     reported as that registry reported it, rather than flattened into a 500.
   version: ${project.version}
 components:
+  schemas:
+
+    # ---- DataCite -------------------------------------------------------------------------------
+
+    DoiFormStart:
+      type: object
+      description: |
+        Everything the workbench needs to open the DOI form for one artifact: the DataCite metadata
+        template, the source artifact, and either the draft DOI already started for it or a metadata
+        instance pre-filled with what could be derived.
+      properties:
+        sourceArtifactType:
+          type: string
+          description: The kind of artifact the DOI is for.
+          enum:
+            - field
+            - element
+            - template
+            - instance
+        sourceArtifact:
+          type: object
+          description: |
+            The source artifact, as the artifact server returned it. An open CEDAR JSON-LD artifact
+            of the kind `sourceArtifactType` names.
+          additionalProperties: true
+        dataCiteTemplate:
+          type: object
+          description: |
+            The DataCite metadata template the form is rendered from, as the artifact server returned
+            it. An open CEDAR JSON-LD template, its identifier fixed by configuration.
+          additionalProperties: true
+        existingDataCiteMetadata:
+          allOf:
+            - $ref: '#/components/schemas/InstanceArtifactDocument'
+          description: |
+            The metadata the form opens with, as an instance of the DataCite metadata template.
+            Converted from the draft DOI where DataCite already holds one for the artifact, and
+            otherwise pre-filled with the artifact's URL and resource type alone.
+        draftDoi:
+          type: string
+          nullable: true
+          description: The draft DOI DataCite already holds for the artifact, or null where it holds none.
+      additionalProperties: false
+    DoiRegistration:
+      type: object
+      description: The DOI as DataCite registered it.
+      properties:
+        doiId:
+          type: string
+          description: The DOI without a resolver prefix, as DataCite identifies it.
+        doiName:
+          type: string
+          format: uri
+          description: The same DOI as a resolvable URL.
+        dataCiteResponse:
+          type: string
+          description: DataCite's own response body, passed through as the string it arrived as rather than reparsed.
+      additionalProperties: false
+    DataCiteDoiMetadata:
+      type: object
+      description: |
+        What DataCite holds for the DOI, as DataCite returned it: its JSON:API document, requested
+        with affiliation detail. The keys below are the ones that document always carries; everything
+        under `attributes` is DataCite's own and follows the DataCite metadata schema.
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            type:
+              type: string
+            attributes:
+              type: object
+              description: The DOI's metadata, as DataCite models it.
+              additionalProperties: true
+          additionalProperties: true
+      additionalProperties: true
+
+    # ---- external authorities -------------------------------------------------------------------
+
+    AuthorityTerm:
+      type: object
+      description: One entry an authority offers for a name.
+      properties:
+        name:
+          type: string
+          description: The entry's display name, chosen by the authority from the names the registry holds.
+        details:
+          type: string
+          description: |
+            A line of supporting detail the authority composes to tell one entry from another of the
+            same name. Its wording is the authority's own.
+      additionalProperties: false
+    AuthoritySearchResults:
+      type: object
+      description: |
+        The entries one authority offers for a name, with the paging that produced them. The status
+        is the authority's own, so an upstream refusal arrives with the registry's status and its
+        reason under `errors`.
+      required:
+        - found
+        - results
+        - page
+        - pageSize
+      properties:
+        found:
+          type: boolean
+          description: Whether the registry answered and offered at least one entry.
+        results:
+          type: object
+          description: One entry per matching term, keyed by the term's IRI, in the order the registry offered them.
+          additionalProperties:
+            $ref: '#/components/schemas/AuthorityTerm'
+        page:
+          type: integer
+          format: int32
+          description: The zero-based page returned, defaulted to 0.
+        pageSize:
+          type: integer
+          format: int32
+          description: The page size used, defaulted to 100.
+        errors:
+          type: array
+          description: |
+            What the registry said went wrong, one message per entry. Present only where the registry
+            reported something; only ORCID does.
+          items:
+            type: string
+      additionalProperties: false
+    AuthorityDetails:
+      type: object
+      description: |
+        What one authority holds for one identifier. Only `found` and `requestedId` are added by
+        CEDAR; the rest of the object is the authority's own, and the keys below are the ones every
+        authority sets when it resolves an identifier. ORCID and ROR also pass the registry's whole
+        record through under `rawResponse`, and its errors under `errors`.
+      required:
+        - found
+        - requestedId
+      properties:
+        found:
+          type: boolean
+          description: Whether the identifier resolved.
+        requestedId:
+          type: string
+          description: The identifier as it was asked for.
+        id:
+          type: string
+          format: uri
+          nullable: true
+          description: The entry's IRI, as the authority spells it.
+        name:
+          type: string
+          nullable: true
+          description: The entry's display name. Null where the identifier did not resolve.
+        details:
+          type: string
+          description: A line of supporting detail, where the authority composes one.
+        rawResponse:
+          type: object
+          description: The registry's own record, unchanged, where the authority passes it through.
+          additionalProperties: true
+        errors:
+          type: array
+          description: What the registry said went wrong, one message per entry.
+          items:
+            type: string
+      additionalProperties: true
   securitySchemes:
     api_key:
       type: apiKey

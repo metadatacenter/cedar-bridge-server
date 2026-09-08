@@ -3,8 +3,10 @@ package org.metadatacenter.cedar.bridge.resources;
 import com.codahale.metrics.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -23,6 +25,7 @@ import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.util.http.CedarError;
+import org.metadatacenter.util.artifact.InstanceArtifactDocument;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance;
 import org.metadatacenter.cedar.bridge.resource.datacite.*;
@@ -122,7 +125,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
           + "is DataCite's own, so a DOI DataCite does not know comes back as its 404 rather than "
           + "this server's. DataCite integration can be switched off by configuration, and every route here answers 400 when it is.")
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "The DOI's metadata, as DataCite returned it"),
+      @ApiResponse(responseCode = "200", description = "The DOI's metadata, as DataCite returned it",
+          content = @Content(schema = @Schema(ref = "#/components/schemas/DataCiteDoiMetadata"))),
       @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite integration is disabled"),
       @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
       @ApiResponse(responseCode = "404", description = "DataCite holds no such DOI; the body is DataCite's own"),
@@ -191,7 +195,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
           + "started for it or a metadata instance pre-filled with what can be derived. Reads only; "
           + "nothing is minted here. DataCite integration can be switched off by configuration, and every route here answers 400 when it is.")
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "The template, the artifact, and the draft or pre-filled metadata"),
+      @ApiResponse(responseCode = "200", description = "The template, the artifact, and the draft or pre-filled metadata",
+          content = @Content(schema = @Schema(ref = "#/components/schemas/DoiFormStart"))),
       @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite integration is disabled, or the artifact is not eligible for a DOI"),
       @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
       @ApiResponse(responseCode = "403", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The caller lacks the template read permission"),
@@ -297,8 +302,16 @@ public class DataCiteResource extends CedarMicroserviceResource {
           + "published DOI, which is findable and permanent. The metadata is validated against the "
           + "DataCite template first, and a failure is returned rather than half-registered. "
           + "DataCite integration can be switched off by configuration, and every route here answers 400 when it is.")
+  @RequestBody(description = "The DataCite metadata to register, as an instance of the DataCite "
+      + "metadata template. It is validated against that template before anything is sent to DataCite.",
+      required = true,
+      content = @Content(mediaType = MediaType.APPLICATION_JSON,
+          schema = @Schema(implementation = InstanceArtifactDocument.class)))
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "The DOI, as registered"),
+      @ApiResponse(responseCode = "201", description = "The DOI, as registered",
+          content = @Content(schema = @Schema(ref = "#/components/schemas/DoiRegistration")),
+          headers = @Header(name = "Location", description = "The DOI as a resolvable URL.",
+              schema = @Schema(type = "string", format = "uri"))),
       @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = CedarError.class)),
           description = "DataCite integration is disabled, `state` is neither draft nor publish, the "
               + "artifact is not eligible, or the metadata failed validation"),
@@ -314,7 +327,10 @@ public class DataCiteResource extends CedarMicroserviceResource {
       @Parameter(description = "`draft` for a DOI that can still be changed, `publish` for a "
           + "findable and permanent one.", required = true)
       @QueryParam("state") String state,
-      JsonNode dataCiteInstance) throws CedarException, IOException, InterruptedException {
+      // Hidden from the scanner, not from the spec: the body is described by the @RequestBody above.
+      // Left unannotated, the scanner resolves JsonNode into a component of its own, which the
+      // explicit request body then never references, and the spec carries an empty JsonNode schema.
+      @Parameter(hidden = true) JsonNode dataCiteInstance) throws CedarException, IOException, InterruptedException {
     CedarRequestContext c = buildRequestContext();
 
     c.must(c.user()).be(LoggedIn);
