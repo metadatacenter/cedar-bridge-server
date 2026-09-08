@@ -12,6 +12,7 @@ import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.rest.context.CedarRequestContext;
+import org.metadatacenter.util.http.CedarError;
 
 import jakarta.ws.rs.core.Response;
 import java.net.http.HttpClient;
@@ -98,7 +99,7 @@ class DataCitePublicationWorkflowTest {
 
     assertEquals(502, response.getStatus());
     assertReconciliationDetails(response);
-    assertTrue(entity(response).containsKey("errorId"));
+    assertTrue(error(response).errorId != null);
   }
 
   @Test
@@ -132,18 +133,15 @@ class DataCitePublicationWorkflowTest {
     assertEquals(true, parameters.get("reconciliationRequired"));
   }
 
-  @SuppressWarnings("unchecked")
   private Map<String, Object> parameters(Response response) {
-    return (Map<String, Object>) entity(response).get("parameters");
+    return error(response).parameters;
   }
 
-  @SuppressWarnings("unchecked")
   private Map<String, Object> objects(Response response) {
-    return (Map<String, Object>) entity(response).get("objects");
+    return error(response).objects;
   }
 
-  @SuppressWarnings("unchecked")
-  private Map<String, Object> entity(Response response) {
-    return (Map<String, Object>) response.getEntity();
+  private CedarError error(Response response) {
+    return (CedarError) response.getEntity();
   }
 }

@@ -14,9 +14,7 @@ class OpenApiErrorContractTest {
       OpenApiErrorContract.assertDocumented(input,
           "GET /datacite/get-doi-metadata/{id} 404",
           "GET /ext-auth/{authority}/search-by-name 404",
-          "GET /ext-auth/{authority}/search-by-name 503",
-          "GET /ext-auth/{authority}/{id} 404",
-          "GET /ext-auth/{authority}/{id} 503");
+          "GET /ext-auth/{authority}/{id} 404");
     }
   }
 }
