@@ -108,12 +108,14 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
           + "is reported as that authority reported it. An authority that has not finished loading "
           + "answers 503 with Retry-After rather than an empty result.")
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "Matching entries, with `found`, `page` and `pageSize`"),
+      @ApiResponse(responseCode = "200", description = "Matching entries, with `found`, `page` and `pageSize`",
+          content = @Content(schema = @Schema(ref = "#/components/schemas/AuthoritySearchResults"))),
       @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = CedarError.class)),
           description = "`page` is negative or `pageSize` is not greater than one"),
       @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
       @ApiResponse(responseCode = "404", description = "No authority is served under this path segment"),
-      @ApiResponse(responseCode = "503", description = "The authority is not ready yet; Retry-After says when to try again")
+      @ApiResponse(responseCode = "503", description = "The authority is not ready yet; Retry-After says when to try again",
+          content = @Content(schema = @Schema(implementation = CedarError.class)))
   })
   public Response searchByName(
       @Parameter(description = "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`, `pmid`, `ror`, `rrid`. A segment no authority is registered under answers 404 naming the ones that are.", required = true)
@@ -165,12 +167,14 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
           + "is the authority's own. This path and the search path both match two segments; the "
           + "literal `search-by-name` wins, so no authority can have an entry by that name.")
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "What the authority holds for the identifier"),
+      @ApiResponse(responseCode = "200", description = "What the authority holds for the identifier",
+          content = @Content(schema = @Schema(ref = "#/components/schemas/AuthorityDetails"))),
       @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
       @ApiResponse(responseCode = "404",
           description = "No authority is served under this path segment, or the authority does not "
               + "hold this identifier"),
-      @ApiResponse(responseCode = "503", description = "The authority is not ready yet; Retry-After says when to try again")
+      @ApiResponse(responseCode = "503", description = "The authority is not ready yet; Retry-After says when to try again",
+          content = @Content(schema = @Schema(implementation = CedarError.class)))
   })
   public Response details(
       @Parameter(description = "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`, `pmid`, `ror`, `rrid`. A segment no authority is registered under answers 404 naming the ones that are.", required = true)
@@ -216,7 +220,7 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   private Response notReadyResponse(AuthorityNotReadyException notReady) {
     return CedarResponse.status(CedarResponseStatus.SERVICE_UNAVAILABLE)
         .header(HttpHeaders.RETRY_AFTER, Long.toString(notReady.getRetryAfterSeconds()))
-        .entity(Map.of("message", notReady.getMessage()))
+        .errorMessage(notReady.getMessage())
         .build();
   }
 }

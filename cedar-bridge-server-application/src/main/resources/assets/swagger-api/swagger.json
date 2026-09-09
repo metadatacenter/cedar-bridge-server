@@ -3,9 +3,28 @@
   "info" : {
     "description" : "Better Metadata - Better Science\n\nThe bridge server is CEDAR's connection to registries outside it. It mints DOIs through DataCite\nso a CEDAR artifact can be cited, and it resolves and searches identifiers held by seven external\nauthorities: DOI, NIH grants, ORCID, CompTox, PubMed, ROR and RRID.\n\nWhere an answer comes from outside, the status comes from outside with it: an upstream refusal is\nreported as that registry reported it, rather than flattened into a 500.\n",
     "title" : "CEDAR Bridge Server API",
-    "version" : "2.9.9"
+    "version" : "2.9.10"
   },
   "paths" : {
+    "/" : {
+      "get" : {
+        "operationId" : "showInfo",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "The service name and links to its API documentation"
+          }
+        },
+        "summary" : "Describe this CEDAR service",
+        "tags" : [ "Service" ]
+      }
+    },
     "/datacite/create-doi" : {
       "get" : {
         "description" : "Return everything the workbench needs to open the DOI form for one artifact: the DataCite metadata template, the source artifact, and either the draft DOI already started for it or a metadata instance pre-filled with what can be derived. Reads only; nothing is minted here. DataCite integration can be switched off by configuration, and every route here answers 400 when it is.",
@@ -21,6 +40,13 @@
         } ],
         "responses" : {
           "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DoiFormStart"
+                }
+              }
+            },
             "description" : "The template, the artifact, and the draft or pre-filled metadata"
           },
           "400" : {
@@ -114,14 +140,33 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/JsonNode"
+                "$ref" : "#/components/schemas/InstanceArtifactDocument"
               }
             }
-          }
+          },
+          "description" : "The DataCite metadata to register, as an instance of the DataCite metadata template. It is validated against that template before anything is sent to DataCite.",
+          "required" : true
         },
         "responses" : {
-          "200" : {
-            "description" : "The DOI, as registered"
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DoiRegistration"
+                }
+              }
+            },
+            "description" : "The DOI, as registered",
+            "headers" : {
+              "Location" : {
+                "description" : "The DOI as a resolvable URL.",
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uri"
+                },
+                "style" : "simple"
+              }
+            }
           },
           "400" : {
             "content" : {
@@ -206,6 +251,13 @@
         } ],
         "responses" : {
           "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataCiteDoiMetadata"
+                }
+              }
+            },
             "description" : "The DOI's metadata, as DataCite returned it"
           },
           "400" : {
@@ -297,6 +349,13 @@
         } ],
         "responses" : {
           "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthoritySearchResults"
+                }
+              }
+            },
             "description" : "Matching entries, with `found`, `page` and `pageSize`"
           },
           "400" : {
@@ -323,6 +382,13 @@
             "description" : "No authority is served under this path segment"
           },
           "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
             "description" : "The authority is not ready yet; Retry-After says when to try again"
           }
         },
@@ -353,6 +419,13 @@
         } ],
         "responses" : {
           "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthorityDetails"
+                }
+              }
+            },
             "description" : "What the authority holds for the identifier"
           },
           "401" : {
@@ -369,16 +442,421 @@
             "description" : "No authority is served under this path segment, or the authority does not hold this identifier"
           },
           "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
             "description" : "The authority is not ready yet; Retry-After says when to try again"
           }
         },
         "summary" : "Resolve an identifier against an external registry",
         "tags" : [ "External authorities" ]
       }
+    },
+    "/healthcheck" : {
+      "get" : {
+        "operationId" : "healthCheck",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Every health check passed"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "At least one health check failed"
+          }
+        },
+        "security" : [ {
+          "api_key" : [ ]
+        } ],
+        "summary" : "Run this service's health checks",
+        "tags" : [ "Service diagnostics" ]
+      }
+    },
+    "/insight/full" : {
+      "get" : {
+        "operationId" : "full",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "The requested JVM diagnostic report"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          }
+        },
+        "security" : [ {
+          "api_key" : [ ]
+        } ],
+        "summary" : "Report all JVM diagnostics except per-thread stack traces",
+        "tags" : [ "Service diagnostics" ]
+      }
+    },
+    "/insight/gc" : {
+      "get" : {
+        "operationId" : "gc",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "The requested JVM diagnostic report"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          }
+        },
+        "security" : [ {
+          "api_key" : [ ]
+        } ],
+        "summary" : "Report JVM garbage-collection counts",
+        "tags" : [ "Service diagnostics" ]
+      }
+    },
+    "/insight/memory" : {
+      "get" : {
+        "operationId" : "memory",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "The requested JVM diagnostic report"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          }
+        },
+        "security" : [ {
+          "api_key" : [ ]
+        } ],
+        "summary" : "Report JVM memory use",
+        "tags" : [ "Service diagnostics" ]
+      }
+    },
+    "/insight/system" : {
+      "get" : {
+        "operationId" : "system",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "The requested JVM diagnostic report"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          }
+        },
+        "security" : [ {
+          "api_key" : [ ]
+        } ],
+        "summary" : "Report operating-system information",
+        "tags" : [ "Service diagnostics" ]
+      }
+    },
+    "/insight/thread-details" : {
+      "get" : {
+        "operationId" : "threadDetails",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "The requested JVM diagnostic report"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          }
+        },
+        "security" : [ {
+          "api_key" : [ ]
+        } ],
+        "summary" : "Report details and stack traces for every JVM thread",
+        "tags" : [ "Service diagnostics" ]
+      }
+    },
+    "/insight/threads" : {
+      "get" : {
+        "operationId" : "threads",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "The requested JVM diagnostic report"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          }
+        },
+        "security" : [ {
+          "api_key" : [ ]
+        } ],
+        "summary" : "Report JVM thread counts",
+        "tags" : [ "Service diagnostics" ]
+      }
     }
   },
   "components" : {
     "schemas" : {
+      "AuthorityDetails" : {
+        "type" : "object",
+        "additionalProperties" : true,
+        "description" : "What one authority holds for one identifier. Only `found` and `requestedId` are added by\nCEDAR; the rest of the object is the authority's own, and the keys below are the ones every\nauthority sets when it resolves an identifier. ORCID and ROR also pass the registry's whole\nrecord through under `rawResponse`, and its errors under `errors`.\n",
+        "properties" : {
+          "details" : {
+            "type" : "string",
+            "description" : "A line of supporting detail, where the authority composes one."
+          },
+          "errors" : {
+            "type" : "array",
+            "description" : "What the registry said went wrong, one message per entry.",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "found" : {
+            "type" : "boolean",
+            "description" : "Whether the identifier resolved."
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uri",
+            "description" : "The entry's IRI, as the authority spells it.",
+            "nullable" : true
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "The entry's display name. Null where the identifier did not resolve.",
+            "nullable" : true
+          },
+          "rawResponse" : {
+            "type" : "object",
+            "additionalProperties" : true,
+            "description" : "The registry's own record, unchanged, where the authority passes it through."
+          },
+          "requestedId" : {
+            "type" : "string",
+            "description" : "The identifier as it was asked for."
+          }
+        },
+        "required" : [ "found", "requestedId" ]
+      },
+      "AuthoritySearchResults" : {
+        "type" : "object",
+        "additionalProperties" : false,
+        "description" : "The entries one authority offers for a name, with the paging that produced them. The status\nis the authority's own, so an upstream refusal arrives with the registry's status and its\nreason under `errors`.\n",
+        "properties" : {
+          "errors" : {
+            "type" : "array",
+            "description" : "What the registry said went wrong, one message per entry. Present only where the registry\nreported something; only ORCID does.\n",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "found" : {
+            "type" : "boolean",
+            "description" : "Whether the registry answered and offered at least one entry."
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The zero-based page returned, defaulted to 0."
+          },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The page size used, defaulted to 100."
+          },
+          "results" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/AuthorityTerm"
+            },
+            "description" : "One entry per matching term, keyed by the term's IRI, in the order the registry offered them."
+          }
+        },
+        "required" : [ "found", "page", "pageSize", "results" ]
+      },
+      "AuthorityTerm" : {
+        "type" : "object",
+        "additionalProperties" : false,
+        "description" : "One entry an authority offers for a name.",
+        "properties" : {
+          "details" : {
+            "type" : "string",
+            "description" : "A line of supporting detail the authority composes to tell one entry from another of the\nsame name. Its wording is the authority's own.\n"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "The entry's display name, chosen by the authority from the names the registry holds."
+          }
+        }
+      },
       "CedarError" : {
         "type" : "object",
         "additionalProperties" : true,
@@ -403,7 +881,7 @@
           "errorKey" : {
             "type" : "string",
             "description" : "Stable machine-readable error identifier.",
-            "enum" : [ "templateElementNotCreated", "templateElementNotFound", "templateElementNotDeleted", "templateElementNotUpdated", "templateElementsNotListed", "templateFieldNotCreated", "templateFieldNotFound", "templateFieldNotDeleted", "templateFieldNotUpdated", "templateFieldsNotListed", "templateNotCreated", "templateNotFound", "templateNotDeleted", "templateNotUpdated", "templatesNotListed", "templateInstanceNotCreated", "templateInstanceNotFound", "templateInstanceNotDeleted", "templateInstanceNotUpdated", "templateInstancesNotListed", "noReadAccessToResource", "noWriteAccessToResource", "noReadAccessToFolder", "noWriteAccessToFolder", "noReadAccessToTemplate", "noWriteAccessToTemplate", "noReadAccessToTemplateElement", "noWriteAccessToTemplateElement", "noReadAccessToTemplateField", "noWriteAccessToTemplateField", "noReadAccessToTemplateInstance", "noWriteAccessToTemplateInstance", "noReadAccessToArtifact", "noWriteAccessToArtifact", "noReadAccessToCategory", "noWriteAccessToCategory", "folderNotFound", "artifactNotFound", "artifactPreconditionRequired", "artifactHasMovedOn", "verbatimWriteRefused", "nodeNotFound", "unknownResourceType", "missingParameter", "invalidInput", "sourceFolderNotFound", "sourceResourceNotFound", "targetFolderNotFound", "nodeNotMoved", "groupNotFound", "userNotFound", "uniqueConstraintCollision", "invalidData", "notAuthorized", "permissionMissing", "tokenInvalid", "userInfoLoadByTokenFailed", "userInfoLoadByApiKeyFailed", "cedarUserNotFound", "authorizationNotFound", "permissionNotOwned", "authorizationTypeUnknown", "apiKeyNotFound", "tokenMissing", "tokenExpired", "parentFolderNotSpecified", "parentFolderSpecifiedTwice", "pathNotNormalized", "parentFolderNotFound", "updateInvalidFolderName", "createInvalidFolderName", "nodeAlreadyPresent", "folderNotCreated", "missingNameAndDescription", "missingData", "folderNotDeleted", "artifactNotDeleted", "resourceNotCreated", "invalidResourceType", "invalidArtifactType", "readOtherProfileForbidden", "updateOtherProfileForbidden", "folderCanNotBeDeleted", "folderCanNotBeChanged", "groupAlreadyPresent", "groupCanBeModifiedOnlyByGroupAdmin", "groupCanBeDeletedOnlyByGroupAdmin", "groupRequiresAdministrator", "groupUsersNotUpdated", "specialGroupCanNotBeDeleted", "folderPermissionsCanNotBeChanged", "unknownInstanceOutputFormat", "folderCopyNotAllowed", "methodNotImplemented", "upstreamServerError", "nothingToDo", "parentCategoryNotFound", "categoryAlreadyPresent", "categoryNotFound", "categoryCanNotBeDeleted", "rootCategoryCanNotBeDeleted", "unableToAttachCategory", "unableToDetachCategory", "noCategoriesWereAttached", "malformedJsonRequestBody", "malformedSearchTerm", "publishedArtifactCanNotBeChanged", "publishedArtifactCanNotBeDeleted", "versioningOnlyOnLatest", "versioningOnlyByOwner", "nonVersionedArtifactType", "createDraftOnlyFromPublished", "publishOnlyDraft", "draftNotCreated", "contentNotValid", "doiNotSupportedByResourceType", "doiCanNotBeSetForEmptyAtId", "doiCanNotBeAltered", "doiCanNotBeSet", "doiAlreadyExists", "dataCiteDOIDisabled", "resourceNotFound", "internalError" ],
+            "enum" : [ "templateElementNotCreated", "templateElementNotFound", "templateElementNotDeleted", "templateElementNotUpdated", "templateElementsNotListed", "templateFieldNotCreated", "templateFieldNotFound", "templateFieldNotDeleted", "templateFieldNotUpdated", "templateFieldsNotListed", "templateNotCreated", "templateNotFound", "templateNotDeleted", "templateNotUpdated", "templatesNotListed", "templateInstanceNotCreated", "templateInstanceNotFound", "templateInstanceNotDeleted", "templateInstanceNotUpdated", "templateInstancesNotListed", "noReadAccessToResource", "noWriteAccessToResource", "noReadAccessToFolder", "noWriteAccessToFolder", "noReadAccessToTemplate", "noWriteAccessToTemplate", "noReadAccessToTemplateElement", "noWriteAccessToTemplateElement", "noReadAccessToTemplateField", "noWriteAccessToTemplateField", "noReadAccessToTemplateInstance", "noWriteAccessToTemplateInstance", "noReadAccessToArtifact", "noWriteAccessToArtifact", "noReadAccessToCategory", "noWriteAccessToCategory", "folderNotFound", "artifactNotFound", "artifactPreconditionRequired", "artifactHasMovedOn", "verbatimWriteRefused", "nodeNotFound", "unknownResourceType", "missingParameter", "invalidInput", "sourceFolderNotFound", "sourceResourceNotFound", "targetFolderNotFound", "nodeNotMoved", "groupNotFound", "userNotFound", "uniqueConstraintCollision", "invalidData", "notAuthorized", "permissionMissing", "tokenInvalid", "userInfoLoadByTokenFailed", "userInfoLoadByApiKeyFailed", "cedarUserNotFound", "authorizationNotFound", "permissionNotOwned", "authorizationTypeUnknown", "apiKeyNotFound", "tokenMissing", "tokenExpired", "parentFolderNotSpecified", "parentFolderSpecifiedTwice", "pathNotNormalized", "parentFolderNotFound", "updateInvalidFolderName", "createInvalidFolderName", "nodeAlreadyPresent", "folderNotCreated", "missingNameAndDescription", "missingData", "folderNotDeleted", "artifactNotDeleted", "resourceNotCreated", "invalidResourceType", "invalidArtifactType", "readOtherProfileForbidden", "updateOtherProfileForbidden", "folderCanNotBeDeleted", "folderCanNotBeChanged", "groupAlreadyPresent", "groupCanBeModifiedOnlyByGroupAdmin", "groupCanBeDeletedOnlyByGroupAdmin", "groupMembersCanBeReadOnlyByGroupAdmin", "groupRequiresAdministrator", "groupUsersNotUpdated", "specialGroupCanNotBeDeleted", "folderPermissionsCanNotBeChanged", "unknownInstanceOutputFormat", "folderCopyNotAllowed", "methodNotImplemented", "upstreamServerError", "nothingToDo", "parentCategoryNotFound", "categoryAlreadyPresent", "categoryNotFound", "categoryCanNotBeDeleted", "rootCategoryCanNotBeDeleted", "unableToAttachCategory", "unableToDetachCategory", "noCategoriesWereAttached", "malformedJsonRequestBody", "malformedSearchTerm", "publishedArtifactCanNotBeChanged", "publishedArtifactCanNotBeDeleted", "versioningOnlyOnLatest", "versioningOnlyByOwner", "nonVersionedArtifactType", "createDraftOnlyFromPublished", "publishOnlyDraft", "draftNotCreated", "contentNotValid", "doiNotSupportedByResourceType", "doiCanNotBeSetForEmptyAtId", "doiCanNotBeAltered", "doiCanNotBeSet", "doiAlreadyExists", "dataCiteDOIDisabled", "resourceNotFound", "internalError" ],
             "nullable" : true
           },
           "errorMessage" : {
@@ -438,11 +916,6 @@
           },
           "operation" : {
             "type" : "object",
-            "additionalProperties" : {
-              "type" : "object",
-              "description" : "Operation that failed. Its fields depend on the operation type.",
-              "nullable" : true
-            },
             "description" : "Operation that failed. Its fields depend on the operation type.",
             "nullable" : true
           },
@@ -475,8 +948,132 @@
         },
         "required" : [ "status", "statusCode" ]
       },
-      "JsonNode" : {
-        "type" : "object"
+      "DataCiteDoiMetadata" : {
+        "type" : "object",
+        "additionalProperties" : true,
+        "description" : "What DataCite holds for the DOI, as DataCite returned it: its JSON:API document, requested\nwith affiliation detail. The keys below are the ones that document always carries; everything\nunder `attributes` is DataCite's own and follows the DataCite metadata schema.\n",
+        "properties" : {
+          "data" : {
+            "type" : "object",
+            "additionalProperties" : true,
+            "properties" : {
+              "attributes" : {
+                "type" : "object",
+                "additionalProperties" : true,
+                "description" : "The DOI's metadata, as DataCite models it."
+              },
+              "id" : {
+                "type" : "string"
+              },
+              "type" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      },
+      "DoiFormStart" : {
+        "type" : "object",
+        "additionalProperties" : false,
+        "description" : "Everything the workbench needs to open the DOI form for one artifact: the DataCite metadata\ntemplate, the source artifact, and either the draft DOI already started for it or a metadata\ninstance pre-filled with what could be derived.\n",
+        "properties" : {
+          "dataCiteTemplate" : {
+            "type" : "object",
+            "additionalProperties" : true,
+            "description" : "The DataCite metadata template the form is rendered from, as the artifact server returned\nit. An open CEDAR JSON-LD template, its identifier fixed by configuration.\n"
+          },
+          "draftDoi" : {
+            "type" : "string",
+            "description" : "The draft DOI DataCite already holds for the artifact, or null where it holds none.",
+            "nullable" : true
+          },
+          "existingDataCiteMetadata" : {
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/InstanceArtifactDocument"
+            } ],
+            "description" : "The metadata the form opens with, as an instance of the DataCite metadata template.\nConverted from the draft DOI where DataCite already holds one for the artifact, and\notherwise pre-filled with the artifact's URL and resource type alone.\n"
+          },
+          "sourceArtifact" : {
+            "type" : "object",
+            "additionalProperties" : true,
+            "description" : "The source artifact, as the artifact server returned it. An open CEDAR JSON-LD artifact\nof the kind `sourceArtifactType` names.\n"
+          },
+          "sourceArtifactType" : {
+            "type" : "string",
+            "description" : "The kind of artifact the DOI is for.",
+            "enum" : [ "field", "element", "template", "instance" ]
+          }
+        }
+      },
+      "DoiRegistration" : {
+        "type" : "object",
+        "additionalProperties" : false,
+        "description" : "The DOI as DataCite registered it.",
+        "properties" : {
+          "dataCiteResponse" : {
+            "type" : "string",
+            "description" : "DataCite's own response body, passed through as the string it arrived as rather than reparsed."
+          },
+          "doiId" : {
+            "type" : "string",
+            "description" : "The DOI without a resolver prefix, as DataCite identifies it."
+          },
+          "doiName" : {
+            "type" : "string",
+            "format" : "uri",
+            "description" : "The same DOI as a resolvable URL."
+          }
+        }
+      },
+      "InstanceArtifactDocument" : {
+        "type" : "object",
+        "additionalProperties" : true,
+        "description" : "A template instance. Its value keys are the names of the template's fields and elements, so the only fixed key beyond the common artifact keys is the template it is based on.",
+        "properties" : {
+          "@context" : {
+            "type" : "object",
+            "additionalProperties" : true,
+            "description" : "JSON-LD context for the keys the artifact uses."
+          },
+          "@id" : {
+            "type" : "string",
+            "format" : "uri",
+            "description" : "The artifact's IRI. The server mints it on a POST, so a body sent to POST carries none; a body sent to PUT carries the IRI of the path."
+          },
+          "oslc:modifiedBy" : {
+            "type" : "string",
+            "format" : "uri",
+            "description" : "IRI of the user who last changed it."
+          },
+          "pav:createdBy" : {
+            "type" : "string",
+            "format" : "uri",
+            "description" : "IRI of the user who created it."
+          },
+          "pav:createdOn" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When the artifact was created."
+          },
+          "pav:lastUpdatedOn" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When the artifact was last changed."
+          },
+          "schema:description" : {
+            "type" : "string",
+            "description" : "Description shown with the name."
+          },
+          "schema:isBasedOn" : {
+            "type" : "string",
+            "format" : "uri",
+            "description" : "IRI of the template the instance was filled in against."
+          },
+          "schema:name" : {
+            "type" : "string",
+            "description" : "Display name."
+          }
+        }
       }
     },
     "securitySchemes" : {
