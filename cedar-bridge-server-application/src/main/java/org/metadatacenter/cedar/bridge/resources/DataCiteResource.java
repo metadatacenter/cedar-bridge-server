@@ -164,7 +164,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       HttpResponse<String> httpResponse = httpClient.send(httpRequest);
       int statusCode = httpResponse.statusCode();
       String jsonResponse = httpResponse.body();
-      JsonNode jsonResource = JsonMapper.MAPPER.readTree(jsonResponse);
+      JsonNode jsonResource = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
 
       // Deserialize DataCite response json file to DataCiteRequest Class. DataCite owns this
       // payload and adds fields to it, so the read takes the tolerant policy.
@@ -421,7 +421,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       String jsonResponse = putOrPostResponse.body();
       try {
         if (statusCode == HttpConstants.CREATED || statusCode == HttpConstants.OK) {
-          JsonNode jsonNode = JsonMapper.MAPPER.readTree(jsonResponse);
+          JsonNode jsonNode = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
           String id = jsonNode.get("data").get("id").asText();
           String doiName = DataciteConstants.DOI_PREFIX + id;
           URI uri = URI.create(doiName);
@@ -445,7 +445,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
               .build();
         } //If the status code is 422, return what DataCite returns
         else if (statusCode == CedarResponseStatus.UNPROCESSABLE_ENTITY.getStatusCode()) {
-          JsonNode jsonResource = JsonMapper.MAPPER.readTree(jsonResponse);
+          JsonNode jsonResource = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
           JsonNode errorsNode = jsonResource.get("errors");
           StringBuilder errorMessageBuilder = new StringBuilder();
           for (JsonNode errorNode : errorsNode) {
@@ -467,7 +467,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
               .build();
         } else {
           //DOI is not created or updated successfully, return what DataCite returns
-          JsonNode jsonResource = JsonMapper.MAPPER.readTree(jsonResponse);
+          JsonNode jsonResource = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
           return Response
               .status(statusCode)
               .entity(jsonResource)
@@ -512,7 +512,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
   Response recordPublishedDoi(String annotationUrl, CedarRequestContext context, String sourceArtifactId,
                               String doiName) {
-    ObjectNode commandContent = JsonMapper.MAPPER.createObjectNode();
+    ObjectNode commandContent = JsonMapper.STRICT_MAPPER.createObjectNode();
     commandContent.put(LinkedData.ID, sourceArtifactId);
     commandContent.put(DataciteConstants.DOI, doiName);
 
@@ -630,7 +630,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
     // Parse the httpResponse body as a JSONObject
     String jsonResponse = httpResponse.body();
-    JsonNode jsonResource = JsonMapper.MAPPER.readTree(jsonResponse);
+    JsonNode jsonResource = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
 
     // Check httpResponse status code
     int statusCode = httpResponse.statusCode();
@@ -734,7 +734,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       throw new IOException("DataCite DOI lookup returned HTTP " + httpResponse.statusCode());
     }
     String jsonResponse = httpResponse.body();
-    JsonNode jsonResource = JsonMapper.MAPPER.readTree(jsonResponse);
+    JsonNode jsonResource = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
     JsonNode dataNode = jsonResource.get("data");
     boolean hasDraftDoi = hasDraftDoi(dataNode);
     response.put(DataciteConstants.DRAFT_METADATA, dataNode);
@@ -771,7 +771,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
       HttpEntity currentTemplateEntity = ProxyUtil.proxyGet(artifactServerUrl, c).getEntity();
       String currentTemplateEntityContent = EntityUtils.toString(currentTemplateEntity, CharEncoding.UTF_8);
-      return JsonMapper.MAPPER.readTree(currentTemplateEntityContent);
+      return JsonMapper.STRICT_MAPPER.readTree(currentTemplateEntityContent);
     } catch (IOException | ParseException | CedarProcessingException e) {
       throw new RuntimeException(e);
     }

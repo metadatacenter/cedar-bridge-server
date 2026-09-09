@@ -180,7 +180,7 @@ public class ExternalAuthorityContractTest {
     HttpResponse<String> response = get("/ext-auth/ror/search-by-name?q=x");
 
     assertEquals(SERVICE_UNAVAILABLE, response.statusCode(), response.body());
-    JsonNode error = JsonMapper.MAPPER.readTree(response.body());
+    JsonNode error = JsonMapper.STRICT_MAPPER.readTree(response.body());
     assertEquals("SERVICE_UNAVAILABLE", error.path("status").asText(), response.body());
     assertEquals("Downstream service is unavailable", error.path("message").asText(), response.body());
     assertTrue(error.path("originalException").isMissingNode()

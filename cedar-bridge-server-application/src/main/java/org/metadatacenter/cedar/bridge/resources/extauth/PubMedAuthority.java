@@ -94,7 +94,7 @@ public class PubMedAuthority implements ExternalAuthority {
         return AuthorityDetailsAnswer.notFound(new HashMap<>());
       }
 
-      JsonNode result = JsonMapper.MAPPER.readTree(EntityUtils.toString(response.getEntity()))
+      JsonNode result = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(response.getEntity()))
           .path("result").path(pmid);
       String title = asTextOrNull(result, "title");
       if (title == null || title.isBlank()) {
@@ -118,7 +118,7 @@ public class PubMedAuthority implements ExternalAuthority {
       if (response.getCode() != HttpConstants.OK) {
         return results;
       }
-      JsonNode item = JsonMapper.MAPPER.readTree(EntityUtils.toString(response.getEntity()))
+      JsonNode item = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(response.getEntity()))
           .path("result").path(pmid);
       addTerm(results, pmid, item);
       return results;
@@ -146,7 +146,7 @@ public class PubMedAuthority implements ExternalAuthority {
         return results;
       }
 
-      JsonNode idList = JsonMapper.MAPPER.readTree(EntityUtils.toString(searchResponse.getEntity()))
+      JsonNode idList = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(searchResponse.getEntity()))
           .path("esearchresult").path("idlist");
       if (!idList.isArray() || idList.isEmpty()) {
         return results;
@@ -161,7 +161,7 @@ public class PubMedAuthority implements ExternalAuthority {
         return results;
       }
 
-      JsonNode summaries = JsonMapper.MAPPER.readTree(EntityUtils.toString(summaryResponse.getEntity()))
+      JsonNode summaries = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(summaryResponse.getEntity()))
           .path("result");
       for (String pmid : pmids) {
         addTerm(results, pmid, summaries.path(pmid));

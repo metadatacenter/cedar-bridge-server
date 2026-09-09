@@ -98,7 +98,7 @@ public class RorAuthority implements ExternalAuthority {
 
   private static JsonNode read(ClassicHttpResponse proxyResponse) {
     try {
-      return JsonMapper.MAPPER.readTree(EntityUtils.toString(proxyResponse.getEntity(), CharEncoding.UTF_8));
+      return JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(proxyResponse.getEntity(), CharEncoding.UTF_8));
     } catch (IOException | ParseException e) {
       throw new RuntimeException(e);
     }

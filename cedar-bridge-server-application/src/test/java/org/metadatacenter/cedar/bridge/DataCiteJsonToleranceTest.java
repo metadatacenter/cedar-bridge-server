@@ -49,7 +49,7 @@ class DataCiteJsonToleranceTest {
 
   @Test
   void dataCiteAttributesReadFromATreeAreTolerantToo() throws Exception {
-    JsonNode attributes = JsonMapper.MAPPER.readTree(RESPONSE_WITH_A_NEW_FIELD)
+    JsonNode attributes = JsonMapper.STRICT_MAPPER.readTree(RESPONSE_WITH_A_NEW_FIELD)
         .get("data").get("attributes");
 
     Attributes read = JsonMapper.TOLERANT_MAPPER.treeToValue(attributes, Attributes.class);

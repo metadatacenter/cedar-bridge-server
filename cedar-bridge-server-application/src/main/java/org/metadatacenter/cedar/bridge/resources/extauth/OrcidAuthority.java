@@ -130,7 +130,7 @@ public class OrcidAuthority implements ExternalAuthority {
 
   private static JsonNode read(ClassicHttpResponse proxyResponse) {
     try {
-      return JsonMapper.MAPPER.readTree(EntityUtils.toString(proxyResponse.getEntity(), CharEncoding.UTF_8));
+      return JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(proxyResponse.getEntity(), CharEncoding.UTF_8));
     } catch (IOException | ParseException e) {
       throw new RuntimeException(e);
     }
@@ -294,7 +294,7 @@ public class OrcidAuthority implements ExternalAuthority {
     try {
       ClassicHttpResponse response = ProxyUtil.proxyGet(url, additionalHeaders());
       JsonNode jsonResponse =
-          JsonMapper.MAPPER.readTree(EntityUtils.toString(response.getEntity(), CharEncoding.UTF_8));
+          JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(response.getEntity(), CharEncoding.UTF_8));
       JsonNode orcidIdentifier = jsonResponse.path("result").path(0).path("orcid-identifier");
 
       String uri = orcidIdentifier.path("uri").asText();
@@ -348,7 +348,7 @@ public class OrcidAuthority implements ExternalAuthority {
         throw new RuntimeException("Failed to retrieve token. HTTP status: " + response.getCode());
       }
 
-      JsonNode jsonResponse = JsonMapper.MAPPER.readTree(EntityUtils.toString(response.getEntity()));
+      JsonNode jsonResponse = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(response.getEntity()));
       accessToken = jsonResponse.get("access_token").asText();
       expiryTime = System.currentTimeMillis() + (jsonResponse.get("expires_in").asLong() * 1000);
     } catch (IOException | ParseException | CedarProcessingException e) {
