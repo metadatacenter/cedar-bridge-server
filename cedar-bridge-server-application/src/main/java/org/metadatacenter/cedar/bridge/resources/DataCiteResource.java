@@ -166,12 +166,9 @@ public class DataCiteResource extends CedarMicroserviceResource {
       String jsonResponse = httpResponse.body();
       JsonNode jsonResource = JsonMapper.MAPPER.readTree(jsonResponse);
 
-      // Deserialize DataCite response json file to DataCiteRequest Class
-      ObjectMapper mapper = new ObjectMapper();
-      mapper.registerModule(new JavaTimeModule());
-      mapper.enable(SerializationFeature.INDENT_OUTPUT);
-      mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-      DataCiteSchema dataCiteResponse = mapper.readValue(jsonResponse, DataCiteSchema.class);
+      // Deserialize DataCite response json file to DataCiteRequest Class. DataCite owns this
+      // payload and adds fields to it, so the read takes the tolerant policy.
+      DataCiteSchema dataCiteResponse = JsonMapper.TOLERANT_MAPPER.readValue(jsonResponse, DataCiteSchema.class);
 
       return Response.status(statusCode).entity(jsonResource).build();
     } catch (InterruptedException e) {
@@ -263,10 +260,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
         // if draft DOI is returned, convert the data from dataCite JSON to Cedar Instance JSON-LD, and put it into response
         JsonNode attributesNode = dataNode.get(0).get(DataciteConstants.ATTRIBUTES);
         JsonNode draftDoi = attributesNode.get(DataciteConstants.DOI);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        Attributes existingDoiMetadata = mapper.treeToValue(attributesNode, Attributes.class);
+        Attributes existingDoiMetadata =
+            JsonMapper.TOLERANT_MAPPER.treeToValue(attributesNode, Attributes.class);
 
         // Pass the value from dataCiteResponse to cedarDataCiteInstance
         MetadataInstance cedarExistingDoiMetadata = DataCiteMetadataParser.parseDataCiteSchema(existingDoiMetadata, userID, cedarConfig);
@@ -426,10 +421,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       String jsonResponse = putOrPostResponse.body();
       try {
         if (statusCode == HttpConstants.CREATED || statusCode == HttpConstants.OK) {
-          // Deserialize DataCite response json file to DataCiteRequest Class
-          ObjectMapper mapper = new ObjectMapper();
-          // DataCiteSchema dataCiteResponse = mapper.readValue(jsonResponse, DataCiteSchema.class);
-          JsonNode jsonNode = mapper.readTree(jsonResponse);
+          JsonNode jsonNode = JsonMapper.MAPPER.readTree(jsonResponse);
           String id = jsonNode.get("data").get("id").asText();
           String doiName = DataciteConstants.DOI_PREFIX + id;
           URI uri = URI.create(doiName);
@@ -662,14 +654,17 @@ public class DataCiteResource extends CedarMicroserviceResource {
    * @return DataCite requested JSON schema
    */
   private String getRequestJson(JsonNode metadata, String sourceArtifactId, String state) {
+    // The request written below keeps its own mapper: its indentation is what DataCite receives.
     ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
     DataCiteSchema dataCiteSchema = new DataCiteSchema();
     try {
-      // Deserialize JSON-LD to MetadataInstance Class
+      // Deserialize JSON-LD to MetadataInstance Class. A stored CEDAR instance is a record this
+      // service consumes rather than owns, so the read takes the tolerant policy.
       String metadataString = metadata.toString();
-      MetadataInstance cedarInstance = mapper.readValue(metadataString, MetadataInstance.class);
+      MetadataInstance cedarInstance =
+          JsonMapper.TOLERANT_MAPPER.readValue(metadataString, MetadataInstance.class);
 
       // Pass the value from dataCiteInstance to dataCiteRequest
       CedarInstanceParser.parseCedarInstance(cedarInstance, dataCiteSchema, sourceArtifactId, state, cedarConfig);
