@@ -66,13 +66,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CedarError"
-          description: The caller lacks the template read permission
+          description: The caller cannot read the source artifact or the DataCite
+            template
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: The source artifact or DataCite template was not found
         "409":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CedarError"
           description: The artifact already has a findable DOI
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: Resource requests are being rate limited
         "500":
           content:
             application/json:
@@ -84,7 +97,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CedarError"
-          description: DataCite could not be reached
+          description: "DataCite could not be reached, or CEDAR returned an invalid\
+            \ upstream response"
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: A CEDAR dependency is unavailable
       security:
       - api_key: []
       summary: Begin minting a DOI for an artifact
@@ -153,13 +173,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CedarError"
-          description: The caller lacks the template read permission
+          description: The caller cannot read the source artifact or the DataCite
+            template
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: The source artifact or DataCite template was not found
         "409":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CedarError"
           description: The artifact already has a findable DOI
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: Resource requests are being rate limited
         "500":
           content:
             application/json:
@@ -171,7 +204,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CedarError"
-          description: DataCite could not be reached
+          description: "DataCite could not be reached, or CEDAR returned an invalid\
+            \ upstream response"
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: A CEDAR dependency is unavailable
       security:
       - api_key: []
       summary: Mint a DOI for an artifact

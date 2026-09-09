@@ -18,11 +18,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.apache.commons.codec.CharEncoding;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.util.http.CedarError;
 import org.metadatacenter.util.artifact.InstanceArtifactDocument;
@@ -46,7 +43,6 @@ import org.metadatacenter.model.BiboStatus;
 import org.metadatacenter.model.CedarResourceType;
 import org.metadatacenter.model.ModelNodeNames;
 import org.metadatacenter.model.folderserver.basic.FolderServerArtifact;
-import org.metadatacenter.model.request.ResourceType;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.ResourcePermissionServiceSession;
@@ -90,6 +86,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
   private final String basicAuth;
   private final DataCiteHttpClient httpClient;
   private final DoiAnnotationWriter doiAnnotationWriter;
+  private final CedarArtifactClient artifactClient;
   protected final org.metadatacenter.bridge.CedarDataServices dataServices;
 
   public DataCiteResource(CedarConfig cedarConfig) {
@@ -114,6 +111,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     this.basicAuth = Base64.getEncoder().encodeToString(
         (repositoryId + ":" + password).getBytes(StandardCharsets.UTF_8));
     this.httpClient = httpClient;
+    this.artifactClient = new CedarArtifactClient(microserviceUrlUtil.getResource());
     this.doiAnnotationWriter = doiAnnotationWriter;
   }
 
@@ -196,9 +194,12 @@ public class DataCiteResource extends CedarMicroserviceResource {
           content = @Content(schema = @Schema(ref = "#/components/schemas/DoiFormStart"))),
       @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite integration is disabled, or the artifact is not eligible for a DOI"),
       @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
-      @ApiResponse(responseCode = "403", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The caller lacks the template read permission"),
+      @ApiResponse(responseCode = "403", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The caller cannot read the source artifact or the DataCite template"),
+      @ApiResponse(responseCode = "404", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The source artifact or DataCite template was not found"),
       @ApiResponse(responseCode = "409", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The artifact already has a findable DOI"),
-      @ApiResponse(responseCode = "502", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite could not be reached"),
+      @ApiResponse(responseCode = "429", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Resource requests are being rate limited"),
+      @ApiResponse(responseCode = "503", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "A CEDAR dependency is unavailable"),
+      @ApiResponse(responseCode = "502", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite could not be reached, or CEDAR returned an invalid upstream response"),
       @ApiResponse(responseCode = "500", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Internal server error")
   })
   public Response createDOIStart(
@@ -222,13 +223,11 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
     String dataCiteTemplateIdS = cedarConfig.getBridgeConfig().getDataCite().getTemplateId();
     CedarTemplateId dataCiteTemplateId = CedarTemplateId.build(dataCiteTemplateIdS);
-    String url1 = microserviceUrlUtil.getArtifact().getArtifactTypeWithId(CedarResourceType.TEMPLATE, dataCiteTemplateId);
-    JsonNode dataCiteTemplateProxyJson = ProxyUtil.proxyGetBodyAsJsonNode(url1, c);
+    JsonNode dataCiteTemplateProxyJson = artifactClient.read(CedarResourceType.TEMPLATE, dataCiteTemplateId, c);
 
     CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
     CedarArtifactId sourceArtifactIdTyped = CedarArtifactId.build(sourceArtifactId, sourceArtifactResourceId.getType());
-    String url2 = microserviceUrlUtil.getArtifact().getArtifactTypeWithId(sourceArtifactResourceId.getType(), sourceArtifactIdTyped);
-    JsonNode sourceArtifactProxyJson = ProxyUtil.proxyGetBodyAsJsonNode(url2, c);
+    JsonNode sourceArtifactProxyJson = artifactClient.read(sourceArtifactResourceId.getType(), sourceArtifactIdTyped, c);
 
     Response eligibilityError = validateSourceArtifactForDoi(c, sourceArtifactResourceId.getType(),
         sourceArtifactIdTyped, sourceArtifactProxyJson);
@@ -311,9 +310,12 @@ public class DataCiteResource extends CedarMicroserviceResource {
           description = "DataCite integration is disabled, `state` is neither draft nor publish, the "
               + "artifact is not eligible, or the metadata failed validation"),
       @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
-      @ApiResponse(responseCode = "403", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The caller lacks the template read permission"),
+      @ApiResponse(responseCode = "403", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The caller cannot read the source artifact or the DataCite template"),
+      @ApiResponse(responseCode = "404", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The source artifact or DataCite template was not found"),
       @ApiResponse(responseCode = "409", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The artifact already has a findable DOI"),
-      @ApiResponse(responseCode = "502", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite could not be reached"),
+      @ApiResponse(responseCode = "429", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Resource requests are being rate limited"),
+      @ApiResponse(responseCode = "503", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "A CEDAR dependency is unavailable"),
+      @ApiResponse(responseCode = "502", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite could not be reached, or CEDAR returned an invalid upstream response"),
       @ApiResponse(responseCode = "500", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Internal server error")
   })
   public Response createDOI(
@@ -349,9 +351,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
     CedarResourceType sourceArtifactType = sourceArtifactResourceId.getType();
     CedarArtifactId sourceArtifactIdTyped = CedarArtifactId.build(sourceArtifactId, sourceArtifactType);
-    String url = microserviceUrlUtil.getArtifact().getArtifactTypeWithId(sourceArtifactType,
-        sourceArtifactIdTyped);
-    JsonNode sourceArtifactProxyJson = ProxyUtil.proxyGetBodyAsJsonNode(url, c);
+    JsonNode sourceArtifactProxyJson = artifactClient.read(sourceArtifactType, sourceArtifactIdTyped, c);
     Response eligibilityError = validateSourceArtifactForDoi(c, sourceArtifactType, sourceArtifactIdTyped,
         sourceArtifactProxyJson);
     if (eligibilityError != null) {
@@ -370,15 +370,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
     Map<String, Object> response = new HashMap<>();
 
-    Pair<Boolean, JsonNode> validationResultPair;
-    try {
-      validationResultPair = validateCEDARInstance(c, templateId, dataCiteInstance);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      return upstreamFailure("CEDAR instance validation was interrupted", e);
-    } catch (IOException e) {
-      return upstreamFailure("CEDAR instance validation failed", e);
-    }
+    Pair<Boolean, JsonNode> validationResultPair = artifactClient.validate(templateId, dataCiteInstance, c);
     Response validationError = validationFailure(validationResultPair);
     if (validationError != null) {
       return validationError;
@@ -600,55 +592,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
   }
 
   /**
-   * This function check if CEDAR DataCite Instance is valid
-   */
-  private Pair<Boolean, JsonNode> validateCEDARInstance(CedarRequestContext c, String templateId,
-                                                        JsonNode dataCiteInstance)
-      throws InterruptedException, IOException {
-    // Get Scheme JSONObject and CEDAR DataCite Instance JSONObject
-    JsonNode schemaResponse = getCEDARTemplate(c, templateId);
-
-    ObjectNode validationBody = JsonNodeFactory.instance.objectNode();
-    validationBody.put("schema", schemaResponse);
-    validationBody.put("instance", dataCiteInstance);
-
-    // Construct API endpoint URL
-    String endpointUrl = microserviceUrlUtil.getArtifact().getValidateCommand(ResourceType.INSTANCE.getValue());
-
-    // Set authorization header
-    String apiKey = c.getCedarUser().getFirstApiKeyAuthHeader();
-
-    URI uri = URI.create(endpointUrl);
-    HttpRequest.Builder request = HttpRequest.newBuilder(uri)
-        .header(DataciteConstants.CONTENT_TYPE, DataciteConstants.APPLICATION_JSON)
-        .header(HttpConstants.HTTP_HEADER_AUTHORIZATION, apiKey)
-        .header(HttpConstants.HTTP_HEADER_ACCEPT, DataciteConstants.APPLICATION_JSON)
-        .POST(HttpRequest.BodyPublishers.ofString(String.valueOf(validationBody)));
-
-    // Call CEDAR validation endpoint and get the httpResponse
-    HttpResponse<String> httpResponse = httpClient.send(request);
-
-    // Parse the httpResponse body as a JSONObject
-    String jsonResponse = httpResponse.body();
-    JsonNode jsonResource = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
-
-    // Check httpResponse status code
-    int statusCode = httpResponse.statusCode();
-
-    if (statusCode != HttpConstants.OK) {
-      throw new IOException("CEDAR instance validation returned HTTP " + statusCode);
-    }
-    String validates = jsonResource.get("validates").asText();
-    if (validates.equals("true")) {
-      // The resource is valid, handle it here
-      return Pair.of(true, jsonResource);
-    } else {
-      // The resource is invalid, handle the errors and warnings here
-      return Pair.of(false, jsonResource);
-    }
-  }
-
-  /**
    * This function transfer JSON-LD format to JSON scheme that used to call DataCite API
    *
    * @return DataCite requested JSON schema
@@ -759,22 +702,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
       }
     }
     return doiName;
-  }
-
-  /**
-   * This function get JSON file of a CEDAR template
-   */
-  private JsonNode getCEDARTemplate(CedarRequestContext c, String templateId) {
-    try {
-      CedarTemplateId cedarTemplateId = CedarTemplateId.build(templateId);
-      String artifactServerUrl = microserviceUrlUtil.getArtifact().getArtifactTypeWithId(CedarResourceType.TEMPLATE, cedarTemplateId);
-
-      HttpEntity currentTemplateEntity = ProxyUtil.proxyGet(artifactServerUrl, c).getEntity();
-      String currentTemplateEntityContent = EntityUtils.toString(currentTemplateEntity, CharEncoding.UTF_8);
-      return JsonMapper.STRICT_MAPPER.readTree(currentTemplateEntityContent);
-    } catch (IOException | ParseException | CedarProcessingException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   @FunctionalInterface
