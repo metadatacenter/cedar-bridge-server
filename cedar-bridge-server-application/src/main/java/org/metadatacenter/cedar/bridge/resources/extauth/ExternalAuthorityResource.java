@@ -136,7 +136,7 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
     final int pageSizeVal = (pageSize != null) ? pageSize : DEFAULT_PAGE_SIZE;
 
     if (pageVal < 0 || pageSizeVal <= 1) {
-      return CedarResponse.badRequest().errorMessage(PAGINATION_ERROR).build();
+      return CedarResponse.badRequest().message(PAGINATION_ERROR).build();
     }
 
     AuthoritySearchAnswer answer;
@@ -212,7 +212,7 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
    */
   private Response unknownAuthority(String segment) {
     return CedarResponse.notFound()
-        .errorMessage("No external authority is served under \"" + segment + "\". Known: "
+        .message("No external authority is served under \"" + segment + "\". Known: "
             + String.join(", ", authoritiesBySegment.keySet()) + ".")
         .build();
   }
@@ -220,7 +220,7 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   private Response notReadyResponse(AuthorityNotReadyException notReady) {
     return CedarResponse.status(CedarResponseStatus.SERVICE_UNAVAILABLE)
         .header(HttpHeaders.RETRY_AFTER, Long.toString(notReady.getRetryAfterSeconds()))
-        .errorMessage(notReady.getMessage())
+        .message(notReady.getMessage())
         .build();
   }
 }

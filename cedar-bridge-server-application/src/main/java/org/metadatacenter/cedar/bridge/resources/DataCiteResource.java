@@ -142,7 +142,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       return CedarResponse
           .badRequest()
           .errorKey(CedarErrorKey.DATACITE_DOI_DISABLED)
-          .errorMessage("DataCite DOI integration is disabled")
+          .message("DataCite DOI integration is disabled")
           .build();
     }
 
@@ -213,7 +213,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       return CedarResponse
           .badRequest()
           .errorKey(CedarErrorKey.DATACITE_DOI_DISABLED)
-          .errorMessage("DataCite DOI integration is disabled")
+          .message("DataCite DOI integration is disabled")
           .build();
     }
 
@@ -241,7 +241,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       String hasDoiError = String.format("The %s(%s) already has a DOI: %s", sourceArtifactResourceId.getType().getValue(), sourceArtifactId, doiName);
       return CedarResponse
           .conflict()
-          .errorMessage(hasDoiError)
+          .message(hasDoiError)
           .errorKey(CedarErrorKey.DOI_ALREADY_EXISTS)
           .parameter("doi", doiName)
           .build();
@@ -336,7 +336,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       return CedarResponse
           .badRequest()
           .errorKey(CedarErrorKey.DATACITE_DOI_DISABLED)
-          .errorMessage("DataCite DOI integration is disabled")
+          .message("DataCite DOI integration is disabled")
           .build();
     }
 
@@ -364,7 +364,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
           .conflict()
           .errorKey(CedarErrorKey.DOI_ALREADY_EXISTS)
           .parameter("doi", findableDoiName)
-          .errorMessage(hasDoiError)
+          .message(hasDoiError)
           .build();
     }
 
@@ -385,7 +385,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
         return CedarResponse
             .badRequest()
             .exception(e)
-            .errorMessage(e.getMessage())
+            .message(e.getMessage())
             .errorKey(CedarErrorKey.INVALID_INPUT)
             .build();
       }
@@ -454,7 +454,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
           }
           return CedarResponse
               .badRequest()
-              .errorMessage(errorMessageBuilder.toString().trim())
+              .message(errorMessageBuilder.toString().trim())
               .errorKey(CedarErrorKey.INVALID_INPUT)
               .build();
         } else {
@@ -468,7 +468,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       } catch (Exception e) {
         return CedarResponse
             .internalServerError()
-            .errorMessage(e.getMessage())
+            .message(e.getMessage())
             .exception(e)
             .build();
       }
@@ -486,7 +486,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     }
     return CedarResponse.badRequest()
         .errorKey(CedarErrorKey.INVALID_INPUT)
-        .errorMessage("The DOI state must be 'draft' or 'publish'")
+        .message("The DOI state must be 'draft' or 'publish'")
         .parameter("state", state)
         .build();
   }
@@ -497,7 +497,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     }
     return CedarResponse.badRequest()
         .errorKey(CedarErrorKey.INVALID_INPUT)
-        .errorMessage("The DataCite metadata instance is invalid")
+        .message("The DataCite metadata instance is invalid")
         .object("validationResult", validationResult.getRight())
         .build();
   }
@@ -530,7 +530,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
   private Response reconciliationFailure(String sourceArtifactId, String doiName, Integer annotationStatus,
                                          Exception exception) {
     CedarResponse.CedarResponseBuilder response = CedarResponse.badGateway()
-        .errorMessage("The DOI was minted at DataCite but could not be recorded in CEDAR; reconciliation is required")
+        .message("The DOI was minted at DataCite but could not be recorded in CEDAR; reconciliation is required")
         .parameter("doi", doiName)
         .parameter("sourceArtifactId", sourceArtifactId)
         .parameter("reconciliationRequired", true);
@@ -545,7 +545,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
   private Response upstreamFailure(String message, Exception exception) {
     return CedarResponse.badGateway()
-        .errorMessage(message)
+        .message(message)
         .exception(exception)
         .build();
   }
@@ -558,7 +558,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       return CedarResponse
           .unauthorized()
           .errorKey(CedarErrorKey.NO_WRITE_ACCESS_TO_ARTIFACT)
-          .errorMessage("You do not have permission to edit the artifact")
+          .message("You do not have permission to edit the artifact")
           .parameter(DataciteConstants.RESOURCE_ID, sourceArtifactId)
           .build();
     }
@@ -568,14 +568,14 @@ public class DataCiteResource extends CedarMicroserviceResource {
     if (folderServerResource == null) {
       return CedarResponse
           .notFound()
-          .errorMessage("The source artifact is not found")
+          .message("The source artifact is not found")
           .id(sourceArtifactId)
           .build();
     }
     if (!(folderServerResource.isOpen() || folderSession.isArtifactOpenImplicitly(sourceArtifactId))) {
       return CedarResponse
           .badRequest()
-          .errorMessage("Please make the " + sourceArtifactType.getValue().toLowerCase() + " open to create a DOI")
+          .message("Please make the " + sourceArtifactType.getValue().toLowerCase() + " open to create a DOI")
           .build();
     }
 
@@ -585,7 +585,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
         || !Objects.equals(publicationStatus.asText(), BiboStatus.PUBLISHED.getValue()))) {
       return CedarResponse
           .badRequest()
-          .errorMessage("Please publish the template to create a DOI")
+          .message("Please publish the template to create a DOI")
           .build();
     }
     return null;

@@ -65,7 +65,7 @@ public class ExternalAuthorityContractTest {
    * The rejection, worded once.
    *
    * <p>Six of the seven built this from a bare string, so a JSON API answered {@code text/plain};
-   * ROR used {@code CedarResponse.badRequest().errorMessage(…)}, the framework's structured error,
+   * ROR used {@code CedarResponse.badRequest().message(…)}, the framework's structured error,
    * and its wording had drifted with it — a comma where the others had "and". Neither difference
    * was anyone's decision; they are what seven copies of one method turn into. ROR's form is the
    * one that survived, since these routes declare they produce JSON.
