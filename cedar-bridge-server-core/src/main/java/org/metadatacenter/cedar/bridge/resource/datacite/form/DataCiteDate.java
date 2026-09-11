@@ -1,9 +1,7 @@
 package org.metadatacenter.cedar.bridge.resource.datacite.form;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class DataCiteDate {
   @JsonProperty("date")
   private String date;

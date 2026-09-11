@@ -101,7 +101,7 @@ public class DoiAuthority implements ExternalAuthority {
       if (statusCode != HttpConstants.OK) {
         return new Upstream(statusCode, null);
       }
-      return new Upstream(statusCode, JsonMapper.MAPPER.readTree(EntityUtils.toString(response.getEntity())));
+      return new Upstream(statusCode, JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(response.getEntity())));
     } catch (CedarProcessingException | IOException | ParseException e) {
       throw new RuntimeException(e);
     }

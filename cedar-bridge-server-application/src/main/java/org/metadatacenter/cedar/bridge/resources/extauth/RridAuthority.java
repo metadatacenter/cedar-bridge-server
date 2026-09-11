@@ -50,7 +50,7 @@ public class RridAuthority implements ExternalAuthority {
     try {
       ClassicHttpResponse proxyResponse = ProxyUtil.proxyPost(SCICRUNCH_API_PREFIX, headers, requestBody);
       int statusCode = proxyResponse.getCode();
-      JsonNode root = JsonMapper.MAPPER.readTree(EntityUtils.toString(proxyResponse.getEntity()));
+      JsonNode root = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(proxyResponse.getEntity()));
 
       if (statusCode != HttpConstants.OK) {
         return AuthoritySearchAnswer.failed(statusCode, null);
@@ -87,7 +87,7 @@ public class RridAuthority implements ExternalAuthority {
         return AuthorityDetailsAnswer.notFound(new HashMap<>());
       }
 
-      JsonNode root = JsonMapper.MAPPER.readTree(EntityUtils.toString(proxyResponse.getEntity()));
+      JsonNode root = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(proxyResponse.getEntity()));
       JsonNode hits = root.path("hits").path("hits");
       if (!hits.isArray() || hits.isEmpty()) {
         return AuthorityDetailsAnswer.notFound(new HashMap<>());
@@ -114,7 +114,7 @@ public class RridAuthority implements ExternalAuthority {
    * a prefix above a substring.
    */
   private static String elasticQuery(String q, int from, int size) {
-    ObjectNode root = JsonMapper.MAPPER.createObjectNode();
+    ObjectNode root = JsonMapper.STRICT_MAPPER.createObjectNode();
     root.put("from", from);
     root.put("size", size);
 
@@ -124,21 +124,21 @@ public class RridAuthority implements ExternalAuthority {
     should.add(clause("wildcard", "*" + q + "*", 1));
 
     try {
-      return JsonMapper.MAPPER.writeValueAsString(root);
+      return JsonMapper.STRICT_MAPPER.writeValueAsString(root);
     } catch (Exception e) {
       throw new RuntimeException("Failed to serialize SciCrunch query body", e);
     }
   }
 
   private static ObjectNode clause(String kind, String value, int boost) {
-    ObjectNode boosted = JsonMapper.MAPPER.createObjectNode();
+    ObjectNode boosted = JsonMapper.STRICT_MAPPER.createObjectNode();
     boosted.put("value", value);
     boosted.put("boost", boost);
 
-    ObjectNode field = JsonMapper.MAPPER.createObjectNode();
+    ObjectNode field = JsonMapper.STRICT_MAPPER.createObjectNode();
     field.set("item.name.aggregate", boosted);
 
-    ObjectNode clause = JsonMapper.MAPPER.createObjectNode();
+    ObjectNode clause = JsonMapper.STRICT_MAPPER.createObjectNode();
     clause.set(kind, field);
     return clause;
   }

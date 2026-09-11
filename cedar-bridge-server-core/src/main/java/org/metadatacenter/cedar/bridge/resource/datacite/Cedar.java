@@ -17,7 +17,6 @@ import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.time.Instant;
 import javax.annotation.Nonnull;
@@ -144,7 +143,6 @@ public class Cedar {
         String compact();
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
     public interface LiteralField extends Field, Compactable {
         @JsonProperty("@value")
         String value();

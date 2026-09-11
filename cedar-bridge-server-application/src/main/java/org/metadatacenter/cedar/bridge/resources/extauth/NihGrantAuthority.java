@@ -55,7 +55,7 @@ public class NihGrantAuthority implements ExternalAuthority {
 
       List<Map.Entry<String, Map<String, Object>>> matching = new ArrayList<>();
       if (statusCode == HttpConstants.OK) {
-        JsonNode root = JsonMapper.MAPPER.readTree(EntityUtils.toString(response.getEntity()));
+        JsonNode root = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(response.getEntity()));
         for (JsonNode hit : root.path("results")) {
           String title = asTextOrNull(hit, "project_title");
           String projectId = asTextOrNull(hit, "project_id");
@@ -95,7 +95,7 @@ public class NihGrantAuthority implements ExternalAuthority {
         return AuthorityDetailsAnswer.notFound(new HashMap<>());
       }
 
-      JsonNode results = JsonMapper.MAPPER.readTree(EntityUtils.toString(response.getEntity())).path("results");
+      JsonNode results = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(response.getEntity())).path("results");
       if (!results.isArray() || results.isEmpty()) {
         return AuthorityDetailsAnswer.notFound(new HashMap<>());
       }

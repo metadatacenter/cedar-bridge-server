@@ -65,7 +65,7 @@ public class ExternalAuthorityContractTest {
    * The rejection, worded once.
    *
    * <p>Six of the seven built this from a bare string, so a JSON API answered {@code text/plain};
-   * ROR used {@code CedarResponse.badRequest().errorMessage(…)}, the framework's structured error,
+   * ROR used {@code CedarResponse.badRequest().message(…)}, the framework's structured error,
    * and its wording had drifted with it — a comma where the others had "and". Neither difference
    * was anyone's decision; they are what seven copies of one method turn into. ROR's form is the
    * one that survived, since these routes declare they produce JSON.
@@ -180,7 +180,7 @@ public class ExternalAuthorityContractTest {
     HttpResponse<String> response = get("/ext-auth/ror/search-by-name?q=x");
 
     assertEquals(SERVICE_UNAVAILABLE, response.statusCode(), response.body());
-    JsonNode error = JsonMapper.MAPPER.readTree(response.body());
+    JsonNode error = JsonMapper.STRICT_MAPPER.readTree(response.body());
     assertEquals("SERVICE_UNAVAILABLE", error.path("status").asText(), response.body());
     assertEquals("Downstream service is unavailable", error.path("message").asText(), response.body());
     assertTrue(error.path("originalException").isMissingNode()

@@ -1,6 +1,7 @@
 package org.metadatacenter.cedar.bridge.resources;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.metadatacenter.util.json.JsonMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.CharEncoding;
 import org.apache.hc.core5.http.HttpEntity;
@@ -168,9 +169,12 @@ public class SubstanceRegistry {
       throw new RuntimeException("PFASSTRUCTV5 response entity from EPA CTX API is null");
     }
 
+    // The EPA CTX API owns these payloads and adds fields to them, so the reads take the tolerant
+    // policy. The batch payload written below is this service's own, and stays strict.
     ObjectMapper mapper = new ObjectMapper();
     String json = EntityUtils.toString(entity, CharEncoding.UTF_8);
-    List<String> dtxsids = mapper.readValue(json, new TypeReference<List<String>>() {});
+    List<String> dtxsids =
+        JsonMapper.TOLERANT_MAPPER.readValue(json, new TypeReference<List<String>>() {});
 
     // ---- 2) Batch-lookup details for those DTXSIDs ----
     headers.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
@@ -197,8 +201,9 @@ public class SubstanceRegistry {
 
       String detailJson = EntityUtils.toString(detailEntity, CharEncoding.UTF_8);
 
-      // Endpoint returns an array of detail objects; unknown fields ignored by Substance
-      List<Substance> subs = mapper.readValue(detailJson, new TypeReference<List<Substance>>() {});
+      // Endpoint returns an array of detail objects; unknown fields ignored by the tolerant policy
+      List<Substance> subs =
+          JsonMapper.TOLERANT_MAPPER.readValue(detailJson, new TypeReference<List<Substance>>() {});
 
       for (Substance s : subs) {
         if (s == null || s.getDtxsid() == null) {
