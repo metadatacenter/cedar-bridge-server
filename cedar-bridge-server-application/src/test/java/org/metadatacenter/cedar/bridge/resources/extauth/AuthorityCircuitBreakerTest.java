@@ -25,7 +25,7 @@ class AuthorityCircuitBreakerTest {
 
   private String answerless() throws CedarProcessingException {
     calls.incrementAndGet();
-    throw new CedarProcessingException("no answer");
+    throw new org.metadatacenter.exception.CedarDependencyUnavailableException("no answer", new java.net.SocketTimeoutException());
   }
 
   @Test
@@ -110,4 +110,15 @@ class AuthorityCircuitBreakerTest {
 
     assertFalse(breaker.isOpen(), "PFAS loading its registry is not evidence about EPA CompTox");
   }
+  @Test
+  void responseParsingFailuresDoNotOpenTheBreaker() {
+    AuthorityCircuitBreaker breaker = breaker();
+    for (int attempt = 0; attempt < 10; attempt++) {
+      assertThrows(RuntimeException.class, () -> breaker.call(() -> {
+        throw new RuntimeException(new java.io.IOException("invalid response JSON"));
+      }));
+    }
+    assertFalse(breaker.isOpen());
+  }
+
 }

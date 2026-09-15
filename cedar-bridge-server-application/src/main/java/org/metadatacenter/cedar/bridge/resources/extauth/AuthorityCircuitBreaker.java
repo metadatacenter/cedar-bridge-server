@@ -85,13 +85,27 @@ final class AuthorityCircuitBreaker {
       // registry, so it neither opens the breaker nor closes it.
       throw notReady;
     } catch (RuntimeException | CedarException failure) {
-      failed();
+      if (transportFailure(failure)) {
+        failed();
+      } else {
+        // An answered response that could not be parsed is not a transport outage.
+        succeeded();
+      }
       throw failure;
     } finally {
       if (probe) {
         probing.set(false);
       }
     }
+  }
+
+  private static boolean transportFailure(Throwable failure) {
+    for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+      if (cause instanceof org.metadatacenter.exception.CedarDependencyUnavailableException) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
