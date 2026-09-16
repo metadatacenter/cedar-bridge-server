@@ -54,6 +54,14 @@ import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
  * the same application, asserts {@code LoggedIn} on every route, so the difference is a choice
  * rather than an omission.
  *
+ * <h2>A registry that stops answering stops being asked</h2>
+ *
+ * <p>Each authority sits behind its own {@link AuthorityCircuitBreaker}. A registry that accepts
+ * connections and never replies costs a full response timeout per request, and a held worker thread
+ * with it, so after a few answerless calls in a row this surface stops asking that one and answers
+ * 503 with {@code Retry-After} until a single probe finds it working again. The other six are
+ * unaffected, and a registry that answers -- including one answering 500 -- is never cut off.
+ *
  * <p>What a reader should not assume is that a public registry makes the route free. Three of the
  * seven authorities reach their registry on credentials the deployment holds:
  * {@code RridAuthority} sends the configured {@code apikey} header, {@code PubMedAuthority} appends
@@ -85,6 +93,14 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
 
   private final Map<String, ExternalAuthority> authoritiesBySegment = new LinkedHashMap<>();
 
+  /**
+   * One breaker per authority, so a registry that has stopped answering stops being asked.
+   *
+   * <p>Per authority rather than one for the surface: ORCID being down says nothing about ROR, and
+   * a shared breaker would take the other six down with whichever one failed.
+   */
+  private final Map<String, AuthorityCircuitBreaker> breakersBySegment = new LinkedHashMap<>();
+
   public ExternalAuthorityResource(CedarConfig cedarConfig, List<ExternalAuthority> authorities) {
     super(cedarConfig);
     for (ExternalAuthority authority : authorities) {
@@ -96,6 +112,7 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
             "two authorities are registered under \"" + authority.pathSegment() + "\": "
                 + clash.getClass().getSimpleName() + " and " + authority.getClass().getSimpleName());
       }
+      breakersBySegment.put(authority.pathSegment(), new AuthorityCircuitBreaker(authority.pathSegment()));
     }
   }
 
@@ -141,7 +158,7 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
 
     AuthoritySearchAnswer answer;
     try {
-      answer = authority.search(query, pageVal, pageSizeVal);
+      answer = breakersBySegment.get(segment).call(() -> authority.search(query, pageVal, pageSizeVal));
     } catch (AuthorityNotReadyException notReady) {
       return notReadyResponse(notReady);
     }
@@ -189,7 +206,7 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
 
     AuthorityDetailsAnswer answer;
     try {
-      answer = authority.details(id);
+      answer = breakersBySegment.get(segment).call(() -> authority.details(id));
     } catch (AuthorityNotReadyException notReady) {
       return notReadyResponse(notReady);
     }
