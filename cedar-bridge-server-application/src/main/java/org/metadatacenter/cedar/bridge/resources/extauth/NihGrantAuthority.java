@@ -41,13 +41,13 @@ public class NihGrantAuthority implements ExternalAuthority {
   }
 
   @Override
-  public AuthoritySearchAnswer search(String query, int page, int pageSize) {
+  public AuthoritySearchAnswer search(String query, int offset, int limit) {
     if (query == null || query.isBlank()) {
       return AuthoritySearchAnswer.nothing();
     }
 
     String body = String.format("{\"criteria\":{\"project_title\":\"%s\"},\"offset\":%d,\"limit\":%d}",
-        query, page * pageSize, pageSize * OVER_FETCH);
+        query, offset, limit * OVER_FETCH);
 
     try {
       ClassicHttpResponse response = ProxyUtil.proxyPost(NIH_REPORTER_API, defaultHeaders(), body);
@@ -65,16 +65,16 @@ public class NihGrantAuthority implements ExternalAuthority {
         }
       }
 
-      // Paginate what survived the narrowing, not what RePORTER offered.
+      // The offset was already applied upstream, so the page is the first of what survived the
+      // narrowing. Applying it again here skipped a page's worth of matches on every page after the
+      // first. Narrowing after the fact leaves the total unknowable, so none is reported.
       Map<String, Object> results = new LinkedHashMap<>();
-      int start = page * pageSize;
-      int end = Math.min(start + pageSize, matching.size());
-      for (int i = start; i < end; i++) {
+      for (int i = 0; i < Math.min(limit, matching.size()); i++) {
         results.put(matching.get(i).getKey(), matching.get(i).getValue());
       }
 
       return statusCode == HttpConstants.OK
-          ? AuthoritySearchAnswer.of(results)
+          ? AuthoritySearchAnswer.ofUnknownTotal(results)
           : AuthoritySearchAnswer.failed(statusCode, null);
     } catch (CedarProcessingException | IOException | ParseException e) {
       throw new RuntimeException(e);

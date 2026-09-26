@@ -10,8 +10,10 @@ import org.metadatacenter.util.http.ProxyUtil;
 import org.metadatacenter.util.json.JsonMapper;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /** Publications and datasets, from DataCite. */
@@ -22,29 +24,61 @@ public class DoiAuthority implements ExternalAuthority {
   private static final String DATACITE_API_PREFIX = "https://api.datacite.org/dois";
   private static final String DOI_IRI_BASE = "https://doi.org/";
 
+  private final String dataciteApiPrefix;
+
+  public DoiAuthority() {
+    this(DATACITE_API_PREFIX);
+  }
+
+  /** An authority reading another DataCite endpoint, so a test can stand one up locally. */
+  DoiAuthority(String dataciteApiPrefix) {
+    this.dataciteApiPrefix = dataciteApiPrefix;
+  }
+
   @Override
   public String pathSegment() {
     return PATH_SEGMENT;
   }
 
   @Override
-  public AuthoritySearchAnswer search(String query, int page, int pageSize) {
-    // DataCite counts pages from one.
-    final int apiPage = page + 1;
+  public AuthoritySearchAnswer search(String query, int offset, int limit) {
     final String q = (query == null) ? "" : query;
+    // DataCite pages by number, counting from one, and cannot start at an arbitrary offset. An
+    // offset that falls inside a page is served from the two pages it straddles.
+    final int firstPage = offset / limit + 1;
+    final int skip = offset % limit;
 
-    // Titles only, so a search for a name does not match an abstract.
-    String dataciteUrl = String.format("%s?query=titles.title:%s&page[number]=%d&page[size]=%d",
-        DATACITE_API_PREFIX, q, apiPage, pageSize);
-
-    Upstream upstream = get(dataciteUrl);
+    Upstream upstream = get(pageUrl(q, firstPage, limit));
     if (!upstream.ok()) {
       // DataCite's own status is passed on, which is what this route has always done: a registry
       // that is down is not a search that found nothing.
       return AuthoritySearchAnswer.failed(upstream.statusCode(), null);
     }
-    JsonNode root = upstream.document();
+    List<Map.Entry<String, Object>> terms = new ArrayList<>(terms(upstream.document()).entrySet());
+    long total = upstream.document().path("meta").path("total").asLong(0);
+    if (skip > 0 && offset + limit > (long) firstPage * limit && (long) firstPage * limit < total) {
+      Upstream next = get(pageUrl(q, firstPage + 1, limit));
+      if (!next.ok()) {
+        return AuthoritySearchAnswer.failed(next.statusCode(), null);
+      }
+      terms.addAll(terms(next.document()).entrySet());
+    }
 
+    Map<String, Object> results = new LinkedHashMap<>();
+    for (Map.Entry<String, Object> term : terms.subList(Math.min(skip, terms.size()),
+        Math.min(skip + limit, terms.size()))) {
+      results.put(term.getKey(), term.getValue());
+    }
+    return AuthoritySearchAnswer.of(results, total);
+  }
+
+  private String pageUrl(String q, int page, int size) {
+    // Titles only, so a search for a name does not match an abstract.
+    return String.format("%s?query=titles.title:%s&page[number]=%d&page[size]=%d",
+        dataciteApiPrefix, q, page, size);
+  }
+
+  private Map<String, Object> terms(JsonNode root) {
     Map<String, Object> results = new LinkedHashMap<>();
     JsonNode data = root.path("data");
     if (data.isArray()) {
@@ -60,13 +94,12 @@ public class DoiAuthority implements ExternalAuthority {
         }
       }
     }
-
-    return AuthoritySearchAnswer.of(results);
+    return results;
   }
 
   @Override
   public AuthorityDetailsAnswer details(String id) {
-    Upstream upstream = get(DATACITE_API_PREFIX + "/" + extractBaseDoi(id));
+    Upstream upstream = get(dataciteApiPrefix + "/" + extractBaseDoi(id));
     if (!upstream.ok()) {
       // Answered 200 with found=false however DataCite replied, which is what this route has
       // always done for an identifier — unlike search, where the status is passed on.

@@ -44,7 +44,7 @@ public class RorAuthority implements ExternalAuthority {
   }
 
   @Override
-  public AuthoritySearchAnswer search(String query, int page, int pageSize) throws CedarException {
+  public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarException {
     // ROR matches a whole word unless asked otherwise, and a field is searched as it is typed.
     String fragment = query;
     if (fragment != null && !fragment.isEmpty() && !fragment.endsWith("*")) {
@@ -60,19 +60,20 @@ public class RorAuthority implements ExternalAuthority {
       return AuthoritySearchAnswer.failed(statusCode, null);
     }
 
-    // ROR pages its own results; this pages them again over what it returned, which is what this
-    // route has always done.
+    // ROR pages its own results; this pages them again over the first page it returned, which is
+    // what this route has always done. The total is therefore of what can be reached, and is capped
+    // when ROR reports more matches than that page holds.
     List<Map.Entry<String, Map<String, String>>> found = new ArrayList<>(searchNames(root).entrySet());
     Map<String, Map<String, String>> results = new LinkedHashMap<>();
-    int fromIndex = page * pageSize;
-    int toIndex = Math.min(fromIndex + pageSize, found.size());
-    if (fromIndex < found.size()) {
-      for (Map.Entry<String, Map<String, String>> entry : found.subList(fromIndex, toIndex)) {
+    int toIndex = Math.min(offset + limit, found.size());
+    if (offset < found.size()) {
+      for (Map.Entry<String, Map<String, String>> entry : found.subList(offset, toIndex)) {
         results.put(entry.getKey(), entry.getValue());
       }
     }
 
-    return AuthoritySearchAnswer.of(results);
+    long reported = root.path("number_of_results").asLong(found.size());
+    return AuthoritySearchAnswer.of(results, found.size(), reported > found.size());
   }
 
   @Override

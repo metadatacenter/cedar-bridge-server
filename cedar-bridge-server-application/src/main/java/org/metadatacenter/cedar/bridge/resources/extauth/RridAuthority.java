@@ -39,9 +39,9 @@ public class RridAuthority implements ExternalAuthority {
   }
 
   @Override
-  public AuthoritySearchAnswer search(String query, int page, int pageSize) {
+  public AuthoritySearchAnswer search(String query, int offset, int limit) {
     final String q = (query == null) ? "" : query;
-    String requestBody = elasticQuery(q, page * pageSize, pageSize);
+    String requestBody = elasticQuery(q, offset, limit);
 
     Map<String, String> headers = new HashMap<>();
     headers.put("Content-Type", MediaType.APPLICATION_JSON);
@@ -68,7 +68,7 @@ public class RridAuthority implements ExternalAuthority {
           results.put(IDENTIFIERS_ORG_RRID_PREFIX + identifier, term);
         }
       }
-      return AuthoritySearchAnswer.of(results);
+      return answer(results, root.path("hits").path("total"));
     } catch (CedarProcessingException | IOException | ParseException e) {
       throw new RuntimeException(e);
     }
@@ -113,6 +113,18 @@ public class RridAuthority implements ExternalAuthority {
    * The Elasticsearch query SciCrunch is asked, which scores an exact name far above a prefix and
    * a prefix above a substring.
    */
+  /**
+   * The terms, out of the total Elasticsearch reported. It reports one either as a number or, past
+   * its tracking limit, as a value with a relation that says whether the value is exact.
+   */
+  static AuthoritySearchAnswer answer(Map<String, ?> results, JsonNode total) {
+    if (total.isObject()) {
+      return AuthoritySearchAnswer.of(results, total.path("value").asLong(0),
+          !"eq".equals(total.path("relation").asText("eq")));
+    }
+    return AuthoritySearchAnswer.of(results, total.asLong(0));
+  }
+
   private static String elasticQuery(String q, int from, int size) {
     ObjectNode root = JsonMapper.STRICT_MAPPER.createObjectNode();
     root.put("from", from);

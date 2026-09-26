@@ -295,14 +295,28 @@ paths:
         name: q
         schema:
           type: string
-      - description: Zero-based page number. Defaults to 0.
+      - description: "How many entries to return, from 1 to 500. Defaults to 100."
+        in: query
+        name: limit
+        schema:
+          type: integer
+          format: int32
+      - description: How many matching entries to skip. Defaults to 0.
+        in: query
+        name: offset
+        schema:
+          type: integer
+          format: int32
+      - description: "Zero-based page number, for clients that page by number. Cannot\
+          \ be sent with `limit` or `offset`. Defaults to 0."
         in: query
         name: page
         schema:
           type: integer
           format: int32
-      - description: "Entries per page. Defaults to 100, and must be greater than\
-          \ one."
+      - description: "Entries per page, for clients that page by number. Cannot be\
+          \ sent with `limit` or `offset`. Defaults to 100, and must be greater than\
+          \ one and at most 500."
         in: query
         name: pageSize
         schema:
@@ -314,13 +328,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthoritySearchResults"
-          description: "Matching entries, with `found`, `page` and `pageSize`"
+          description: "A page of matching entries, with the paging envelope and,\
+            \ for clients that still page by number, `found`, `page` and `pageSize`"
         "400":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CedarError"
-          description: '`page` is negative or `pageSize` is not greater than one'
+          description: "The limit or offset is out of range, `page` is negative or\
+            \ `pageSize` is not greater than one, or both kinds of paging were sent"
         "401":
           content:
             application/json:
@@ -631,14 +647,37 @@ components:
       required:
       - found
       - requestedId
+    AuthoritySearchRequest:
+      type: object
+      additionalProperties: false
+      description: "The page that was asked for, after defaults were applied."
+      properties:
+        limit:
+          type: integer
+          format: int32
+        offset:
+          type: integer
+          format: int32
+      required:
+      - limit
+      - offset
     AuthoritySearchResults:
       type: object
       additionalProperties: false
       description: |
-        The entries one authority offers for a name, with the paging that produced them. The status
-        is the authority's own, so an upstream refusal arrives with the registry's status and its
-        reason under `errors`.
+        The entries one authority offers for a name, in CEDAR's paging envelope. The status is the
+        authority's own, so an upstream refusal arrives with the registry's status and its reason
+        under `errors`. `found`, `page` and `pageSize` are the fields the route answered with before
+        it took `limit` and `offset`, kept for clients that still page by number.
       properties:
+        countCapped:
+          type: boolean
+          description: Present and true when `totalCount` is a lower bound. There
+            is then no `last` link.
+        currentOffset:
+          type: integer
+          format: int64
+          description: The offset of the first entry on this page.
         errors:
           type: array
           description: |
@@ -657,17 +696,36 @@ components:
           type: integer
           format: int32
           description: "The page size used, defaulted to 100."
+        paging:
+          type: object
+          additionalProperties:
+            type: string
+          description: "Links to the first, previous, next and last pages, keyed by\
+            \ relation. A relation with no page is absent."
+        request:
+          $ref: "#/components/schemas/AuthoritySearchRequest"
         results:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/AuthorityTerm"
           description: "One entry per matching term, keyed by the term's IRI, in the\
             \ order the registry offered them."
+        totalCount:
+          type: integer
+          format: int64
+          description: |
+            How many entries match. A lower bound when `countCapped` is true: ROR can be read only
+            one upstream page deep, and NIH RePORTER narrows its answers after the fact and cannot
+            know its total at all.
       required:
+      - currentOffset
       - found
       - page
       - pageSize
+      - paging
+      - request
       - results
+      - totalCount
     AuthorityTerm:
       type: object
       additionalProperties: false

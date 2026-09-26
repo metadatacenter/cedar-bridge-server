@@ -86,14 +86,14 @@ public class OrcidAuthority implements ExternalAuthority {
   }
 
   @Override
-  public AuthoritySearchAnswer search(String query, int page, int pageSize) throws CedarException {
+  public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarException {
     if (query == null || query.trim().isEmpty()) {
       return AuthoritySearchAnswer.nothing();
     }
 
     String url = String.format(orcidApiPrefix + ORCID_API_V3_EXPANDED_SEARCH_PREFIX,
         UrlUtil.urlEncode(String.format(EXPANDED_SEARCH_QUERY, query)))
-        + "&start=" + (page * pageSize) + "&rows=" + pageSize;
+        + "&start=" + offset + "&rows=" + limit;
 
     ClassicHttpResponse proxyResponse = ProxyUtil.proxyGet(url, additionalHeaders());
     int statusCode = proxyResponse.getCode();
@@ -102,7 +102,7 @@ public class OrcidAuthority implements ExternalAuthority {
     if (statusCode != HttpConstants.OK) {
       return AuthoritySearchAnswer.failed(statusCode, errors(root));
     }
-    return AuthoritySearchAnswer.of(searchNames(root));
+    return AuthoritySearchAnswer.of(searchNames(root), root.path("num-found").asLong(0));
   }
 
   @Override

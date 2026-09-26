@@ -58,24 +58,29 @@ public class PubMedAuthority implements ExternalAuthority {
   }
 
   @Override
-  public AuthoritySearchAnswer search(String query, int page, int pageSize) {
+  public AuthoritySearchAnswer search(String query, int offset, int limit) {
     if (query == null || query.isBlank()) {
       return AuthoritySearchAnswer.nothing();
     }
 
     final String q = query.trim();
-    final boolean looksLikePmid = q.chars().allMatch(Character::isDigit);
+    // An exact identifier match leads the first page only; merged into every page, it repeated there.
+    final boolean looksLikePmid = offset == 0 && q.chars().allMatch(Character::isDigit);
 
     CompletableFuture<Map<String, Object>> byId = looksLikePmid
         ? CompletableFuture.supplyAsync(() -> lookupById(q))
         : CompletableFuture.completedFuture(new LinkedHashMap<>());
-    CompletableFuture<Map<String, Object>> byTitle =
-        CompletableFuture.supplyAsync(() -> searchByTitle(q, page, pageSize));
+    CompletableFuture<TitleMatches> byTitle =
+        CompletableFuture.supplyAsync(() -> searchByTitle(q, offset, limit));
 
     try {
-      Map<String, Object> merged = new LinkedHashMap<>(byId.join());
-      byTitle.join().forEach(merged::putIfAbsent);
-      return AuthoritySearchAnswer.of(merged);
+      Map<String, Object> identified = byId.join();
+      TitleMatches titled = byTitle.join();
+      Map<String, Object> merged = new LinkedHashMap<>(identified);
+      titled.terms().forEach(merged::putIfAbsent);
+      // The identifier match is counted only when it is not also a title match.
+      long extra = identified.keySet().stream().filter(k -> !titled.terms().containsKey(k)).count();
+      return AuthoritySearchAnswer.of(merged, titled.count() + extra);
     } catch (Exception e) {
       return AuthoritySearchAnswer.failed(BAD_GATEWAY, null);
     }
@@ -133,23 +138,28 @@ public class PubMedAuthority implements ExternalAuthority {
    * <p>A trailing wildcard is added only from three characters, so a one- or two-letter fragment
    * does not ask NCBI to match most of PubMed.
    */
-  private Map<String, Object> searchByTitle(String raw, int page, int pageSize) {
+  private record TitleMatches(Map<String, Object> terms, long count) {
+  }
+
+  private TitleMatches searchByTitle(String raw, int offset, int limit) {
     Map<String, Object> results = new LinkedHashMap<>();
 
     String term = (!raw.endsWith("*") && raw.length() >= 3) ? raw + "*" : raw;
-    String esearchUrl = ESEARCH + "&retstart=" + (page * pageSize) + "&retmax=" + pageSize
+    String esearchUrl = ESEARCH + "&retstart=" + offset + "&retmax=" + limit
         + "&term=" + url(term) + "[Title]" + ncbiOptionalParams();
 
     try {
       ClassicHttpResponse searchResponse = ProxyUtil.proxyGet(esearchUrl, defaultHeaders());
       if (searchResponse.getCode() != HttpConstants.OK) {
-        return results;
+        return new TitleMatches(results, 0);
       }
 
-      JsonNode idList = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(searchResponse.getEntity()))
-          .path("esearchresult").path("idlist");
+      JsonNode esearch = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(searchResponse.getEntity()))
+          .path("esearchresult");
+      long count = esearch.path("count").asLong(0);
+      JsonNode idList = esearch.path("idlist");
       if (!idList.isArray() || idList.isEmpty()) {
-        return results;
+        return new TitleMatches(results, count);
       }
 
       List<String> pmids = new ArrayList<>();
@@ -158,7 +168,7 @@ public class PubMedAuthority implements ExternalAuthority {
       ClassicHttpResponse summaryResponse =
           ProxyUtil.proxyGet(summaryUrl(String.join(",", pmids)), defaultHeaders());
       if (summaryResponse.getCode() != HttpConstants.OK) {
-        return results;
+        return new TitleMatches(results, count);
       }
 
       JsonNode summaries = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(summaryResponse.getEntity()))
@@ -166,7 +176,7 @@ public class PubMedAuthority implements ExternalAuthority {
       for (String pmid : pmids) {
         addTerm(results, pmid, summaries.path(pmid));
       }
-      return results;
+      return new TitleMatches(results, count);
     } catch (CedarProcessingException | IOException | ParseException e) {
       throw new RuntimeException(e);
     }
