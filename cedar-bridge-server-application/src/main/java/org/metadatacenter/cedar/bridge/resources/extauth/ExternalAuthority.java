@@ -29,12 +29,13 @@ public interface ExternalAuthority {
   String pathSegment();
 
   /**
-   * The terms this authority offers for a name, on the page asked for.
+   * The terms this authority offers for a name: at most {@code limit} of them, skipping the first
+   * {@code offset}.
    *
    * <p>Called with pagination already defaulted and validated, so an implementation can use the
-   * numbers as given.
+   * numbers as given. The offset need not be a multiple of the limit.
    */
-  AuthoritySearchAnswer search(String query, int page, int pageSize) throws CedarException;
+  AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarException;
 
   /** Everything this authority knows about one identifier. */
   AuthorityDetailsAnswer details(String id) throws CedarException;

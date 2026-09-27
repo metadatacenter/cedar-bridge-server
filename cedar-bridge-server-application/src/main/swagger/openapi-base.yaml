@@ -112,15 +112,41 @@ components:
     AuthoritySearchResults:
       type: object
       description: |
-        The entries one authority offers for a name, with the paging that produced them. The status
-        is the authority's own, so an upstream refusal arrives with the registry's status and its
-        reason under `errors`.
+        The entries one authority offers for a name, in CEDAR's paging envelope. The status is the
+        authority's own, so an upstream refusal arrives with the registry's status and its reason
+        under `errors`. `found`, `page` and `pageSize` are the fields the route answered with before
+        it took `limit` and `offset`, kept for clients that still page by number.
       required:
         - found
         - results
         - page
         - pageSize
+        - request
+        - totalCount
+        - currentOffset
+        - paging
       properties:
+        request:
+          $ref: '#/components/schemas/AuthoritySearchRequest'
+        totalCount:
+          type: integer
+          format: int64
+          description: |
+            How many entries match. A lower bound when `countCapped` is true: ROR can be read only
+            one upstream page deep, and NIH RePORTER narrows its answers after the fact and cannot
+            know its total at all.
+        currentOffset:
+          type: integer
+          format: int64
+          description: The offset of the first entry on this page.
+        countCapped:
+          type: boolean
+          description: Present and true when `totalCount` is a lower bound. There is then no `last` link.
+        paging:
+          type: object
+          description: Links to the first, previous, next and last pages, keyed by relation. A relation with no page is absent.
+          additionalProperties:
+            type: string
         found:
           type: boolean
           description: Whether the registry answered and offered at least one entry.
@@ -144,6 +170,18 @@ components:
             reported something; only ORCID does.
           items:
             type: string
+      additionalProperties: false
+    AuthoritySearchRequest:
+      type: object
+      description: The page that was asked for, after defaults were applied.
+      required: [limit, offset]
+      properties:
+        limit:
+          type: integer
+          format: int32
+        offset:
+          type: integer
+          format: int32
       additionalProperties: false
     AuthorityDetails:
       type: object

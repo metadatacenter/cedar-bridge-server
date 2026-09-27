@@ -40,7 +40,7 @@ public class PfasAuthority implements ExternalAuthority {
   }
 
   @Override
-  public AuthoritySearchAnswer search(String query, int page, int pageSize) {
+  public AuthoritySearchAnswer search(String query, int offset, int limit) {
     requireLoaded();
 
     if (query == null || query.trim().isEmpty()) {
@@ -72,9 +72,9 @@ public class PfasAuthority implements ExternalAuthority {
     });
 
     Map<String, Map<String, Object>> results = new LinkedHashMap<>();
-    int fromIndex = page * pageSize;
+    int fromIndex = offset;
     if (fromIndex < matches.size()) {
-      int toIndex = Math.min(fromIndex + pageSize, matches.size());
+      int toIndex = Math.min(fromIndex + limit, matches.size());
       for (Map.Entry<String, Substance> entry : matches.subList(fromIndex, toIndex)) {
         Substance substance = entry.getValue();
         Map<String, Object> term = new HashMap<>();
@@ -84,7 +84,7 @@ public class PfasAuthority implements ExternalAuthority {
       }
     }
 
-    return AuthoritySearchAnswer.of(results);
+    return AuthoritySearchAnswer.of(results, matches.size());
   }
 
   @Override

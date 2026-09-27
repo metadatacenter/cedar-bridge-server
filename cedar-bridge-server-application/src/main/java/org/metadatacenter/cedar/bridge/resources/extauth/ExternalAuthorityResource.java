@@ -22,11 +22,13 @@ import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.http.CedarResponseStatus;
 import org.metadatacenter.util.http.CedarResponse;
+import org.metadatacenter.util.http.PagedQuery;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 
@@ -79,15 +81,23 @@ import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 @Tag(name = "External authorities")
 public class ExternalAuthorityResource extends CedarMicroserviceResource {
 
-  /**
-   * The default page size all seven have always used.
-   *
-   * <p>{@code pageSize} is rejected at {@code <= 1} rather than {@code < 1}, which is surprising —
-   * a page of one is refused — and is what all seven did. Transcribed rather than corrected: this
-   * is a refactor, and the contract test pins it so that changing it has to be a decision.
-   */
+  /** The default page size all seven have always used. */
   private static final int DEFAULT_PAGE_SIZE = 100;
 
+  /**
+   * The largest page an authority is asked for. Before there was one, a caller could ask a registry
+   * for any number of entries on the deployment's credentials.
+   */
+  static final int MAX_PAGE_SIZE = 500;
+
+  /**
+   * The refusal for the zero-based {@code page} and {@code pageSize} the route took before it took
+   * {@code limit} and {@code offset}, kept for the clients that still send them.
+   *
+   * <p>{@code pageSize} is rejected at {@code <= 1} rather than {@code < 1}, which is surprising —
+   * a page of one is refused — and is what all seven did. The contract test pins it, so changing
+   * it has to be a decision.
+   */
   private static final String PAGINATION_ERROR =
       "Invalid pagination parameters: page must be >= 0, pageSize must be > 1";
 
@@ -125,10 +135,12 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
           + "is reported as that authority reported it. An authority that has not finished loading "
           + "answers 503 with Retry-After rather than an empty result.")
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "Matching entries, with `found`, `page` and `pageSize`",
+      @ApiResponse(responseCode = "200", description = "A page of matching entries, with the paging envelope and, "
+          + "for clients that still page by number, `found`, `page` and `pageSize`",
           content = @Content(schema = @Schema(ref = "#/components/schemas/AuthoritySearchResults"))),
       @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = CedarError.class)),
-          description = "`page` is negative or `pageSize` is not greater than one"),
+          description = "The limit or offset is out of range, `page` is negative or `pageSize` is not greater "
+              + "than one, or both kinds of paging were sent"),
       @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
       @ApiResponse(responseCode = "404", description = "No authority is served under this path segment"),
       @ApiResponse(responseCode = "503", description = "The authority is not ready yet; Retry-After says when to try again",
@@ -139,9 +151,15 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
       @PathParam("authority") String segment,
       @Parameter(description = "The name to search for.")
       @QueryParam("q") String query,
-      @Parameter(description = "Zero-based page number. Defaults to 0.")
+      @Parameter(description = "How many entries to return, from 1 to 500. Defaults to 100.")
+      @QueryParam("limit") Optional<Integer> limit,
+      @Parameter(description = "How many matching entries to skip. Defaults to 0.")
+      @QueryParam("offset") Optional<Integer> offset,
+      @Parameter(description = "Zero-based page number, for clients that page by number. Cannot be sent with "
+          + "`limit` or `offset`. Defaults to 0.")
       @QueryParam("page") Integer page,
-      @Parameter(description = "Entries per page. Defaults to 100, and must be greater than one.")
+      @Parameter(description = "Entries per page, for clients that page by number. Cannot be sent with `limit` "
+          + "or `offset`. Defaults to 100, and must be greater than one and at most 500.")
       @QueryParam("pageSize") Integer pageSize) throws CedarException {
 
     ExternalAuthority authority = authoritiesBySegment.get(segment);
@@ -149,29 +167,41 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
       return unknownAuthority(segment);
     }
 
-    final int pageVal = (page != null) ? page : 0;
-    final int pageSizeVal = (pageSize != null) ? pageSize : DEFAULT_PAGE_SIZE;
-
-    if (pageVal < 0 || pageSizeVal <= 1) {
-      return CedarResponse.badRequest().message(PAGINATION_ERROR).build();
+    final int offsetVal;
+    final int limitVal;
+    boolean byNumber = page != null || pageSize != null;
+    if (byNumber && (limit.isPresent() || offset.isPresent())) {
+      return CedarResponse.badRequest()
+          .message("Send either limit and offset or page and pageSize, not both").build();
+    }
+    if (byNumber) {
+      int pageVal = (page != null) ? page : 0;
+      int pageSizeVal = (pageSize != null) ? pageSize : DEFAULT_PAGE_SIZE;
+      if (pageVal < 0 || pageSizeVal <= 1) {
+        return CedarResponse.badRequest().message(PAGINATION_ERROR).build();
+      }
+      if (pageSizeVal > MAX_PAGE_SIZE) {
+        return CedarResponse.badRequest()
+            .message("Invalid pagination parameters: pageSize must be at most " + MAX_PAGE_SIZE).build();
+      }
+      offsetVal = pageVal * pageSizeVal;
+      limitVal = pageSizeVal;
+    } else {
+      PagedQuery pagedQuery = new PagedQuery(DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE).limit(limit).offset(offset);
+      pagedQuery.validate();
+      offsetVal = pagedQuery.getOffset();
+      limitVal = pagedQuery.getLimit();
     }
 
     AuthoritySearchAnswer answer;
     try {
-      answer = breakersBySegment.get(segment).call(() -> authority.search(query, pageVal, pageSizeVal));
+      answer = breakersBySegment.get(segment).call(() -> authority.search(query, offsetVal, limitVal));
     } catch (AuthorityNotReadyException notReady) {
       return notReadyResponse(notReady);
     }
 
-    Map<String, Object> body = new HashMap<>();
-    body.put("found", answer.found());
-    body.put("results", answer.results());
-    body.put("page", pageVal);
-    body.put("pageSize", pageSizeVal);
-    if (answer.errors() != null) {
-      body.put("errors", answer.errors());
-    }
-
+    AuthoritySearchPage body = new AuthoritySearchPage(answer, uriInfo.getRequestUri().toString(), limitVal,
+        offsetVal);
     return CedarResponse.status(CedarResponseStatus.fromStatusCode(answer.statusCode())).entity(body).build();
   }
 

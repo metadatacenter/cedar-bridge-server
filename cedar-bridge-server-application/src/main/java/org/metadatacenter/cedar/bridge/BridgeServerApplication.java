@@ -48,18 +48,24 @@ public class BridgeServerApplication extends CedarMicroserviceApplication<Bridge
     // entry answers for one registry and says nothing about routing, parameters, pagination or
     // the envelope, which the resource owns and writes once — so an eighth authority is one class
     // and one line here.
-    final ExternalAuthorityResource extAuth = new ExternalAuthorityResource(cedarConfig, List.of(
+    final ExternalAuthorityResource extAuth =
+        new ExternalAuthorityResource(cedarConfig, createExternalAuthorities(substanceRegistry));
+    environment.jersey().register(extAuth);
+
+    environment.healthChecks().register("comp-tox", new CompToxHealthCheck(substanceRegistry));
+
+
+  }
+
+  /** The authorities the ext-auth route serves. A test replaces them with ones it can script. */
+  protected List<ExternalAuthority> createExternalAuthorities(SubstanceRegistry substanceRegistry) {
+    return List.of(
         new OrcidAuthority(cedarConfig),
         new RorAuthority(cedarConfig),
         new PfasAuthority(substanceRegistry),
         new PubMedAuthority(cedarConfig),
         new RridAuthority(cedarConfig),
         new NihGrantAuthority(),
-        new DoiAuthority()));
-    environment.jersey().register(extAuth);
-
-    environment.healthChecks().register("comp-tox", new CompToxHealthCheck(substanceRegistry));
-
-
+        new DoiAuthority());
   }
 }
