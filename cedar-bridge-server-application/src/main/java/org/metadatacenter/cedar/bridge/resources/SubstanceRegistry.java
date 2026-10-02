@@ -171,7 +171,7 @@ public class SubstanceRegistry {
 
     // The EPA CTX API owns these payloads and adds fields to them, so the reads take the tolerant
     // policy. The batch payload written below is this service's own, and stays strict.
-    ObjectMapper mapper = new ObjectMapper();
+    ObjectMapper mapper = JsonMapper.TOLERANT_MAPPER;
     String json = EntityUtils.toString(entity, CharEncoding.UTF_8);
     List<String> dtxsids =
         JsonMapper.TOLERANT_MAPPER.readValue(json, new TypeReference<List<String>>() {});
