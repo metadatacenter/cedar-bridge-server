@@ -168,6 +168,7 @@ class CedarArtifactClientTest {
   void bothDoiEntryPointsStopAtAResourceDenialBeforeEligibilityOrMinting() throws Exception {
     CedarConfig config = mock(CedarConfig.class, RETURNS_DEEP_STUBS);
     when(config.getMicroserviceUrlUtil().getResource()).thenReturn(urls);
+    when(config.getLinkedDataUtil().resolveResourceId(TEMPLATE_ID)).thenReturn(TEMPLATE_ID);
     when(config.getBridgeConfig().getDataCite().isEnabled()).thenReturn(true);
     when(config.getBridgeConfig().getDataCite().getTemplateId()).thenReturn(TEMPLATE_ID);
     CedarDataServices services = mock(CedarDataServices.class);

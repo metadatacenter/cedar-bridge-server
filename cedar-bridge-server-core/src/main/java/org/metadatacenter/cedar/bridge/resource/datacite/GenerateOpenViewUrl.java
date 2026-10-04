@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 public class GenerateOpenViewUrl {
   public static String getOpenViewUrl(String sourceArtifactId, CedarConfig cedarConfig) {
     CedarResourceType cedarResourceType = CedarFQResourceId.build(sourceArtifactId).getType();
-    String encodedSourceArtifactId = URLEncoder.encode(sourceArtifactId, StandardCharsets.UTF_8);
+    String encodedSourceArtifactId = URLEncoder.encode(org.metadatacenter.id.CedarResourceAddress.pathId(sourceArtifactId), StandardCharsets.UTF_8);
     String uriBase = cedarConfig.getServers().getOpenview().getUriBase();
     if (cedarResourceType != null && cedarResourceType.supportsDOI()) {
       return uriBase + cedarResourceType.getPrefix() + "/" + encodedSourceArtifactId;
