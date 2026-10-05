@@ -132,7 +132,8 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   @Operation(summary = "Search an external registry by name",
       description = "These routes take no credentials. Neither builds a request context, so anyone who can reach this host can use them, and three of the seven authorities behind them spend credentials the deployment holds. Recorded here because a spec that claimed otherwise would be worse than one that says so. Search one external authority for entries matching a name, and return them with "
           + "the paging that produced them. The status is the authority's own, so an upstream refusal "
-          + "is reported as that authority reported it. An authority that has not finished loading "
+          + "is reported as that authority reported it. A registry that does not answer is a 503, and "
+          + "one whose answer cannot be read is a 502. An authority that has not finished loading "
           + "answers 503 with Retry-After rather than an empty result.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "A page of matching entries, with the paging envelope and, "
@@ -143,7 +144,11 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
               + "than one, or both kinds of paging were sent"),
       @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
       @ApiResponse(responseCode = "404", description = "No authority is served under this path segment"),
-      @ApiResponse(responseCode = "503", description = "The authority is not ready yet; Retry-After says when to try again",
+      @ApiResponse(responseCode = "502", description = "The registry answered with something that could not be read, "
+          + "or refused the credentials this server holds",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "503", description = "The registry did not answer, or the authority is not ready yet; "
+          + "when it is not ready, Retry-After says when to try again",
           content = @Content(schema = @Schema(implementation = CedarError.class)))
   })
   public Response searchByName(
@@ -195,14 +200,14 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
 
     AuthoritySearchAnswer answer;
     try {
-      answer = breakersBySegment.get(segment).call(() -> authority.search(query, offsetVal, limitVal));
+      answer = ask(segment, () -> authority.search(query, offsetVal, limitVal));
     } catch (AuthorityNotReadyException notReady) {
       return notReadyResponse(notReady);
     }
 
     AuthoritySearchPage body = new AuthoritySearchPage(answer, uriInfo.getRequestUri().toString(), limitVal,
         offsetVal);
-    return CedarResponse.status(CedarResponseStatus.fromStatusCode(answer.statusCode())).entity(body).build();
+    return answered(answer.statusCode(), body);
   }
 
   @GET
@@ -211,7 +216,9 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   @Operation(summary = "Resolve an identifier against an external registry",
       description = "These routes take no credentials. Neither builds a request context, so anyone who can reach this host can use them, and three of the seven authorities behind them spend credentials the deployment holds. Recorded here because a spec that claimed otherwise would be worse than one that says so. Look one identifier up in an external authority and return what it holds, with "
           + "`found` saying whether it resolved and `requestedId` echoing what was asked. The status "
-          + "is the authority's own. This path and the search path both match two segments; the "
+          + "is the authority's own, so a registry that failed to look the identifier up is not "
+          + "reported as not holding it. A registry that does not answer is a 503, and one whose answer "
+          + "cannot be read is a 502. This path and the search path both match two segments; the "
           + "literal `search-by-name` wins, so no authority can have an entry by that name.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "What the authority holds for the identifier",
@@ -220,7 +227,11 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
       @ApiResponse(responseCode = "404",
           description = "No authority is served under this path segment, or the authority does not "
               + "hold this identifier"),
-      @ApiResponse(responseCode = "503", description = "The authority is not ready yet; Retry-After says when to try again",
+      @ApiResponse(responseCode = "502", description = "The registry answered with something that could not be read, "
+          + "or refused the credentials this server holds",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "503", description = "The registry did not answer, or the authority is not ready yet; "
+          + "when it is not ready, Retry-After says when to try again",
           content = @Content(schema = @Schema(implementation = CedarError.class)))
   })
   public Response details(
@@ -236,7 +247,7 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
 
     AuthorityDetailsAnswer answer;
     try {
-      answer = breakersBySegment.get(segment).call(() -> authority.details(id));
+      answer = ask(segment, () -> authority.details(id));
     } catch (AuthorityNotReadyException notReady) {
       return notReadyResponse(notReady);
     }
@@ -247,7 +258,40 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
     body.put("found", answer.found());
     body.put("requestedId", id);
 
-    return CedarResponse.status(CedarResponseStatus.fromStatusCode(answer.statusCode())).entity(body).build();
+    return answered(answer.statusCode(), body);
+  }
+
+  /**
+   * Asks an authority through its circuit breaker.
+   *
+   * <p>A registry that does not answer is a 503, which {@code ProxyUtil} raises and the breaker
+   * counts, and one whose answer cannot be read is a 502. An authority that wraps either in an
+   * unchecked exception has it unwrapped here, so the status survives: four of the seven used to,
+   * and every outage of theirs went out as a 500.
+   */
+  private <T> T ask(String segment, AuthorityCircuitBreaker.Call<T> call) throws CedarException {
+    try {
+      return breakersBySegment.get(segment).call(call);
+    } catch (RuntimeException e) {
+      for (Throwable cause = e.getCause(); cause != null; cause = cause.getCause()) {
+        if (cause instanceof CedarException cedarException) {
+          throw cedarException;
+        }
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * The registry's status, as the answer's. A status CEDAR names no constant for, such as 429 or
+   * 504, is the registry's as much as any other; looking it up gave null, and null is a 500.
+   */
+  private static Response answered(int statusCode, Object body) {
+    CedarResponseStatus status = CedarResponseStatus.fromStatusCode(statusCode);
+    if (status != null) {
+      return CedarResponse.status(status).entity(body).build();
+    }
+    return Response.fromResponse(CedarResponse.ok().entity(body).build()).status(statusCode).build();
   }
 
   /**

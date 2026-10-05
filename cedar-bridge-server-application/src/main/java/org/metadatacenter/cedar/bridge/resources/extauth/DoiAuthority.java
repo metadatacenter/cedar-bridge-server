@@ -1,15 +1,9 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.ParseException;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.exception.CedarProcessingException;
-import org.metadatacenter.util.http.ProxyUtil;
-import org.metadatacenter.util.json.JsonMapper;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -41,27 +35,28 @@ public class DoiAuthority implements ExternalAuthority {
   }
 
   @Override
-  public AuthoritySearchAnswer search(String query, int offset, int limit) {
+  public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarProcessingException {
     final String q = (query == null) ? "" : query;
     // DataCite pages by number, counting from one, and cannot start at an arbitrary offset. An
     // offset that falls inside a page is served from the two pages it straddles.
     final int firstPage = offset / limit + 1;
     final int skip = offset % limit;
 
-    Upstream upstream = get(pageUrl(q, firstPage, limit));
+    RegistryReply upstream = RegistryReply.get(pageUrl(q, firstPage, limit), new HashMap<>());
     if (!upstream.ok()) {
       // DataCite's own status is passed on, which is what this route has always done: a registry
       // that is down is not a search that found nothing.
-      return AuthoritySearchAnswer.failed(upstream.statusCode(), null);
+      return AuthoritySearchAnswer.failed(upstream.status(), null);
     }
-    List<Map.Entry<String, Object>> terms = new ArrayList<>(terms(upstream.document()).entrySet());
-    long total = upstream.document().path("meta").path("total").asLong(0);
+    JsonNode document = upstream.json();
+    List<Map.Entry<String, Object>> terms = new ArrayList<>(terms(document).entrySet());
+    long total = document.path("meta").path("total").asLong(0);
     if (skip > 0 && offset + limit > (long) firstPage * limit && (long) firstPage * limit < total) {
-      Upstream next = get(pageUrl(q, firstPage + 1, limit));
+      RegistryReply next = RegistryReply.get(pageUrl(q, firstPage + 1, limit), new HashMap<>());
       if (!next.ok()) {
-        return AuthoritySearchAnswer.failed(next.statusCode(), null);
+        return AuthoritySearchAnswer.failed(next.status(), null);
       }
-      terms.addAll(terms(next.document()).entrySet());
+      terms.addAll(terms(next.json()).entrySet());
     }
 
     Map<String, Object> results = new LinkedHashMap<>();
@@ -98,15 +93,18 @@ public class DoiAuthority implements ExternalAuthority {
   }
 
   @Override
-  public AuthorityDetailsAnswer details(String id) {
-    Upstream upstream = get(dataciteApiPrefix + "/" + extractBaseDoi(id));
-    if (!upstream.ok()) {
-      // Answered 200 with found=false however DataCite replied, which is what this route has
-      // always done for an identifier — unlike search, where the status is passed on.
+  public AuthorityDetailsAnswer details(String id) throws CedarProcessingException {
+    RegistryReply upstream = RegistryReply.get(dataciteApiPrefix + "/" + extractBaseDoi(id), new HashMap<>());
+    if (upstream.status() == HttpConstants.NOT_FOUND) {
       return AuthorityDetailsAnswer.notFound(new HashMap<>());
     }
+    if (!upstream.ok()) {
+      // An identifier DataCite failed to look up is not one it does not hold. This answered
+      // "not found" for both, so an outage told the user the DOI did not exist.
+      return AuthorityDetailsAnswer.failed(upstream.status(), new HashMap<>());
+    }
 
-    JsonNode attributes = upstream.document().path("data").path("attributes");
+    JsonNode attributes = upstream.json().path("data").path("attributes");
     String doi = attributes.path("doi").asText(null);
     String title = title(attributes);
     if (doi == null || title == null) {
@@ -118,26 +116,6 @@ public class DoiAuthority implements ExternalAuthority {
     body.put("name", title);
     body.put("details", detailsSentence(attributes, title));
     return AuthorityDetailsAnswer.found(body);
-  }
-
-  /** What DataCite answered: its status, and the document when there is one. */
-  private record Upstream(int statusCode, JsonNode document) {
-    boolean ok() {
-      return statusCode == HttpConstants.OK;
-    }
-  }
-
-  private static Upstream get(String url) {
-    try {
-      ClassicHttpResponse response = ProxyUtil.proxyGet(url, new HashMap<>());
-      int statusCode = response.getCode();
-      if (statusCode != HttpConstants.OK) {
-        return new Upstream(statusCode, null);
-      }
-      return new Upstream(statusCode, JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(response.getEntity())));
-    } catch (CedarProcessingException | IOException | ParseException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   private static String title(JsonNode attributes) {
