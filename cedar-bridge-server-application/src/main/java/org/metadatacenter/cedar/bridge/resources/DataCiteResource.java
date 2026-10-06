@@ -225,6 +225,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     CedarTemplateId dataCiteTemplateId = CedarTemplateId.build(dataCiteTemplateIdS);
     JsonNode dataCiteTemplateProxyJson = artifactClient.read(CedarResourceType.TEMPLATE, dataCiteTemplateId, c);
 
+    sourceArtifactId = linkedDataUtil.resolveResourceId(sourceArtifactId);
     CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
     CedarArtifactId sourceArtifactIdTyped = CedarArtifactId.build(sourceArtifactId, sourceArtifactResourceId.getType());
     JsonNode sourceArtifactProxyJson = artifactClient.read(sourceArtifactResourceId.getType(), sourceArtifactIdTyped, c);
@@ -348,6 +349,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     c.must(c.user()).have(CedarPermission.TEMPLATE_READ);
 
     //Check if the source artifact has a DOI
+    sourceArtifactId = linkedDataUtil.resolveResourceId(sourceArtifactId);
     CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
     CedarResourceType sourceArtifactType = sourceArtifactResourceId.getType();
     CedarArtifactId sourceArtifactIdTyped = CedarArtifactId.build(sourceArtifactId, sourceArtifactType);
@@ -505,7 +507,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
   Response recordPublishedDoi(String annotationUrl, CedarRequestContext context, String sourceArtifactId,
                               String doiName) {
     ObjectNode commandContent = JsonMapper.STRICT_MAPPER.createObjectNode();
-    commandContent.put(LinkedData.ID, sourceArtifactId);
+    commandContent.put(LinkedData.ID, org.metadatacenter.id.CedarResourceAddress.selector(sourceArtifactId));
     commandContent.put(DataciteConstants.DOI, doiName);
 
     ClassicHttpResponse annotationResponse = null;

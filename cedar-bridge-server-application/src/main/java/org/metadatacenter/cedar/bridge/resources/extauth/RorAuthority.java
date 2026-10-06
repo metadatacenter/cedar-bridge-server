@@ -1,18 +1,10 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.commons.lang3.CharEncoding;
-import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.ParseException;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.config.CedarConfig;
-import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.exception.CedarException;
-import org.metadatacenter.util.http.ProxyUtil;
 import org.metadatacenter.util.http.UrlUtil;
-import org.metadatacenter.util.json.JsonMapper;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -52,13 +44,11 @@ public class RorAuthority implements ExternalAuthority {
     }
 
     String url = rorApiPrefix + ROR_API_V2_ORGANIZATION_SEARCH_PREFIX + UrlUtil.urlEncode(fragment);
-    ClassicHttpResponse proxyResponse = ProxyUtil.proxyGet(url, new HashMap<>());
-    int statusCode = proxyResponse.getCode();
-    JsonNode root = read(proxyResponse);
-
-    if (statusCode != HttpConstants.OK) {
-      return AuthoritySearchAnswer.failed(statusCode, null);
+    RegistryReply reply = RegistryReply.get(url, new HashMap<>());
+    if (!reply.ok()) {
+      return AuthoritySearchAnswer.failed(reply.status(), null);
     }
+    JsonNode root = reply.json();
 
     // ROR pages its own results; this pages them again over the first page it returned, which is
     // what this route has always done. The total is therefore of what can be reached, and is capped
@@ -79,30 +69,23 @@ public class RorAuthority implements ExternalAuthority {
   @Override
   public AuthorityDetailsAnswer details(String id) throws CedarException {
     String url = rorApiPrefix + ROR_API_V2_ORGANIZATIONS_PREFIX + UrlUtil.urlEncode(id);
-    ClassicHttpResponse proxyResponse = ProxyUtil.proxyGet(url, new HashMap<>());
-    int statusCode = proxyResponse.getCode();
-    JsonNode root = read(proxyResponse);
+    RegistryReply reply = RegistryReply.get(url, new HashMap<>());
 
     Map<String, Object> body = new HashMap<>();
-    body.put("rawResponse", root);
-
-    if (statusCode != HttpConstants.OK) {
+    if (!reply.ok()) {
+      // What ROR said is passed on when it said it in JSON; its status is passed on regardless.
+      JsonNode refusal = reply.refusal();
+      body.put("rawResponse", refusal);
       body.put("name", null);
-      body.put("errors", errors(root));
-      return AuthorityDetailsAnswer.failed(statusCode, body);
+      body.put("errors", refusal == null ? List.of() : errors(refusal));
+      return AuthorityDetailsAnswer.failed(reply.status(), body);
     }
 
+    JsonNode root = reply.json();
+    body.put("rawResponse", root);
     body.put("id", textOrNull(root, "id"));
     body.put("name", bestName(root));
     return AuthorityDetailsAnswer.found(body);
-  }
-
-  private static JsonNode read(ClassicHttpResponse proxyResponse) {
-    try {
-      return JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(proxyResponse.getEntity(), CharEncoding.UTF_8));
-    } catch (IOException | ParseException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   /**

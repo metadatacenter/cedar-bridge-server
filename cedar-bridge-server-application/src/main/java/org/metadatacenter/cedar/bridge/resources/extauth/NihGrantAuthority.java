@@ -2,15 +2,9 @@ package org.metadatacenter.cedar.bridge.resources.extauth;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.ws.rs.core.MediaType;
-import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.ParseException;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.exception.CedarProcessingException;
-import org.metadatacenter.util.http.ProxyUtil;
-import org.metadatacenter.util.json.JsonMapper;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -35,13 +29,24 @@ public class NihGrantAuthority implements ExternalAuthority {
    */
   private static final int OVER_FETCH = 5;
 
+  private final String reporterApi;
+
+  public NihGrantAuthority() {
+    this(NIH_REPORTER_API);
+  }
+
+  /** An authority reading another RePORTER endpoint, so a test can stand one up locally. */
+  NihGrantAuthority(String reporterApi) {
+    this.reporterApi = reporterApi;
+  }
+
   @Override
   public String pathSegment() {
     return PATH_SEGMENT;
   }
 
   @Override
-  public AuthoritySearchAnswer search(String query, int offset, int limit) {
+  public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarProcessingException {
     if (query == null || query.isBlank()) {
       return AuthoritySearchAnswer.nothing();
     }
@@ -49,70 +54,62 @@ public class NihGrantAuthority implements ExternalAuthority {
     String body = String.format("{\"criteria\":{\"project_title\":\"%s\"},\"offset\":%d,\"limit\":%d}",
         query, offset, limit * OVER_FETCH);
 
-    try {
-      ClassicHttpResponse response = ProxyUtil.proxyPost(NIH_REPORTER_API, defaultHeaders(), body);
-      int statusCode = response.getCode();
-
-      List<Map.Entry<String, Map<String, Object>>> matching = new ArrayList<>();
-      if (statusCode == HttpConstants.OK) {
-        JsonNode root = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(response.getEntity()));
-        for (JsonNode hit : root.path("results")) {
-          String title = asTextOrNull(hit, "project_title");
-          String projectId = asTextOrNull(hit, "project_id");
-          if (title != null && projectId != null && title.toLowerCase().contains(query.toLowerCase())) {
-            matching.add(Map.entry(NIH_REPORTER_IRI_PREFIX + projectId, term(hit, title)));
-          }
-        }
-      }
-
-      // The offset was already applied upstream, so the page is the first of what survived the
-      // narrowing. Applying it again here skipped a page's worth of matches on every page after the
-      // first. Narrowing after the fact leaves the total unknowable, so none is reported.
-      Map<String, Object> results = new LinkedHashMap<>();
-      for (int i = 0; i < Math.min(limit, matching.size()); i++) {
-        results.put(matching.get(i).getKey(), matching.get(i).getValue());
-      }
-
-      return statusCode == HttpConstants.OK
-          ? AuthoritySearchAnswer.ofUnknownTotal(results)
-          : AuthoritySearchAnswer.failed(statusCode, null);
-    } catch (CedarProcessingException | IOException | ParseException e) {
-      throw new RuntimeException(e);
+    RegistryReply reply = RegistryReply.post(reporterApi, defaultHeaders(), body);
+    if (!reply.ok()) {
+      return AuthoritySearchAnswer.failed(reply.status(), null);
     }
+
+    List<Map.Entry<String, Map<String, Object>>> matching = new ArrayList<>();
+    for (JsonNode hit : reply.json().path("results")) {
+      String title = asTextOrNull(hit, "project_title");
+      String projectId = asTextOrNull(hit, "project_id");
+      if (title != null && projectId != null && title.toLowerCase().contains(query.toLowerCase())) {
+        matching.add(Map.entry(NIH_REPORTER_IRI_PREFIX + projectId, term(hit, title)));
+      }
+    }
+
+    // The offset was already applied upstream, so the page is the first of what survived the
+    // narrowing. Applying it again here skipped a page's worth of matches on every page after the
+    // first. Narrowing after the fact leaves the total unknowable, so none is reported.
+    Map<String, Object> results = new LinkedHashMap<>();
+    for (int i = 0; i < Math.min(limit, matching.size()); i++) {
+      results.put(matching.get(i).getKey(), matching.get(i).getValue());
+    }
+    return AuthoritySearchAnswer.ofUnknownTotal(results);
   }
 
   @Override
-  public AuthorityDetailsAnswer details(String id) {
+  public AuthorityDetailsAnswer details(String id) throws CedarProcessingException {
     if (id == null || id.isBlank()) {
       return AuthorityDetailsAnswer.notFound(new HashMap<>());
     }
 
     String body = String.format("{\"criteria\":{\"project_nums\":[\"%s\"]}}", id.trim().toUpperCase(Locale.ROOT));
 
-    try {
-      ClassicHttpResponse response = ProxyUtil.proxyPost(NIH_REPORTER_API, defaultHeaders(), body);
-      if (response.getCode() != HttpConstants.OK) {
-        return AuthorityDetailsAnswer.notFound(new HashMap<>());
-      }
-
-      JsonNode results = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(response.getEntity())).path("results");
-      if (!results.isArray() || results.isEmpty()) {
-        return AuthorityDetailsAnswer.notFound(new HashMap<>());
-      }
-
-      JsonNode first = results.get(0);
-      String projectId = asTextOrNull(first, "project_id");
-      String title = asTextOrNull(first, "project_title");
-      if (projectId == null || title == null) {
-        return AuthorityDetailsAnswer.notFound(new HashMap<>());
-      }
-
-      Map<String, Object> found = new HashMap<>(term(first, title));
-      found.put("id", NIH_REPORTER_IRI_PREFIX + projectId);
-      return AuthorityDetailsAnswer.found(found);
-    } catch (CedarProcessingException | IOException | ParseException e) {
-      throw new RuntimeException(e);
+    RegistryReply reply = RegistryReply.post(reporterApi, defaultHeaders(), body);
+    if (reply.status() == HttpConstants.NOT_FOUND) {
+      return AuthorityDetailsAnswer.notFound(new HashMap<>());
     }
+    if (!reply.ok()) {
+      // A grant RePORTER failed to look up is not one it does not hold.
+      return AuthorityDetailsAnswer.failed(reply.status(), new HashMap<>());
+    }
+
+    JsonNode results = reply.json().path("results");
+    if (!results.isArray() || results.isEmpty()) {
+      return AuthorityDetailsAnswer.notFound(new HashMap<>());
+    }
+
+    JsonNode first = results.get(0);
+    String projectId = asTextOrNull(first, "project_id");
+    String title = asTextOrNull(first, "project_title");
+    if (projectId == null || title == null) {
+      return AuthorityDetailsAnswer.notFound(new HashMap<>());
+    }
+
+    Map<String, Object> found = new HashMap<>(term(first, title));
+    found.put("id", NIH_REPORTER_IRI_PREFIX + projectId);
+    return AuthorityDetailsAnswer.found(found);
   }
 
   /** One project as a term: what it is called, and a line describing it. */

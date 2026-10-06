@@ -4,16 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.ws.rs.core.MediaType;
-import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.ParseException;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.exception.CedarProcessingException;
-import org.metadatacenter.util.http.ProxyUtil;
 import org.metadatacenter.util.json.JsonMapper;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -27,10 +22,19 @@ public class RridAuthority implements ExternalAuthority {
   private static final String IDENTIFIERS_ORG_RRID_PREFIX = "https://identifiers.org/RRID:";
   private static final String SCICRUNCH_RESOLVER_API = "https://scicrunch.org/resolver/";
 
+  private final String searchApi;
+  private final String resolverApi;
   private final String rridApiKey;
 
   public RridAuthority(CedarConfig cedarConfig) {
-    this.rridApiKey = cedarConfig.getExternalAuthorities().getRrid().getApiKey();
+    this(SCICRUNCH_API_PREFIX, SCICRUNCH_RESOLVER_API, cedarConfig.getExternalAuthorities().getRrid().getApiKey());
+  }
+
+  /** An authority reading other SciCrunch endpoints, so a test can stand them up locally. */
+  RridAuthority(String searchApi, String resolverApi, String rridApiKey) {
+    this.searchApi = searchApi;
+    this.resolverApi = resolverApi;
+    this.rridApiKey = rridApiKey;
   }
 
   @Override
@@ -39,7 +43,7 @@ public class RridAuthority implements ExternalAuthority {
   }
 
   @Override
-  public AuthoritySearchAnswer search(String query, int offset, int limit) {
+  public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarProcessingException {
     final String q = (query == null) ? "" : query;
     String requestBody = elasticQuery(q, offset, limit);
 
@@ -47,66 +51,61 @@ public class RridAuthority implements ExternalAuthority {
     headers.put("Content-Type", MediaType.APPLICATION_JSON);
     headers.put("apikey", rridApiKey);
 
-    try {
-      ClassicHttpResponse proxyResponse = ProxyUtil.proxyPost(SCICRUNCH_API_PREFIX, headers, requestBody);
-      int statusCode = proxyResponse.getCode();
-      JsonNode root = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(proxyResponse.getEntity()));
-
-      if (statusCode != HttpConstants.OK) {
-        return AuthoritySearchAnswer.failed(statusCode, null);
-      }
-
-      Map<String, Object> results = new LinkedHashMap<>();
-      for (JsonNode hit : root.path("hits").path("hits")) {
-        JsonNode itemNode = hit.path("_source").path("item");
-        String identifier = itemNode.path("identifier").asText(null);
-        String name = itemNode.path("name").asText(null);
-        if (identifier != null && name != null) {
-          Map<String, Object> term = new HashMap<>();
-          term.put("name", name);
-          term.put("details", buildDetails(itemNode));
-          results.put(IDENTIFIERS_ORG_RRID_PREFIX + identifier, term);
-        }
-      }
-      return answer(results, root.path("hits").path("total"));
-    } catch (CedarProcessingException | IOException | ParseException e) {
-      throw new RuntimeException(e);
+    // The status first: SciCrunch's error pages are not JSON, and reading one first made its
+    // refusal a 500.
+    RegistryReply reply = RegistryReply.post(searchApi, headers, requestBody);
+    if (!reply.ok()) {
+      return AuthoritySearchAnswer.failed(reply.status(), null);
     }
+    JsonNode root = reply.json();
+
+    Map<String, Object> results = new LinkedHashMap<>();
+    for (JsonNode hit : root.path("hits").path("hits")) {
+      JsonNode itemNode = hit.path("_source").path("item");
+      String identifier = itemNode.path("identifier").asText(null);
+      String name = itemNode.path("name").asText(null);
+      if (identifier != null && name != null) {
+        Map<String, Object> term = new HashMap<>();
+        term.put("name", name);
+        term.put("details", buildDetails(itemNode));
+        results.put(IDENTIFIERS_ORG_RRID_PREFIX + identifier, term);
+      }
+    }
+    return answer(results, root.path("hits").path("total"));
   }
 
   @Override
-  public AuthorityDetailsAnswer details(String id) {
-    final String resolverUrl = SCICRUNCH_RESOLVER_API + extractBaseRrid(id) + ".json";
+  public AuthorityDetailsAnswer details(String id) throws CedarProcessingException {
+    final String resolverUrl = resolverApi + extractBaseRrid(id) + ".json";
 
     Map<String, String> headers = new HashMap<>();
     headers.put("apikey", rridApiKey);
 
-    try {
-      ClassicHttpResponse proxyResponse = ProxyUtil.proxyGet(resolverUrl, headers);
-      if (proxyResponse.getCode() != HttpConstants.OK) {
-        return AuthorityDetailsAnswer.notFound(new HashMap<>());
-      }
-
-      JsonNode root = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(proxyResponse.getEntity()));
-      JsonNode hits = root.path("hits").path("hits");
-      if (!hits.isArray() || hits.isEmpty()) {
-        return AuthorityDetailsAnswer.notFound(new HashMap<>());
-      }
-
-      JsonNode item = hits.get(0).path("_source").path("item");
-      String identifier = item.path("identifier").asText(null);
-      String name = item.path("name").asText(null);
-      if (identifier == null || name == null) {
-        return AuthorityDetailsAnswer.notFound(new HashMap<>());
-      }
-
-      Map<String, Object> body = new HashMap<>();
-      body.put("id", IDENTIFIERS_ORG_RRID_PREFIX + identifier);
-      body.put("name", name);
-      return AuthorityDetailsAnswer.found(body);
-    } catch (CedarProcessingException | IOException | ParseException e) {
-      throw new RuntimeException(e);
+    RegistryReply reply = RegistryReply.get(resolverUrl, headers);
+    if (reply.status() == HttpConstants.NOT_FOUND) {
+      return AuthorityDetailsAnswer.notFound(new HashMap<>());
     }
+    if (!reply.ok()) {
+      // An RRID SciCrunch failed to resolve is not one it does not hold.
+      return AuthorityDetailsAnswer.failed(reply.status(), new HashMap<>());
+    }
+
+    JsonNode hits = reply.json().path("hits").path("hits");
+    if (!hits.isArray() || hits.isEmpty()) {
+      return AuthorityDetailsAnswer.notFound(new HashMap<>());
+    }
+
+    JsonNode item = hits.get(0).path("_source").path("item");
+    String identifier = item.path("identifier").asText(null);
+    String name = item.path("name").asText(null);
+    if (identifier == null || name == null) {
+      return AuthorityDetailsAnswer.notFound(new HashMap<>());
+    }
+
+    Map<String, Object> body = new HashMap<>();
+    body.put("id", IDENTIFIERS_ORG_RRID_PREFIX + identifier);
+    body.put("name", name);
+    return AuthorityDetailsAnswer.found(body);
   }
 
   /**

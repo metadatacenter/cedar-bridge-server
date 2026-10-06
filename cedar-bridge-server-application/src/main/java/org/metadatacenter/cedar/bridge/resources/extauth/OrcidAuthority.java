@@ -3,17 +3,10 @@ package org.metadatacenter.cedar.bridge.resources.extauth;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
-import org.apache.commons.codec.CharEncoding;
-import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.ParseException;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.config.CedarConfig;
-import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.exception.CedarProcessingException;
-import org.metadatacenter.util.http.ProxyUtil;
 import org.metadatacenter.util.http.UrlUtil;
-import org.metadatacenter.util.json.JsonMapper;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -74,10 +67,18 @@ public class OrcidAuthority implements ExternalAuthority {
   private String orcidIdPrefix;
 
   public OrcidAuthority(CedarConfig cedarConfig) {
-    this.orcidTokenPrefix = cedarConfig.getExternalAuthorities().getOrcid().getTokenPrefix();
-    this.orcidApiPrefix = cedarConfig.getExternalAuthorities().getOrcid().getApiPrefix();
-    this.clientId = cedarConfig.getExternalAuthorities().getOrcid().getClientId();
-    this.clientSecret = cedarConfig.getExternalAuthorities().getOrcid().getClientSecret();
+    this(cedarConfig.getExternalAuthorities().getOrcid().getTokenPrefix(),
+        cedarConfig.getExternalAuthorities().getOrcid().getApiPrefix(),
+        cedarConfig.getExternalAuthorities().getOrcid().getClientId(),
+        cedarConfig.getExternalAuthorities().getOrcid().getClientSecret());
+  }
+
+  /** An authority reading other ORCID endpoints, so a test can stand them up locally. */
+  OrcidAuthority(String orcidTokenPrefix, String orcidApiPrefix, String clientId, String clientSecret) {
+    this.orcidTokenPrefix = orcidTokenPrefix;
+    this.orcidApiPrefix = orcidApiPrefix;
+    this.clientId = clientId;
+    this.clientSecret = clientSecret;
   }
 
   @Override
@@ -95,13 +96,12 @@ public class OrcidAuthority implements ExternalAuthority {
         UrlUtil.urlEncode(String.format(EXPANDED_SEARCH_QUERY, query)))
         + "&start=" + offset + "&rows=" + limit;
 
-    ClassicHttpResponse proxyResponse = ProxyUtil.proxyGet(url, additionalHeaders());
-    int statusCode = proxyResponse.getCode();
-    JsonNode root = read(proxyResponse);
-
-    if (statusCode != HttpConstants.OK) {
-      return AuthoritySearchAnswer.failed(statusCode, errors(root));
+    RegistryReply reply = RegistryReply.get(url, additionalHeaders());
+    if (!reply.ok()) {
+      JsonNode refusal = reply.refusal();
+      return AuthoritySearchAnswer.failed(reply.status(), refusal == null ? List.of() : errors(refusal));
     }
+    JsonNode root = reply.json();
     return AuthoritySearchAnswer.of(searchNames(root), root.path("num-found").asLong(0));
   }
 
@@ -110,33 +110,26 @@ public class OrcidAuthority implements ExternalAuthority {
     String extracted = id.contains("/") ? id.substring(id.lastIndexOf('/') + 1) : id;
     String url = orcidApiPrefix + ORCID_V3_PREFIX + UrlUtil.urlEncode(extracted) + ORCID_API_V3_RECORD_SUFFIX;
 
-    ClassicHttpResponse proxyResponse = ProxyUtil.proxyGet(url, additionalHeaders());
-    int statusCode = proxyResponse.getCode();
-    JsonNode root = read(proxyResponse);
+    RegistryReply reply = RegistryReply.get(url, additionalHeaders());
 
     Map<String, Object> body = new HashMap<>();
-    body.put("rawResponse", root);
-
-    if (statusCode != HttpConstants.OK) {
+    if (!reply.ok()) {
+      // What ORCID said is passed on when it said it in JSON; its status is passed on regardless.
+      JsonNode refusal = reply.refusal();
+      body.put("rawResponse", refusal);
       body.put("name", null);
-      body.put("errors", errors(root));
-      return AuthorityDetailsAnswer.failed(statusCode, body);
+      body.put("errors", refusal == null ? List.of() : errors(refusal));
+      return AuthorityDetailsAnswer.failed(reply.status(), body);
     }
 
+    JsonNode root = reply.json();
+    body.put("rawResponse", root);
     body.put("id", recordId(root));
     body.put("name", bestName(root));
     return AuthorityDetailsAnswer.found(body);
   }
 
-  private static JsonNode read(ClassicHttpResponse proxyResponse) {
-    try {
-      return JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(proxyResponse.getEntity(), CharEncoding.UTF_8));
-    } catch (IOException | ParseException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private Map<String, Map<String, String>> searchNames(JsonNode root) {
+  private Map<String, Map<String, String>> searchNames(JsonNode root) throws CedarProcessingException {
     // The prefix is discovered from ORCID itself, so it is resolved on the first search rather
     // than when this is constructed: asking for it at construction time makes the whole server's
     // startup depend on ORCID being reachable and on the credentials being valid.
@@ -273,7 +266,7 @@ public class OrcidAuthority implements ExternalAuthority {
    * <p>Read off a record ORCID itself returns rather than hard-coded, because it differs between
    * the sandbox and production.
    */
-  private void ensureOrcidIdPrefixInitialized() {
+  private void ensureOrcidIdPrefixInitialized() throws CedarProcessingException {
     if (orcidIdPrefix != null) {
       return;
     }
@@ -288,35 +281,37 @@ public class OrcidAuthority implements ExternalAuthority {
     }
   }
 
-  private void determineOrcidIdPrefix() {
+  /**
+   * Learns the prefix from a record ORCID returns. A record that does not show one is an answer this
+   * cannot use, so a 502 like any other; it was a 500, as was every failure to ask.
+   */
+  private void determineOrcidIdPrefix() throws CedarProcessingException {
     String url = orcidApiPrefix + ORCID_API_V3_SIMPLE_SEARCH_PREFIX + "stanford";
 
-    try {
-      ClassicHttpResponse response = ProxyUtil.proxyGet(url, additionalHeaders());
-      JsonNode jsonResponse =
-          JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(response.getEntity(), CharEncoding.UTF_8));
-      JsonNode orcidIdentifier = jsonResponse.path("result").path(0).path("orcid-identifier");
-
-      String uri = orcidIdentifier.path("uri").asText();
-      String path = orcidIdentifier.path("path").asText();
-
-      if (!uri.endsWith(path)) {
-        throw new RuntimeException("Could not determine ORCID ID prefix.");
-      }
-      orcidIdPrefix = uri.substring(0, uri.length() - path.length());
-    } catch (IOException | ParseException | CedarException e) {
-      throw new RuntimeException("Error retrieving ORCID ID prefix", e);
+    RegistryReply reply = RegistryReply.get(url, additionalHeaders());
+    if (!reply.ok()) {
+      throw RegistryReply.unreadable(new IOException("ORCID answered " + reply.status()
+          + " when asked for the record that shows its identifier prefix"));
     }
+    JsonNode orcidIdentifier = reply.json().path("result").path(0).path("orcid-identifier");
+
+    String uri = orcidIdentifier.path("uri").asText();
+    String path = orcidIdentifier.path("path").asText();
+
+    if (path.isEmpty() || !uri.endsWith(path)) {
+      throw RegistryReply.unreadable(new IOException("ORCID's record shows no identifier prefix"));
+    }
+    orcidIdPrefix = uri.substring(0, uri.length() - path.length());
   }
 
-  private Map<String, String> additionalHeaders() {
+  private Map<String, String> additionalHeaders() throws CedarProcessingException {
     Map<String, String> additionalHeaders = new HashMap<>();
     additionalHeaders.put(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON);
     additionalHeaders.put(HttpHeaders.AUTHORIZATION, HTTP_AUTH_HEADER_BEARER_PREFIX + accessToken());
     return additionalHeaders;
   }
 
-  private String accessToken() {
+  private String accessToken() throws CedarProcessingException {
     if (accessToken != null && System.currentTimeMillis() <= expiryTime) {
       return accessToken;
     }
@@ -331,7 +326,12 @@ public class OrcidAuthority implements ExternalAuthority {
     }
   }
 
-  private void refreshToken() {
+  /**
+   * Fetches the token the deployment's credentials buy. A refusal is a 502: the credentials are the
+   * deployment's, so the caller can do nothing about them, and the status ORCID gave would tell it
+   * otherwise. It was a 500.
+   */
+  private void refreshToken() throws CedarProcessingException {
     Map<String, String> headers = new HashMap<>();
     headers.put(HTTP_HEADER_CONTENT_TYPE, CONTENT_TYPE_APPLICATION_X_WWW_FORM_URLENCODED);
     headers.put(HTTP_HEADER_ACCEPT, CONTENT_TYPE_APPLICATION_JSON);
@@ -342,17 +342,18 @@ public class OrcidAuthority implements ExternalAuthority {
         URLEncoder.encode(ORCID_TOKEN_GRANT_TYPE, StandardCharsets.UTF_8),
         URLEncoder.encode(ORCID_TOKEN_SCOPE, StandardCharsets.UTF_8));
 
-    try {
-      ClassicHttpResponse response = ProxyUtil.proxyPost(orcidTokenPrefix + ORCID_TOKEN_SUFFIX, headers, body);
-      if (response.getCode() != HttpConstants.OK) {
-        throw new RuntimeException("Failed to retrieve token. HTTP status: " + response.getCode());
-      }
-
-      JsonNode jsonResponse = JsonMapper.STRICT_MAPPER.readTree(EntityUtils.toString(response.getEntity()));
-      accessToken = jsonResponse.get("access_token").asText();
-      expiryTime = System.currentTimeMillis() + (jsonResponse.get("expires_in").asLong() * 1000);
-    } catch (IOException | ParseException | CedarProcessingException e) {
-      throw new RuntimeException("Error while fetching access token", e);
+    RegistryReply reply = RegistryReply.post(orcidTokenPrefix + ORCID_TOKEN_SUFFIX, headers, body);
+    if (!reply.ok()) {
+      throw RegistryReply.unreadable(new IOException("ORCID refused the credentials this server holds, with "
+          + reply.status()));
     }
+    JsonNode jsonResponse = reply.json();
+    JsonNode token = jsonResponse.get("access_token");
+    JsonNode expiresIn = jsonResponse.get("expires_in");
+    if (token == null || !token.isTextual() || expiresIn == null || !expiresIn.canConvertToLong()) {
+      throw RegistryReply.unreadable(new IOException("ORCID's token answer carries no token"));
+    }
+    accessToken = token.asText();
+    expiryTime = System.currentTimeMillis() + (expiresIn.asLong() * 1000);
   }
 }
