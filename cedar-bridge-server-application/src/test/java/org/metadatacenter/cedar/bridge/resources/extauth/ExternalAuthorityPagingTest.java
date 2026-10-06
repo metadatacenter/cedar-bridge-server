@@ -164,6 +164,23 @@ public class ExternalAuthorityPagingTest {
   }
 
   @Test
+  public void thePagingLinksOfAPageNumberRequestCanBeFollowed() throws Exception {
+    SCRIPTED.answer = AuthoritySearchAnswer.of(terms(0, 10), 50);
+
+    JsonNode page = get("/ext-auth/scripted/search-by-name?q=x&page=2&pageSize=10");
+
+    for (String rel : List.of("first", "prev", "next", "last")) {
+      String link = page.get("paging").get(rel).asText();
+      Map<String, String> query = query(link);
+      assertFalse(query.containsKey("page") || query.containsKey("pageSize"),
+          "the " + rel + " link pages by offset alone, but was " + link);
+      assertEquals("x", query.get("q"));
+      assertEquals(200, status(pathOf(link)), "the " + rel + " link " + link + " can be followed");
+    }
+    assertEquals("30", query(page.get("paging").get("next").asText()).get("offset"));
+  }
+
+  @Test
   public void outOfRangePagingIsRefused() throws Exception {
     assertEquals(400, status("/ext-auth/scripted/search-by-name?q=x&limit=0"));
     assertEquals(400, status("/ext-auth/scripted/search-by-name?q=x&limit=501"));

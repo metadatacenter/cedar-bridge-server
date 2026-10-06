@@ -205,8 +205,11 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
       return notReadyResponse(notReady);
     }
 
-    AuthoritySearchPage body = new AuthoritySearchPage(answer, uriInfo.getRequestUri().toString(), limitVal,
-        offsetVal);
+    // The links page by offset and limit. Built from the request as sent, a request paging by number
+    // gave links carrying both kinds of paging, which this route refuses.
+    String linkBase = uriInfo.getRequestUriBuilder().replaceQueryParam("page").replaceQueryParam("pageSize")
+        .build().toString();
+    AuthoritySearchPage body = new AuthoritySearchPage(answer, linkBase, limitVal, offsetVal);
     return answered(answer.statusCode(), body);
   }
 
