@@ -250,7 +250,8 @@ class DataCiteDoiRoutesTest {
     ArgumentCaptor<String> url = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> command = ArgumentCaptor.forClass(String.class);
     verify(annotationWriter).post(url.capture(), eq(context), command.capture());
-    assertTrue(url.getValue().endsWith("command/annotations/doi"), url.getValue());
+    assertEquals("http://127.0.0.1:" + resourceServer.getAddress().getPort() + "/command/annotations/doi",
+        url.getValue());
     JsonNode recorded = JsonMapper.STRICT_MAPPER.readTree(command.getValue());
     assertEquals("template-instances/" + SOURCE_UUID, recorded.path("@id").asText());
     assertEquals("https://doi.org/" + DRAFT_DOI, recorded.path("doi").asText());
