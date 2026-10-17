@@ -407,7 +407,9 @@ public class ExternalAuthorityPagingTest {
 
   /**
    * Every paging refusal is the shared error body. The route's own refusals say what was wrong. A
-   * parameter that is not a number is refused by the framework before the route runs, with no message.
+   * parameter that is not a number is refused by the framework before the route runs, with a message
+   * that identifies the parameter and says what form it takes. Jersey's text, which describes the Java
+   * parsing that failed, stays out of the body.
    */
   @Test
   public void everyPagingRefusalIsASharedErrorBody() throws Exception {
@@ -417,8 +419,13 @@ public class ExternalAuthorityPagingTest {
       JsonNode error = SharedErrorBody.of(response, 400);
       assertFalse(error.get("message").asText("").isBlank(), query + " -> " + error);
     }
-    for (String query : List.of("page=abc", "pageSize=abc", "limit=abc", "offset=abc")) {
-      SharedErrorBody.of(send("/ext-auth/scripted/search-by-name?q=x&" + query), 400);
+    for (String parameter : List.of("page", "pageSize", "limit", "offset")) {
+      HttpResponse<String> response = send("/ext-auth/scripted/search-by-name?q=x&" + parameter + "=abc");
+      JsonNode error = SharedErrorBody.of(response, 400);
+      assertEquals("The query parameter " + parameter + " must be an integer from -2147483648 to 2147483647",
+          error.get("message").asText(null), response.body());
+      assertTrue(error.get("errorKey").isNull(), response.body());
+      assertFalse(response.body().contains("For input string"), response.body());
     }
     assertEquals(-1, SCRIPTED.lastOffset, "the authority was asked anyway");
   }
