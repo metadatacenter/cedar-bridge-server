@@ -57,7 +57,7 @@
                 }
               }
             },
-            "description" : "DataCite integration is disabled, or the artifact is not eligible for a DOI"
+            "description" : "DataCite integration is disabled (dataCiteDOIDisabled), the artifact is not eligible for a DOI, or the resource server refused a read (upstreamServerError)"
           },
           "401" : {
             "content" : {
@@ -67,7 +67,7 @@
                 }
               }
             },
-            "description" : "Unauthorized"
+            "description" : "The request carries no valid credentials, the caller cannot edit the source artifact (noWriteAccessToArtifact), or the resource server refused a read (upstreamServerError)"
           },
           "403" : {
             "content" : {
@@ -77,7 +77,7 @@
                 }
               }
             },
-            "description" : "The caller cannot read the source artifact or the DataCite template"
+            "description" : "The caller cannot read the source artifact or the DataCite template (upstreamServerError), or lacks the template read permission"
           },
           "404" : {
             "content" : {
@@ -89,6 +89,16 @@
             },
             "description" : "The source artifact or DataCite template was not found"
           },
+          "406" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "The request does not accept a JSON response"
+          },
           "409" : {
             "content" : {
               "application/json" : {
@@ -97,7 +107,7 @@
                 }
               }
             },
-            "description" : "The artifact already has a findable DOI"
+            "description" : "The artifact already has a findable DOI (doiAlreadyExists)"
           },
           "429" : {
             "content" : {
@@ -107,7 +117,7 @@
                 }
               }
             },
-            "description" : "Resource requests are being rate limited"
+            "description" : "The caller, or the reads the workflow makes of the resource server, exceeded the deployment's request rate"
           },
           "500" : {
             "content" : {
@@ -127,7 +137,7 @@
                 }
               }
             },
-            "description" : "DataCite could not be reached, or CEDAR returned an invalid upstream response"
+            "description" : "DataCite could not be reached or refused the draft lookup, whose errors are then in objects.dataCiteErrors, or the resource server's answer could not be used (upstreamServerError)"
           },
           "503" : {
             "content" : {
@@ -137,7 +147,7 @@
                 }
               }
             },
-            "description" : "A CEDAR dependency is unavailable"
+            "description" : "The graph database or another service the request depends on is unavailable"
           }
         },
         "security" : [ {
@@ -206,7 +216,7 @@
                 }
               }
             },
-            "description" : "DataCite integration is disabled, `state` is neither draft nor publish, the artifact is not eligible, or the metadata failed validation"
+            "description" : "DataCite integration is disabled (dataCiteDOIDisabled), `state` is neither draft nor publish, the body is not JSON (malformedJsonRequestBody), the artifact is not eligible, the metadata failed validation (invalidInput, with the report in objects.validationResult), or DataCite refused the metadata (invalidInput, with DataCite's errors in objects.dataCiteErrors). The resource server refusing a read is also reported (upstreamServerError)."
           },
           "401" : {
             "content" : {
@@ -216,7 +226,7 @@
                 }
               }
             },
-            "description" : "Unauthorized"
+            "description" : "The request carries no valid credentials, the caller cannot edit the source artifact (noWriteAccessToArtifact), or the resource server refused a read (upstreamServerError)"
           },
           "403" : {
             "content" : {
@@ -226,7 +236,7 @@
                 }
               }
             },
-            "description" : "The caller cannot read the source artifact or the DataCite template"
+            "description" : "The caller cannot read the source artifact or the DataCite template (upstreamServerError), or lacks the template read permission"
           },
           "404" : {
             "content" : {
@@ -236,7 +246,17 @@
                 }
               }
             },
-            "description" : "The source artifact or DataCite template was not found"
+            "description" : "The source artifact or DataCite template was not found, or DataCite no longer holds the draft it was asked to update (upstreamServerError, with DataCite's errors in objects.dataCiteErrors)"
+          },
+          "406" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "The request does not accept a JSON response"
           },
           "409" : {
             "content" : {
@@ -246,7 +266,17 @@
                 }
               }
             },
-            "description" : "The artifact already has a findable DOI"
+            "description" : "The artifact already has a findable DOI (doiAlreadyExists), or DataCite refused the registration as a conflict (upstreamServerError, with DataCite's errors in objects.dataCiteErrors)"
+          },
+          "415" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "The body is not declared as JSON"
           },
           "429" : {
             "content" : {
@@ -256,7 +286,7 @@
                 }
               }
             },
-            "description" : "Resource requests are being rate limited"
+            "description" : "The caller, or the reads the workflow makes of the resource server, exceeded the deployment's request rate"
           },
           "500" : {
             "content" : {
@@ -276,7 +306,7 @@
                 }
               }
             },
-            "description" : "DataCite could not be reached, or CEDAR returned an invalid upstream response"
+            "description" : "DataCite could not be reached, failed, refused the repository credentials this server holds, or limited this deployment's requests (upstreamServerError, with DataCite's errors in objects.dataCiteErrors when it gave any). The resource server's answer could not be used (upstreamServerError), or the DOI was minted but could not be recorded in CEDAR, which parameters.reconciliationRequired reports."
           },
           "503" : {
             "content" : {
@@ -286,7 +316,7 @@
                 }
               }
             },
-            "description" : "A CEDAR dependency is unavailable"
+            "description" : "The graph database or another service the request depends on is unavailable"
           }
         },
         "security" : [ {
@@ -298,7 +328,7 @@
     },
     "/datacite/get-doi-metadata/{id}" : {
       "get" : {
-        "description" : "Fetch what DataCite holds for a DOI, including affiliation detail. The status is DataCite's own, so a DOI DataCite does not know comes back as its 404 rather than this server's. DataCite integration can be switched off by configuration, and every route here answers 400 when it is.",
+        "description" : "Fetch what DataCite holds for a DOI, including affiliation detail. A refusal of the request itself keeps DataCite's status, so a DOI DataCite does not know is a 404. Every refusal DataCite makes is answered in the shared error body (upstreamServerError), with DataCite's own errors in objects.dataCiteErrors and its status in parameters.upstreamStatusCode. DataCite integration can be switched off by configuration, and every route here answers 400 when it is.",
         "operationId" : "getDOIMetadata",
         "parameters" : [ {
           "description" : "The DOI as a URL. Example: https://doi.org/10.82658/abcd-1234",
@@ -328,7 +358,7 @@
                 }
               }
             },
-            "description" : "DataCite integration is disabled"
+            "description" : "DataCite integration is disabled (dataCiteDOIDisabled), or DataCite refused the request (upstreamServerError)"
           },
           "401" : {
             "content" : {
@@ -338,10 +368,37 @@
                 }
               }
             },
-            "description" : "Unauthorized"
+            "description" : "The request carries no valid credentials"
           },
           "404" : {
-            "description" : "DataCite holds no such DOI; the body is DataCite's own"
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "DataCite holds no such DOI (upstreamServerError). The body's objects.dataCiteErrors holds DataCite's errors."
+          },
+          "406" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "The request does not accept a JSON response"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "The deployment limits each user's request rate, and the caller exceeded it"
           },
           "500" : {
             "content" : {
@@ -361,7 +418,17 @@
                 }
               }
             },
-            "description" : "DataCite could not be reached"
+            "description" : "DataCite could not be reached, failed, refused the repository credentials this server holds, or limited this deployment's requests (upstreamServerError, with DataCite's errors in objects.dataCiteErrors when it gave any)."
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "The graph database or another service the request depends on is unavailable"
           }
         },
         "security" : [ {

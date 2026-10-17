@@ -12,7 +12,6 @@ class OpenApiErrorContractTest {
   void errorResponsesPublishTheCommonSchema() throws IOException {
     try (InputStream input = getClass().getResourceAsStream("/assets/swagger-api/swagger.json")) {
       OpenApiErrorContract.assertDocumented(input,
-          "GET /datacite/get-doi-metadata/{id} 404",
           "GET /ext-auth/{authority}/search-by-name 404",
           "GET /ext-auth/{authority}/{id} 404");
     }

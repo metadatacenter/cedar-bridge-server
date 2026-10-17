@@ -8,6 +8,8 @@ import org.apache.hc.core5.http.message.BasicClassicHttpResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.bridge.GenerateMetadataInstanceTests;
 import org.metadatacenter.cedar.bridge.resource.datacite.Cedar;
@@ -280,7 +282,80 @@ class DataCiteDoiRoutesTest {
     assertEquals("titles: Title can't be blank\n"
         + "creators: Creator can't be blank\n"
         + "This DOI has already been taken", error.message);
+    assertEquals(3, ((JsonNode) error.objects.get("dataCiteErrors")).size());
+    assertEquals("titles", ((JsonNode) error.objects.get("dataCiteErrors")).path(0).path("source").asText());
     verifyNoInteractions(annotationWriter);
+  }
+
+  /**
+   * DataCite refusing the registration itself keeps its status, so the caller can act on it, and its
+   * errors reach the caller in the shared error body rather than as a body of DataCite's own.
+   */
+  @Test
+  void relaysARefusedRegistrationInTheSharedErrorBody() throws Exception {
+    dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP, new Reply(200, draftLookup()));
+    String gone = """
+        {"errors": [{"status": "404", "title": "The resource you are looking for doesn't exist."}]}
+        """;
+    dataCiteReplies.put(DataCiteCall.UPDATE, new Reply(404, gone));
+
+    Response response = resource.createDOI(SOURCE_ID, "publish", dataCiteInstance());
+
+    assertDataCiteRefusal(response, 404, 404, "DataCite refused the request with HTTP 404.\n"
+        + "The resource you are looking for doesn't exist.", gone);
+    assertEquals(List.of(DataCiteCall.DRAFT_LOOKUP, DataCiteCall.UPDATE), calls());
+    verifyNoInteractions(annotationWriter);
+  }
+
+  /**
+   * A refused repository credential, a rate limit on the deployment's account and DataCite's own
+   * failures are nothing the caller can act on, so each is a bad gateway that still names DataCite's
+   * status and carries its errors.
+   */
+  @ParameterizedTest
+  @ValueSource(ints = {401, 403, 429, 500, 503})
+  void reportsDataCitesOwnFailureToRegisterAsABadGateway(int status) throws Exception {
+    dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP, new Reply(200, "{\"data\": []}"));
+    String failed = "{\"errors\": [{\"status\": \"" + status + "\", \"title\": \"Refused\"}]}";
+    dataCiteReplies.put(DataCiteCall.CREATE, new Reply(status, failed));
+
+    Response response = resource.createDOI(SOURCE_ID, "publish", dataCiteInstance());
+
+    assertDataCiteRefusal(response, 502, status, failureExplanation(status) + "\nRefused", failed);
+    verifyNoInteractions(annotationWriter);
+  }
+
+  @Test
+  void reportsAnUnreadableDataCiteFailureAsABadGatewayWithoutErrors() throws Exception {
+    dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP, new Reply(200, "{\"data\": []}"));
+    dataCiteReplies.put(DataCiteCall.CREATE, new Reply(503, "<html>Service Unavailable</html>"));
+
+    Response response = resource.createDOI(SOURCE_ID, "publish", dataCiteInstance());
+
+    assertDataCiteRefusal(response, 502, 503, "DataCite failed with HTTP 503.", null);
+  }
+
+  /**
+   * The draft lookup is the bridge's own question rather than the caller's, so DataCite refusing it is a
+   * bad gateway whatever DataCite answered. The message is the one the form has always shown, and the
+   * body carries DataCite's status and errors.
+   */
+  @Test
+  void reportsARefusedDraftLookupWithDataCitesErrors() throws Exception {
+    String refused = "{\"errors\": [{\"status\": \"401\", \"title\": \"Bad credentials\"}]}";
+    dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP, new Reply(401, refused));
+
+    Response response = resource.createDOIStart(SOURCE_ID);
+
+    assertEquals(502, response.getStatus());
+    CedarError error = assertInstanceOf(CedarError.class, response.getEntity());
+    assertEquals(502, error.statusCode);
+    assertNull(error.errorKey);
+    assertEquals("The DataCite draft lookup failed", error.message);
+    assertEquals(401, error.parameters.get("upstreamStatusCode"));
+    assertEquals("DataCite", error.parameters.get("upstreamService"));
+    assertEquals(JsonMapper.STRICT_MAPPER.readTree(refused).path("errors"), error.objects.get("dataCiteErrors"));
+    assertEquals(List.of(DataCiteCall.DRAFT_LOOKUP), calls());
   }
 
   @Test
@@ -322,8 +397,12 @@ class DataCiteDoiRoutesTest {
     assertEquals(URI.create(ENDPOINT + "/" + NEW_DOI + "?affiliation=true"), sentToDataCite.get(0).uri());
   }
 
+  /**
+   * A DOI DataCite does not know is a 404 the caller can act on. The answer is the shared error body,
+   * which carries DataCite's errors in objects.dataCiteErrors rather than relaying DataCite's own body.
+   */
   @Test
-  void passesDataCitesAnswerThroughForADoiItDoesNotKnow() throws Exception {
+  void answersADoiDataCiteDoesNotKnowInTheSharedErrorBody() throws Exception {
     String unknown = """
         {"errors": [{"status": "404", "title": "The resource you are looking for doesn't exist."}]}
         """;
@@ -331,8 +410,48 @@ class DataCiteDoiRoutesTest {
 
     Response response = resource.getDOIMetadata("https://doi.org/" + PREFIX + "/unknown");
 
-    assertEquals(404, response.getStatus());
-    assertEquals(JsonMapper.STRICT_MAPPER.readTree(unknown), response.getEntity());
+    assertDataCiteRefusal(response, 404, 404, "DataCite refused the request with HTTP 404.\n"
+        + "The resource you are looking for doesn't exist.", unknown);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {401, 403, 429, 500, 502})
+  void reportsDataCitesOwnFailureToReadADoiAsABadGateway(int status) throws Exception {
+    dataCiteReplies.put(DataCiteCall.METADATA_READ, new Reply(status, "{\"errors\": []}"));
+
+    Response response = resource.getDOIMetadata("https://doi.org/" + NEW_DOI);
+
+    assertDataCiteRefusal(response, 502, status, failureExplanation(status), "{\"errors\": []}");
+  }
+
+  /** What the message says first about a DataCite status the caller cannot act on. */
+  private static String failureExplanation(int status) {
+    return switch (status) {
+      case 401, 403 -> "DataCite refused the repository credentials this server holds (HTTP " + status
+          + "). This is a CEDAR configuration problem rather than one the caller can resolve.";
+      case 429 -> "DataCite is limiting the requests of this deployment's repository account (HTTP 429).";
+      default -> "DataCite failed with HTTP " + status + ".";
+    };
+  }
+
+  /**
+   * Asserts a DataCite refusal in the shared error body: the status the caller receives, DataCite's own
+   * status and name, the message, and DataCite's errors, or their absence when its answer held none.
+   */
+  private static void assertDataCiteRefusal(Response response, int status, int upstreamStatus, String message,
+                                            String upstreamBody) throws Exception {
+    assertEquals(status, response.getStatus());
+    CedarError error = assertInstanceOf(CedarError.class, response.getEntity());
+    assertEquals(status, error.statusCode);
+    assertEquals(CedarErrorKey.UPSTREAM_SERVER_ERROR.getValue(), error.errorKey);
+    assertEquals(message, error.message);
+    assertEquals(upstreamStatus, error.parameters.get("upstreamStatusCode"));
+    assertEquals("DataCite", error.parameters.get("upstreamService"));
+    if (upstreamBody == null) {
+      assertTrue(error.objects.isEmpty(), error.objects.toString());
+    } else {
+      assertEquals(JsonMapper.STRICT_MAPPER.readTree(upstreamBody).path("errors"), error.objects.get("dataCiteErrors"));
+    }
   }
 
   // Opening the DOI form

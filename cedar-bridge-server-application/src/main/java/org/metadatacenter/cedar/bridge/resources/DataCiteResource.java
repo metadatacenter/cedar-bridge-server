@@ -119,17 +119,32 @@ public class DataCiteResource extends CedarMicroserviceResource {
   @Timed
   @Path("/get-doi-metadata/{id}")
   @Operation(summary = "Get a DOI's metadata from DataCite",
-      description = "Fetch what DataCite holds for a DOI, including affiliation detail. The status "
-          + "is DataCite's own, so a DOI DataCite does not know comes back as its 404 rather than "
-          + "this server's. DataCite integration can be switched off by configuration, and every route here answers 400 when it is.")
+      description = "Fetch what DataCite holds for a DOI, including affiliation detail. A refusal of the "
+          + "request itself keeps DataCite's status, so a DOI DataCite does not know is a 404. Every refusal "
+          + "DataCite makes is answered in the shared error body (upstreamServerError), with DataCite's own errors in "
+          + "objects.dataCiteErrors and its status in parameters.upstreamStatusCode. DataCite integration can "
+          + "be switched off by configuration, and every route here answers 400 when it is.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "The DOI's metadata, as DataCite returned it",
           content = @Content(schema = @Schema(ref = "#/components/schemas/DataCiteDoiMetadata"))),
-      @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite integration is disabled"),
-      @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
-      @ApiResponse(responseCode = "404", description = "DataCite holds no such DOI; the body is DataCite's own"),
-      @ApiResponse(responseCode = "502", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite could not be reached"),
-      @ApiResponse(responseCode = "500", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Internal server error")
+      @ApiResponse(responseCode = "400", description = "DataCite integration is disabled (dataCiteDOIDisabled), "
+          + "or DataCite refused the request (upstreamServerError)",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "401", description = UNAUTHORIZED,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "404", description = "DataCite holds no such DOI (upstreamServerError). The "
+          + "body's objects.dataCiteErrors holds DataCite's errors.",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "406", description = NOT_ACCEPTABLE,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "429", description = RATE_LIMITED,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "500", description = INTERNAL_ERROR,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "502", description = DATACITE_FAILED,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "503", description = UNAVAILABLE,
+          content = @Content(schema = @Schema(implementation = CedarError.class)))
   })
   public Response getDOIMetadata(
       @Parameter(description = "The DOI as a URL. Example: https://doi.org/10.82658/abcd-1234",
@@ -162,6 +177,9 @@ public class DataCiteResource extends CedarMicroserviceResource {
       HttpResponse<String> httpResponse = httpClient.send(httpRequest);
       int statusCode = httpResponse.statusCode();
       String jsonResponse = httpResponse.body();
+      if (Response.Status.Family.familyOf(statusCode) != Response.Status.Family.SUCCESSFUL) {
+        return dataCiteRefusal(statusCode, jsonResponse);
+      }
       JsonNode jsonResource = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
 
       // Deserialize DataCite response json file to DataCiteRequest Class. DataCite owns this
@@ -192,15 +210,33 @@ public class DataCiteResource extends CedarMicroserviceResource {
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "The template, the artifact, and the draft or pre-filled metadata",
           content = @Content(schema = @Schema(ref = "#/components/schemas/DoiFormStart"))),
-      @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite integration is disabled, or the artifact is not eligible for a DOI"),
-      @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
-      @ApiResponse(responseCode = "403", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The caller cannot read the source artifact or the DataCite template"),
-      @ApiResponse(responseCode = "404", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The source artifact or DataCite template was not found"),
-      @ApiResponse(responseCode = "409", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The artifact already has a findable DOI"),
-      @ApiResponse(responseCode = "429", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Resource requests are being rate limited"),
-      @ApiResponse(responseCode = "503", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "A CEDAR dependency is unavailable"),
-      @ApiResponse(responseCode = "502", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite could not be reached, or CEDAR returned an invalid upstream response"),
-      @ApiResponse(responseCode = "500", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Internal server error")
+      @ApiResponse(responseCode = "400", description = "DataCite integration is disabled (dataCiteDOIDisabled), the "
+          + "artifact is not eligible for a DOI, or the resource server refused a read (upstreamServerError)",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "401", description = "The request carries no valid credentials, the caller "
+          + "cannot edit the source artifact (noWriteAccessToArtifact), or the resource server refused a read "
+          + "(upstreamServerError)",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "403", description = "The caller cannot read the source artifact or the DataCite "
+          + "template (upstreamServerError), or lacks the template read permission",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "404", description = "The source artifact or DataCite template was not found",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "406", description = NOT_ACCEPTABLE,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "409", description = "The artifact already has a findable DOI (doiAlreadyExists)",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "429", description = "The caller, or the reads the workflow makes of the resource "
+          + "server, exceeded the deployment's request rate",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "500", description = INTERNAL_ERROR,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "502", description = "DataCite could not be reached or refused the draft lookup, "
+          + "whose errors are then in objects.dataCiteErrors, or the resource server's answer could not be used "
+          + "(upstreamServerError)",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "503", description = UNAVAILABLE,
+          content = @Content(schema = @Schema(implementation = CedarError.class)))
   })
   public Response createDOIStart(
       @Parameter(description = "Identifier of the artifact the DOI is for.", required = true)
@@ -307,17 +343,42 @@ public class DataCiteResource extends CedarMicroserviceResource {
           content = @Content(schema = @Schema(ref = "#/components/schemas/DoiRegistration")),
           headers = @Header(name = "Location", description = "The DOI as a resolvable URL.",
               schema = @Schema(type = "string", format = "uri"))),
-      @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = CedarError.class)),
-          description = "DataCite integration is disabled, `state` is neither draft nor publish, the "
-              + "artifact is not eligible, or the metadata failed validation"),
-      @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
-      @ApiResponse(responseCode = "403", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The caller cannot read the source artifact or the DataCite template"),
-      @ApiResponse(responseCode = "404", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The source artifact or DataCite template was not found"),
-      @ApiResponse(responseCode = "409", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "The artifact already has a findable DOI"),
-      @ApiResponse(responseCode = "429", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Resource requests are being rate limited"),
-      @ApiResponse(responseCode = "503", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "A CEDAR dependency is unavailable"),
-      @ApiResponse(responseCode = "502", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "DataCite could not be reached, or CEDAR returned an invalid upstream response"),
-      @ApiResponse(responseCode = "500", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Internal server error")
+      @ApiResponse(responseCode = "400", description = "DataCite integration is disabled (dataCiteDOIDisabled), "
+          + "`state` is neither draft nor publish, the body is not JSON (malformedJsonRequestBody), the artifact is "
+          + "not eligible, the metadata failed validation (invalidInput, with the report in "
+          + "objects.validationResult), or DataCite refused the metadata (invalidInput, with DataCite's errors in "
+          + "objects.dataCiteErrors). The resource server refusing a read is also reported (upstreamServerError).",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "401", description = "The request carries no valid credentials, the caller "
+          + "cannot edit the source artifact (noWriteAccessToArtifact), or the resource server refused a read "
+          + "(upstreamServerError)",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "403", description = "The caller cannot read the source artifact or the DataCite "
+          + "template (upstreamServerError), or lacks the template read permission",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "404", description = "The source artifact or DataCite template was not found, or "
+          + "DataCite no longer holds the draft it was asked to update (upstreamServerError, with DataCite's errors "
+          + "in objects.dataCiteErrors)",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "406", description = NOT_ACCEPTABLE,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "409", description = "The artifact already has a findable DOI (doiAlreadyExists), "
+          + "or DataCite refused the registration as a conflict (upstreamServerError, with DataCite's errors in "
+          + "objects.dataCiteErrors)",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "415", description = "The body is not declared as JSON",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "429", description = "The caller, or the reads the workflow makes of the resource "
+          + "server, exceeded the deployment's request rate",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "500", description = INTERNAL_ERROR,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "502", description = DATACITE_FAILED + " The resource server's answer could not "
+          + "be used (upstreamServerError), or the DOI was minted but could not be recorded in CEDAR, which "
+          + "parameters.reconciliationRequired reports.",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "503", description = UNAVAILABLE,
+          content = @Content(schema = @Schema(implementation = CedarError.class)))
   })
   public Response createDOI(
       @Parameter(description = "Identifier of the artifact the DOI is for.", required = true)
@@ -441,31 +502,15 @@ public class DataCiteResource extends CedarMicroserviceResource {
         else if (statusCode == CedarResponseStatus.UNPROCESSABLE_ENTITY.getStatusCode()) {
           JsonNode jsonResource = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
           JsonNode errorsNode = jsonResource.get("errors");
-          StringBuilder errorMessageBuilder = new StringBuilder();
-          for (JsonNode errorNode : errorsNode) {
-            JsonNode sourceNode = errorNode.get("source");
-            if (sourceNode != null && sourceNode.isTextual()) {
-              String source = sourceNode.asText();
-              errorMessageBuilder.append(source).append(": ");
-            }
-            JsonNode titleNode = errorNode.get("title");
-            if (titleNode != null && titleNode.isTextual()) {
-              String title = titleNode.asText();
-              errorMessageBuilder.append(title).append("\n");
-            }
-          }
           return CedarResponse
               .badRequest()
-              .message(errorMessageBuilder.toString().trim())
+              .message(dataCiteErrorText(errorsNode))
               .errorKey(CedarErrorKey.INVALID_INPUT)
+              .object(DATACITE_ERRORS, errorsNode)
               .build();
         } else {
-          //DOI is not created or updated successfully, return what DataCite returns
-          JsonNode jsonResource = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
-          return Response
-              .status(statusCode)
-              .entity(jsonResource)
-              .build();
+          // DataCite neither registered nor updated the DOI. The shared error body carries its errors.
+          return dataCiteRefusal(statusCode, jsonResponse);
         }
       } catch (Exception e) {
         return CedarResponse
@@ -546,11 +591,110 @@ public class DataCiteResource extends CedarMicroserviceResource {
   }
 
   private Response upstreamFailure(String message, Exception exception) {
-    return CedarResponse.badGateway()
+    CedarResponse.CedarResponseBuilder failure = CedarResponse.badGateway()
         .message(message)
-        .exception(exception)
-        .build();
+        .exception(exception);
+    if (exception instanceof DataCiteLookupRefused refused) {
+      failure.parameter(UPSTREAM_STATUS_CODE, refused.status).parameter(UPSTREAM_SERVICE, DATACITE);
+      JsonNode errors = dataCiteErrors(refused.body);
+      if (errors != null) failure.object(DATACITE_ERRORS, errors);
+    }
+    return failure.build();
   }
+
+  /**
+   * A refusal DataCite gave, in the shared error body.
+   *
+   * <p>DataCite explains a refusal in a list of errors of its own. The body carries that list in
+   * objects.dataCiteErrors, and the message repeats its titles. A refusal of the request itself keeps
+   * DataCite's status, so the caller can act on it: DataCite holds no such DOI, or refused what it was
+   * asked to register. A refused repository credential is a CEDAR configuration problem, a rate limit
+   * applies to the deployment's account rather than to the caller, and a 5xx is DataCite failing, so
+   * each of those answers 502, as does any status that is not a refusal at all.
+   */
+  static Response dataCiteRefusal(int upstreamStatus, String upstreamBody) {
+    boolean upstreamFault = upstreamStatus < 400 || upstreamStatus >= 500
+        || upstreamStatus == 401 || upstreamStatus == 403 || upstreamStatus == 429;
+    String explanation;
+    if (upstreamStatus == 401 || upstreamStatus == 403) {
+      explanation = "DataCite refused the repository credentials this server holds (HTTP " + upstreamStatus
+          + "). This is a CEDAR configuration problem rather than one the caller can resolve.";
+    } else if (upstreamStatus == 429) {
+      explanation = "DataCite is limiting the requests of this deployment's repository account (HTTP 429).";
+    } else if (upstreamStatus >= 500) {
+      explanation = "DataCite failed with HTTP " + upstreamStatus + ".";
+    } else if (upstreamFault) {
+      explanation = "DataCite answered HTTP " + upstreamStatus + ", which the DOI workflow cannot use.";
+    } else {
+      explanation = "DataCite refused the request with HTTP " + upstreamStatus + ".";
+    }
+    JsonNode errors = dataCiteErrors(upstreamBody);
+    String reasons = errors == null ? "" : dataCiteErrorText(errors);
+    CedarResponse.CedarResponseBuilder refusal = CedarResponse
+        .status(upstreamFault ? CedarResponseStatus.BAD_GATEWAY.getStatusCode() : upstreamStatus)
+        .errorKey(CedarErrorKey.UPSTREAM_SERVER_ERROR)
+        .message(reasons.isEmpty() ? explanation : explanation + "\n" + reasons)
+        .parameter(UPSTREAM_STATUS_CODE, upstreamStatus)
+        .parameter(UPSTREAM_SERVICE, DATACITE);
+    if (errors != null) refusal.object(DATACITE_ERRORS, errors);
+    return refusal.build();
+  }
+
+  /** The errors DataCite lists in a refusal, or null when its answer holds no such list. */
+  private static JsonNode dataCiteErrors(String body) {
+    if (body == null || body.isBlank()) return null;
+    try {
+      JsonNode errors = JsonMapper.TOLERANT_MAPPER.readTree(body).path("errors");
+      return errors.isArray() ? errors : null;
+    } catch (IOException e) {
+      return null;
+    }
+  }
+
+  /** DataCite's errors as one line each, the property at fault first when DataCite names one. */
+  private static String dataCiteErrorText(JsonNode errorsNode) {
+    StringBuilder errorMessageBuilder = new StringBuilder();
+    for (JsonNode errorNode : errorsNode) {
+      JsonNode sourceNode = errorNode.get("source");
+      if (sourceNode != null && sourceNode.isTextual()) {
+        String source = sourceNode.asText();
+        errorMessageBuilder.append(source).append(": ");
+      }
+      JsonNode titleNode = errorNode.get("title");
+      if (titleNode != null && titleNode.isTextual()) {
+        String title = titleNode.asText();
+        errorMessageBuilder.append(title).append("\n");
+      }
+    }
+    return errorMessageBuilder.toString().trim();
+  }
+
+  /** DataCite refused a draft lookup. The exception keeps DataCite's status and body for the caller's error. */
+  static final class DataCiteLookupRefused extends IOException {
+    private final int status;
+    private final String body;
+
+    DataCiteLookupRefused(int status, String body) {
+      super("DataCite DOI lookup returned HTTP " + status);
+      this.status = status;
+      this.body = body;
+    }
+  }
+
+  private static final String DATACITE = "DataCite";
+  private static final String DATACITE_ERRORS = "dataCiteErrors";
+  private static final String UPSTREAM_STATUS_CODE = "upstreamStatusCode";
+  private static final String UPSTREAM_SERVICE = "upstreamService";
+  private static final String UNAUTHORIZED = "The request carries no valid credentials";
+  private static final String NOT_ACCEPTABLE = "The request does not accept a JSON response";
+  private static final String RATE_LIMITED = "The deployment limits each user's request rate, and the caller "
+      + "exceeded it";
+  private static final String INTERNAL_ERROR = "Internal server error";
+  private static final String UNAVAILABLE = "The graph database or another service the request depends on is "
+      + "unavailable";
+  private static final String DATACITE_FAILED = "DataCite could not be reached, failed, refused the repository "
+      + "credentials this server holds, or limited this deployment's requests (upstreamServerError, with "
+      + "DataCite's errors in objects.dataCiteErrors when it gave any).";
 
   Response validateSourceArtifactForDoi(CedarRequestContext context, CedarResourceType sourceArtifactType,
                                         CedarArtifactId sourceArtifactId, JsonNode sourceArtifactJson)
@@ -676,7 +820,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
         .GET();
     HttpResponse<String> httpResponse = httpClient.send(httpRequest);
     if (httpResponse.statusCode() != HttpConstants.OK) {
-      throw new IOException("DataCite DOI lookup returned HTTP " + httpResponse.statusCode());
+      throw new DataCiteLookupRefused(httpResponse.statusCode(), httpResponse.body());
     }
     String jsonResponse = httpResponse.body();
     JsonNode jsonResource = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
