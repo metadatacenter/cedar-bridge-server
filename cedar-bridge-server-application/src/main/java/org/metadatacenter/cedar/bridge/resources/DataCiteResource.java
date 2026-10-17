@@ -595,7 +595,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
         .message(message)
         .exception(exception);
     if (exception instanceof DataCiteLookupRefused refused) {
-      failure.parameter(UPSTREAM_STATUS_CODE, refused.status).parameter(UPSTREAM_SERVICE, DATACITE);
+      failure.parameter(UpstreamRefusal.STATUS_PARAMETER, refused.status)
+          .parameter(UpstreamRefusal.SERVICE_PARAMETER, DATACITE);
       JsonNode errors = dataCiteErrors(refused.body);
       if (errors != null) failure.object(DATACITE_ERRORS, errors);
     }
@@ -606,38 +607,28 @@ public class DataCiteResource extends CedarMicroserviceResource {
    * A refusal DataCite gave, in the shared error body.
    *
    * <p>DataCite explains a refusal in a list of errors of its own. The body carries that list in
-   * objects.dataCiteErrors, and the message repeats its titles. A refusal of the request itself keeps
-   * DataCite's status, so the caller can act on it: DataCite holds no such DOI, or refused what it was
-   * asked to register. A refused repository credential is a CEDAR configuration problem, a rate limit
-   * applies to the deployment's account rather than to the caller, and a 5xx is DataCite failing, so
-   * each of those answers 502, as does any status that is not a refusal at all.
+   * objects.dataCiteErrors, and the message repeats its titles. {@link UpstreamRefusal} decides the
+   * status, by the rule the external-authority routes follow too. A refusal of the request itself
+   * keeps DataCite's status, so the caller can act on it, whether DataCite holds no such DOI or
+   * refused what it was asked to register. A refused repository credential is a CEDAR configuration
+   * problem, a rate limit applies to the deployment's account rather than to the caller, and a 5xx is
+   * DataCite failing, so each of those answers 502, as does any status that is not a refusal at all.
    */
   static Response dataCiteRefusal(int upstreamStatus, String upstreamBody) {
-    boolean upstreamFault = upstreamStatus < 400 || upstreamStatus >= 500
-        || upstreamStatus == 401 || upstreamStatus == 403 || upstreamStatus == 429;
-    String explanation;
-    if (upstreamStatus == 401 || upstreamStatus == 403) {
-      explanation = "DataCite refused the repository credentials this server holds (HTTP " + upstreamStatus
+    UpstreamRefusal refusal = new UpstreamRefusal(DATACITE, upstreamStatus);
+    String explanation = switch (refusal.kind()) {
+      case ACCESS_REFUSED -> "DataCite refused the repository credentials this server holds (HTTP " + upstreamStatus
           + "). This is a CEDAR configuration problem rather than one the caller can resolve.";
-    } else if (upstreamStatus == 429) {
-      explanation = "DataCite is limiting the requests of this deployment's repository account (HTTP 429).";
-    } else if (upstreamStatus >= 500) {
-      explanation = "DataCite failed with HTTP " + upstreamStatus + ".";
-    } else if (upstreamFault) {
-      explanation = "DataCite answered HTTP " + upstreamStatus + ", which the DOI workflow cannot use.";
-    } else {
-      explanation = "DataCite refused the request with HTTP " + upstreamStatus + ".";
-    }
+      case RATE_LIMITED -> "DataCite is limiting the requests of this deployment's repository account (HTTP 429).";
+      case FAILED -> "DataCite failed with HTTP " + upstreamStatus + ".";
+      case UNUSABLE -> "DataCite answered HTTP " + upstreamStatus + ", which the DOI workflow cannot use.";
+      case REQUEST_REFUSED -> "DataCite refused the request with HTTP " + upstreamStatus + ".";
+    };
     JsonNode errors = dataCiteErrors(upstreamBody);
-    String reasons = errors == null ? "" : dataCiteErrorText(errors);
-    CedarResponse.CedarResponseBuilder refusal = CedarResponse
-        .status(upstreamFault ? CedarResponseStatus.BAD_GATEWAY.getStatusCode() : upstreamStatus)
-        .errorKey(CedarErrorKey.UPSTREAM_SERVER_ERROR)
-        .message(reasons.isEmpty() ? explanation : explanation + "\n" + reasons)
-        .parameter(UPSTREAM_STATUS_CODE, upstreamStatus)
-        .parameter(UPSTREAM_SERVICE, DATACITE);
-    if (errors != null) refusal.object(DATACITE_ERRORS, errors);
-    return refusal.build();
+    CedarResponse.CedarResponseBuilder answer =
+        refusal.answer(explanation, errors == null ? "" : dataCiteErrorText(errors));
+    if (errors != null) answer.object(DATACITE_ERRORS, errors);
+    return answer.build();
   }
 
   /** The errors DataCite lists in a refusal, or null when its answer holds no such list. */
@@ -683,8 +674,6 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
   private static final String DATACITE = "DataCite";
   private static final String DATACITE_ERRORS = "dataCiteErrors";
-  private static final String UPSTREAM_STATUS_CODE = "upstreamStatusCode";
-  private static final String UPSTREAM_SERVICE = "upstreamService";
   private static final String UNAUTHORIZED = "The request carries no valid credentials";
   private static final String NOT_ACCEPTABLE = "The request does not accept a JSON response";
   private static final String RATE_LIMITED = "The deployment limits each user's request rate, and the caller "

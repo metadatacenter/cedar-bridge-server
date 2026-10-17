@@ -17,8 +17,9 @@ info:
     An upstream refusal is answered in the shared error body with the key `upstreamServerError`,
     rather than flattened into a 500. Its parameters name the upstream service and the status it
     answered, and its objects carry what it answered. A refusal keeps the upstream status, except that
-    DataCite failing, refusing this server's credentials or limiting its requests answers 502, as does
-    an upstream answer that is neither a success nor a refusal.
+    DataCite or an external registry failing, refusing this deployment's credentials or access, or
+    limiting its requests answers 502, as does an upstream answer that is neither a success nor a
+    refusal. The external-authority routes, which take no credentials, therefore never answer 401.
   title: CEDAR Bridge Server API
   version: 2.9.25-SNAPSHOT
 paths:
@@ -358,15 +359,18 @@ paths:
         \ behind them spend credentials the deployment holds. Recorded here because\
         \ a spec that claimed otherwise would be worse than one that says so. Search\
         \ one external authority for entries matching a name, and return them with\
-        \ the paging that produced them. A registry's refusal keeps the registry's\
-        \ status and is answered in the shared error body (upstreamServerError), with\
-        \ that status in parameters.upstreamStatusCode, the registry in parameters.upstreamService,\
-        \ and the authority's answer in objects.authorityAnswer, where `found` is\
-        \ false. A registry may refuse with a status not listed below, which is relayed\
-        \ the same way. A status that is neither 200 nor a refusal, such as a redirect,\
-        \ is a 502. A registry that does not answer is a 503, and one whose answer\
-        \ cannot be read is a 502. An authority that has not finished loading answers\
-        \ 503 with Retry-After rather than an empty result."
+        \ the paging that produced them. A registry's refusal is answered in the shared\
+        \ error body (upstreamServerError), with the registry's status in parameters.upstreamStatusCode,\
+        \ the registry in parameters.upstreamService, and the authority's answer in\
+        \ objects.authorityAnswer, where `found` is false. A refusal of the request\
+        \ itself keeps the registry's status, which may be one not listed below, such\
+        \ as 409. A registry that refuses this deployment's access (401 or 403), limits\
+        \ its requests (429) or fails (5xx) is a 502, since the caller can do nothing\
+        \ about it. So is a status that is neither 200 nor an error, such as a redirect.\
+        \ These routes therefore never answer 401. A registry that does not answer\
+        \ is a 503, and one whose answer cannot be read is a 502. An authority that\
+        \ has not finished loading answers 503 with Retry-After rather than an empty\
+        \ result."
       operationId: searchByName
       parameters:
       - description: "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`,\
@@ -426,20 +430,6 @@ paths:
             \ `pageSize` is not greater than one, both kinds of paging were sent,\
             \ or a paging parameter is not a number. The registry refusing the search\
             \ with 400 is reported too (upstreamServerError)."
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: The registry refused the request this server made with 401
-            (upstreamServerError). These routes take no credentials of their own.
-        "403":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: The registry refused the request this server made with 403
-            (upstreamServerError)
         "404":
           content:
             application/json:
@@ -454,12 +444,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/CedarError"
           description: The request does not accept a JSON response
-        "429":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: The registry is limiting this deployment's requests (upstreamServerError)
         "500":
           content:
             application/json:
@@ -473,22 +457,16 @@ paths:
                 $ref: "#/components/schemas/CedarError"
           description: "The registry answered with something that could not be read,\
             \ or ORCID refused the credentials this server holds. A registry that\
-            \ answers 502 itself, or with a status that is neither 200 nor a refusal,\
-            \ is reported as upstreamServerError."
+            \ refuses this deployment's access (401 or 403), limits its requests (429),\
+            \ fails (5xx), or answers with a status that is neither 200 nor an error\
+            \ is reported as upstreamServerError, with its status in parameters.upstreamStatusCode."
         "503":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CedarError"
           description: "The registry did not answer, or the authority is not ready\
-            \ yet, in which case Retry-After says when to try again. A registry that\
-            \ answers 503 itself is reported as upstreamServerError."
-        "504":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: The registry answered 504 (upstreamServerError)
+            \ yet, in which case Retry-After says when to try again."
       summary: Search an external registry by name
       tags:
       - External authorities
@@ -500,18 +478,20 @@ paths:
         \ a spec that claimed otherwise would be worse than one that says so. Look\
         \ one identifier up in an external authority and return what it holds, with\
         \ `found` saying whether it resolved and `requestedId` echoing what was asked.\
-        \ A registry's refusal keeps the registry's status and is answered in the\
-        \ shared error body (upstreamServerError), with that status in parameters.upstreamStatusCode,\
-        \ the registry in parameters.upstreamService, and the authority's answer in\
-        \ objects.authorityAnswer, where `found` is false and `requestedId` echoes\
-        \ what was asked. Because the status is the registry's, a registry that failed\
-        \ to look the identifier up is not reported as not holding it. A registry\
-        \ may refuse with a status not listed below, which is relayed the same way.\
-        \ A status that is neither 200 nor a refusal, such as a redirect, is a 502.\
-        \ A registry that does not answer is a 503, and one whose answer cannot be\
-        \ read is a 502. This path and the search path both match two segments; the\
-        \ literal `search-by-name` wins, so no authority can have an entry by that\
-        \ name."
+        \ A registry's refusal is answered in the shared error body (upstreamServerError),\
+        \ with the registry's status in parameters.upstreamStatusCode, the registry\
+        \ in parameters.upstreamService, and the authority's answer in objects.authorityAnswer,\
+        \ where `found` is false and `requestedId` echoes what was asked. A refusal\
+        \ of the request itself keeps the registry's status, which may be one not\
+        \ listed below, such as 409. A registry that refuses this deployment's access\
+        \ (401 or 403), limits its requests (429) or fails (5xx) is a 502, since the\
+        \ caller can do nothing about it. So is a status that is neither 200 nor an\
+        \ error, such as a redirect. These routes therefore never answer 401. A failed\
+        \ lookup is a 502, so it is never reported as an identifier the registry does\
+        \ not hold. A registry that does not answer is a 503, and one whose answer\
+        \ cannot be read is a 502. This path and the search path both match two segments;\
+        \ the literal `search-by-name` wins, so no authority can have an entry by\
+        \ that name."
       operationId: details
       parameters:
       - description: "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`,\
@@ -541,20 +521,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/CedarError"
           description: The registry refused the lookup with 400 (upstreamServerError)
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: The registry refused the request this server made with 401
-            (upstreamServerError). These routes take no credentials of their own.
-        "403":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: The registry refused the request this server made with 403
-            (upstreamServerError)
         "404":
           content:
             application/json:
@@ -573,12 +539,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/CedarError"
           description: The request does not accept a JSON response
-        "429":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: The registry is limiting this deployment's requests (upstreamServerError)
         "500":
           content:
             application/json:
@@ -592,22 +552,16 @@ paths:
                 $ref: "#/components/schemas/CedarError"
           description: "The registry answered with something that could not be read,\
             \ or ORCID refused the credentials this server holds. A registry that\
-            \ answers 502 itself, or with a status that is neither 200 nor a refusal,\
-            \ is reported as upstreamServerError."
+            \ refuses this deployment's access (401 or 403), limits its requests (429),\
+            \ fails (5xx), or answers with a status that is neither 200 nor an error\
+            \ is reported as upstreamServerError, with its status in parameters.upstreamStatusCode."
         "503":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CedarError"
           description: "The registry did not answer, or the authority is not ready\
-            \ yet, in which case Retry-After says when to try again. A registry that\
-            \ answers 503 itself is reported as upstreamServerError."
-        "504":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: The registry answered 504 (upstreamServerError)
+            \ yet, in which case Retry-After says when to try again."
       summary: Resolve an identifier against an external registry
       tags:
       - External authorities
@@ -874,10 +828,10 @@ components:
       additionalProperties: false
       description: |
         The entries one authority offers for a name, in CEDAR's paging envelope. A registry's refusal
-        is not a page. It keeps the registry's status and is answered in the shared error body, with
-        `found`, `results` and any reasons the authority read off the refusal in
-        `objects.authorityAnswer`. `found`, `page` and `pageSize` are the fields the route answered
-        with before it took `limit` and `offset`, kept for clients that still page by number.
+        is not a page. It is answered in the shared error body, with `found`, `results` and any reasons
+        the authority read off the refusal in `objects.authorityAnswer`. `found`, `page` and `pageSize`
+        are the fields the route answered with before it took `limit` and `offset`, kept for clients
+        that still page by number.
       properties:
         countCapped:
           type: boolean

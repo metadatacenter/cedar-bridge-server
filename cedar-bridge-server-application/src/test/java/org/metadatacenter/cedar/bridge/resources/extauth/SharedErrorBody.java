@@ -9,7 +9,10 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** What every refusal of the external-authority routes must be: the shared error body. */
+/**
+ * What every refusal of the external-authority routes must be: the shared error body, with no
+ * authentication challenge, since these routes take no credentials.
+ */
 final class SharedErrorBody {
 
   private SharedErrorBody() {
@@ -18,6 +21,8 @@ final class SharedErrorBody {
   /** The answer as a CedarError whose status is the one the response carries. */
   static JsonNode of(HttpResponse<String> response, int status) throws Exception {
     assertEquals(status, response.statusCode(), response.body());
+    assertTrue(response.headers().firstValue("WWW-Authenticate").isEmpty(),
+        "a route that takes no credentials asks for none: " + response.headers().map());
     assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/json"),
         response.headers().map().toString());
     JsonNode error = JsonMapper.STRICT_MAPPER.readTree(response.body());

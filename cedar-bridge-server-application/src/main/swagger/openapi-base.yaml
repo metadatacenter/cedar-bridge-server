@@ -21,8 +21,9 @@ info:
     An upstream refusal is answered in the shared error body with the key `upstreamServerError`,
     rather than flattened into a 500. Its parameters name the upstream service and the status it
     answered, and its objects carry what it answered. A refusal keeps the upstream status, except that
-    DataCite failing, refusing this server's credentials or limiting its requests answers 502, as does
-    an upstream answer that is neither a success nor a refusal.
+    DataCite or an external registry failing, refusing this deployment's credentials or access, or
+    limiting its requests answers 502, as does an upstream answer that is neither a success nor a
+    refusal. The external-authority routes, which take no credentials, therefore never answer 401.
   version: ${project.version}
 components:
   schemas:
@@ -123,10 +124,10 @@ components:
       type: object
       description: |
         The entries one authority offers for a name, in CEDAR's paging envelope. A registry's refusal
-        is not a page. It keeps the registry's status and is answered in the shared error body, with
-        `found`, `results` and any reasons the authority read off the refusal in
-        `objects.authorityAnswer`. `found`, `page` and `pageSize` are the fields the route answered
-        with before it took `limit` and `offset`, kept for clients that still page by number.
+        is not a page. It is answered in the shared error body, with `found`, `results` and any reasons
+        the authority read off the refusal in `objects.authorityAnswer`. `found`, `page` and `pageSize`
+        are the fields the route answered with before it took `limit` and `offset`, kept for clients
+        that still page by number.
       required:
         - found
         - results

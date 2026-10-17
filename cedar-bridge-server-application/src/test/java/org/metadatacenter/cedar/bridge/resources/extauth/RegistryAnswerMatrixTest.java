@@ -50,9 +50,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * answered a search NCBI refused with an empty page, and a 429 or a 504, which CEDAR names no constant
  * for, went out as a 500 from all six. An ORCID that refused this server's credentials was a 500 too.
  *
- * <p>The rule each must keep: a registry that does not answer is a 503; a refusal is answered with the
- * registry's own status; a 200 that cannot be read is a 502; and a refusal of the credentials the
- * deployment holds is a 502, since the caller can do nothing about them. Each authority keeps its own
+ * <p>The rule each must keep: a registry that does not answer is a 503; a refusal of the request
+ * itself is answered with the registry's own status; a 200 that cannot be read is a 502; and a
+ * registry that refuses the deployment's credentials or access (401 or 403), limits its requests
+ * (429) or fails (5xx) is a 502, since the caller can do nothing about any of them. No answer is
+ * therefore a 401, and none carries CEDAR's authentication challenge. Each authority keeps its own
  * way of saying that a registry does not hold an identifier: four answer 200 with {@code found}
  * false, two answer 404. Which is right is a separate question, and nothing here settles it.
  *
@@ -70,6 +72,7 @@ public class RegistryAnswerMatrixTest {
     OK(200, null), UNREADABLE(200, "<html><body>Maintenance</body></html>"),
     BAD_REQUEST(400, "{\"error\":\"bad query\"}"), UNAUTHORIZED(401, "{\"error\":\"key refused\"}"),
     FORBIDDEN(403, "<html>Forbidden</html>"), NOT_FOUND(404, "{\"error\":\"not found\"}"),
+    GONE(410, "{\"error\":\"withdrawn\"}"),
     TOO_MANY_REQUESTS(429, "{\"error\":\"slow down\"}"), SERVER_ERROR(500, "<html>Oops</html>"),
     BAD_GATEWAY(502, "<html>Bad gateway</html>"), UNAVAILABLE(503, "<html>Down</html>"),
     GATEWAY_TIMEOUT(504, "<html>Timed out</html>"), NO_ANSWER(0, null);
@@ -200,10 +203,14 @@ public class RegistryAnswerMatrixTest {
     } else if (answer == Answer.NOT_FOUND && step.route().equals("details")
         && FOUND_FALSE_FOR_MISSING.contains(step.authority())) {
       expected = 200;
+    } else if (deploymentOrRegistryFault(answer.status)) {
+      expected = 502;
     } else {
       expected = answer.status;
     }
     assertEquals(expected, response.statusCode(), step + " answered " + response.body());
+    assertTrue(response.headers().firstValue("WWW-Authenticate").isEmpty(),
+        "no answer asks the caller to authenticate: " + response.headers().map());
     assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/json"),
         "the answer is JSON: " + response.headers().map());
     JsonNode body = JsonMapper.STRICT_MAPPER.readTree(response.body());
@@ -234,6 +241,9 @@ public class RegistryAnswerMatrixTest {
     String registry = REGISTRIES.get(step.authority());
     assertEquals(registry, error.at("/parameters/upstreamService").asText(), body.toString());
     String explanation = answer.status >= 500 ? registry + " failed with HTTP " + answer.status + "."
+        : answer.status == 401 || answer.status == 403 ? registry + " refused this deployment's access (HTTP "
+            + answer.status + "). This is a problem with the deployment rather than one the caller can resolve."
+        : answer.status == 429 ? registry + " is limiting this deployment's requests (HTTP 429)."
         : details && answer == Answer.NOT_FOUND ? registry + " holds no entry for \"" + requestedId + "\" (HTTP 404)."
         : registry + " refused the request with HTTP " + answer.status + ".";
     // ORCID reads its reason off a refusal that is JSON. ROR reads reasons only from a list, which none
@@ -263,6 +273,14 @@ public class RegistryAnswerMatrixTest {
     } else {
       assertEquals(Set.of("found", "requestedId"), keys(said), body.toString());
     }
+  }
+
+  /**
+   * Whether a registry's status concerns the deployment or the registry rather than the request: a
+   * refusal of the deployment's credentials or access, a limit on its requests, or a failure.
+   */
+  private static boolean deploymentOrRegistryFault(int status) {
+    return status == 401 || status == 403 || status == 429 || status >= 500;
   }
 
   private static Set<String> keys(JsonNode node) {

@@ -284,9 +284,9 @@ public class ExternalAuthorityPagingTest {
   }
 
   /**
-   * A registry's refusal of a search keeps its status and is answered in the shared error body. What
-   * the route used to answer with is in objects.authorityAnswer, without the paging envelope of a page
-   * the registry never gave.
+   * A registry's refusal of the search itself keeps its status and is answered in the shared error
+   * body. What the route used to answer with is in objects.authorityAnswer, without the paging
+   * envelope of a page the registry never gave.
    */
   @Test
   public void aRegistryRefusalOfASearchKeepsItsStatusInTheSharedErrorBody() throws Exception {
@@ -302,10 +302,10 @@ public class ExternalAuthorityPagingTest {
 
   @Test
   public void aSearchRefusalWithoutReasonsCarriesNone() throws Exception {
-    SCRIPTED.answer = AuthoritySearchAnswer.failed(503, null);
+    SCRIPTED.answer = AuthoritySearchAnswer.failed(422, null);
 
-    JsonNode error = refusal(send("/ext-auth/scripted/search-by-name?q=x"), 503, 503,
-        "The scripted registry failed with HTTP 503.");
+    JsonNode error = refusal(send("/ext-auth/scripted/search-by-name?q=x"), 422, 422,
+        "The scripted registry refused the request with HTTP 422.");
 
     assertEquals(JsonMapper.STRICT_MAPPER.readTree("{\"found\":false,\"results\":{}}"),
         error.at("/objects/authorityAnswer"));
@@ -333,13 +333,46 @@ public class ExternalAuthorityPagingTest {
 
   @Test
   public void aLookupRefusalOtherThanNotFoundSaysTheRegistryRefusedTheRequest() throws Exception {
-    SCRIPTED.detailsAnswer = AuthorityDetailsAnswer.failed(429, new HashMap<>());
+    SCRIPTED.detailsAnswer = AuthorityDetailsAnswer.failed(410, new HashMap<>());
 
-    JsonNode error = refusal(send("/ext-auth/scripted/R-1"), 429, 429,
-        "The scripted registry refused the request with HTTP 429.");
+    JsonNode error = refusal(send("/ext-auth/scripted/R-1"), 410, 410,
+        "The scripted registry refused the request with HTTP 410.");
 
     assertEquals(JsonMapper.STRICT_MAPPER.readTree("{\"found\":false,\"requestedId\":\"R-1\"}"),
         error.at("/objects/authorityAnswer"));
+  }
+
+  /**
+   * A registry that refuses the deployment's credentials or access, limits its requests or fails has
+   * told the caller nothing about the request, so either route answers 502. The body still names the
+   * registry's status, carries the authority's answer, and says which of these happened. A registry's
+   * 401 in particular never reaches the caller, nor does CEDAR's authentication challenge with it.
+   */
+  @Test
+  public void aRegistryFaultTheCallerCannotRemedyIsABadGateway() throws Exception {
+    Map<Integer, String> explanations = new LinkedHashMap<>();
+    for (int status : List.of(401, 403)) {
+      explanations.put(status, "The scripted registry refused this deployment's access (HTTP " + status
+          + "). This is a problem with the deployment rather than one the caller can resolve.");
+    }
+    explanations.put(429, "The scripted registry is limiting this deployment's requests (HTTP 429).");
+    for (int status : List.of(500, 501, 502, 503, 504, 599)) {
+      explanations.put(status, "The scripted registry failed with HTTP " + status + ".");
+    }
+    for (Map.Entry<Integer, String> expected : explanations.entrySet()) {
+      int status = expected.getKey();
+      SCRIPTED.answer = AuthoritySearchAnswer.failed(status, List.of("said " + status));
+      SCRIPTED.detailsAnswer = AuthorityDetailsAnswer.failed(status, new HashMap<>());
+
+      JsonNode search = refusal(send("/ext-auth/scripted/search-by-name?q=x"), 502, status,
+          expected.getValue() + "\nsaid " + status);
+      assertEquals(JsonMapper.STRICT_MAPPER.readTree(
+              "{\"found\":false,\"results\":{},\"errors\":[\"said " + status + "\"]}"),
+          search.at("/objects/authorityAnswer"));
+      JsonNode lookup = refusal(send("/ext-auth/scripted/R-1"), 502, status, expected.getValue());
+      assertEquals(JsonMapper.STRICT_MAPPER.readTree("{\"found\":false,\"requestedId\":\"R-1\"}"),
+          lookup.at("/objects/authorityAnswer"));
+    }
   }
 
   /**

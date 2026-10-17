@@ -14,7 +14,8 @@ import java.util.Map;
  * registry refuses, both pass its reasons through. So this carries the body rather than prescribing
  * it, and the resource adds the two keys every answer has.
  *
- * @param statusCode the status to answer with, which is the registry's own when it was not 200
+ * @param statusCode 200, or the registry's status when it refused, which the route answers as
+ *                   {@code UpstreamRefusal} classifies it
  * @param found      whether the identifier resolved
  * @param body       everything this authority has to say about it, its own keys
  */
@@ -33,8 +34,9 @@ public record AuthorityDetailsAnswer(int statusCode, boolean found, Map<String, 
   }
 
   /**
-   * The registry answered, and not with a record. The route answers a refusal with its status, in
-   * the shared error body, which carries this body in {@code objects.authorityAnswer}.
+   * The registry answered, and not with a record. The route answers it in the shared error body,
+   * which carries this body in {@code objects.authorityAnswer}, with a status {@code UpstreamRefusal}
+   * decides from the registry's.
    */
   public static AuthorityDetailsAnswer failed(int statusCode, Map<String, Object> body) {
     return new AuthorityDetailsAnswer(statusCode, false, body);
