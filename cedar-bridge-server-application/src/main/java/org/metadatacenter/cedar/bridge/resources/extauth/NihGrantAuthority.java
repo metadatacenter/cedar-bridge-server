@@ -46,6 +46,11 @@ public class NihGrantAuthority implements ExternalAuthority {
   }
 
   @Override
+  public String registryName() {
+    return "NIH RePORTER";
+  }
+
+  @Override
   public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarProcessingException {
     if (query == null || query.isBlank()) {
       return AuthoritySearchAnswer.nothing();

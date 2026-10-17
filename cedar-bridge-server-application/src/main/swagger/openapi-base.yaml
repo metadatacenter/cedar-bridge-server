@@ -18,8 +18,11 @@ info:
     so a CEDAR artifact can be cited, and it resolves and searches identifiers held by seven external
     authorities: DOI, NIH grants, ORCID, CompTox, PubMed, ROR and RRID.
     
-    Where an answer comes from outside, the status comes from outside with it: an upstream refusal is
-    reported as that registry reported it, rather than flattened into a 500.
+    An upstream refusal is answered in the shared error body with the key `upstreamServerError`,
+    rather than flattened into a 500. Its parameters name the upstream service and the status it
+    answered, and its objects carry what it answered. A refusal keeps the upstream status, except that
+    DataCite failing, refusing this server's credentials or limiting its requests answers 502, as does
+    an upstream answer that is neither a success nor a refusal.
   version: ${project.version}
 components:
   schemas:
@@ -119,10 +122,11 @@ components:
     AuthoritySearchResults:
       type: object
       description: |
-        The entries one authority offers for a name, in CEDAR's paging envelope. The status is the
-        authority's own, so an upstream refusal arrives with the registry's status and its reason
-        under `errors`. `found`, `page` and `pageSize` are the fields the route answered with before
-        it took `limit` and `offset`, kept for clients that still page by number.
+        The entries one authority offers for a name, in CEDAR's paging envelope. A registry's refusal
+        is not a page. It keeps the registry's status and is answered in the shared error body, with
+        `found`, `results` and any reasons the authority read off the refusal in
+        `objects.authorityAnswer`. `found`, `page` and `pageSize` are the fields the route answered
+        with before it took `limit` and `offset`, kept for clients that still page by number.
       required:
         - found
         - results
@@ -170,13 +174,6 @@ components:
           type: integer
           format: int32
           description: The page size used, defaulted to 100.
-        errors:
-          type: array
-          description: |
-            What the registry said went wrong, one message per entry. Present only where the registry
-            reported something; only ORCID does.
-          items:
-            type: string
       additionalProperties: false
     AuthoritySearchRequest:
       type: object
@@ -196,7 +193,10 @@ components:
         What one authority holds for one identifier. Only `found` and `requestedId` are added by
         CEDAR; the rest of the object is the authority's own, and the keys below are the ones every
         authority sets when it resolves an identifier. ORCID and ROR also pass the registry's whole
-        record through under `rawResponse`, and its errors under `errors`.
+        record through under `rawResponse`. A registry's refusal is answered in the shared error body,
+        whose `objects.authorityAnswer` holds this object with `found` false. There ORCID and ROR
+        carry the registry's own answer under `rawResponse`, null when it was not JSON, and its reasons
+        under `errors`.
       required:
         - found
         - requestedId
@@ -225,7 +225,9 @@ components:
           additionalProperties: true
         errors:
           type: array
-          description: What the registry said went wrong, one message per entry.
+          description: |
+            What the registry said went wrong, one message per entry. Set by ORCID and ROR, and only
+            in a refusal's `objects.authorityAnswer`.
           items:
             type: string
       additionalProperties: true

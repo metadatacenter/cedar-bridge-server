@@ -40,6 +40,11 @@ public class PfasAuthority implements ExternalAuthority {
   }
 
   @Override
+  public String registryName() {
+    return "EPA CompTox";
+  }
+
+  @Override
   public AuthoritySearchAnswer search(String query, int offset, int limit) {
     requireLoaded();
 

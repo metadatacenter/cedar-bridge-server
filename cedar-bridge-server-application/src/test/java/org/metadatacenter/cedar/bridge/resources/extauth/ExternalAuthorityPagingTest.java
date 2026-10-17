@@ -39,7 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The external-authority search answered in CEDAR's body paging envelope.
  *
  * <p>Two things are under test. The route: how it reads either kind of paging, what it hands an
- * authority, and how it builds the envelope from whatever the authority knows about its total. And
+ * authority, how it builds the envelope from whatever the authority knows about its total, and how
+ * either route answers a refusal, which is in the shared error body rather than the envelope. And
  * the two authorities whose paging does the most work: DataCite, which pages by number and has to
  * serve an offset that falls inside a page, and ROR, which can be read only one upstream page deep.
  * Both read a registry stood up here, on a local port, rather than the real one.
@@ -81,12 +82,18 @@ public class ExternalAuthorityPagingTest {
   /** Answers whatever the test last told it to, and remembers what it was asked for. */
   static final class ScriptedAuthority implements ExternalAuthority {
     volatile AuthoritySearchAnswer answer = AuthoritySearchAnswer.nothing();
+    volatile AuthorityDetailsAnswer detailsAnswer = AuthorityDetailsAnswer.notFound(new HashMap<>());
     volatile int lastOffset = -1;
     volatile int lastLimit = -1;
 
     @Override
     public String pathSegment() {
       return "scripted";
+    }
+
+    @Override
+    public String registryName() {
+      return "The scripted registry";
     }
 
     @Override
@@ -98,7 +105,7 @@ public class ExternalAuthorityPagingTest {
 
     @Override
     public AuthorityDetailsAnswer details(String id) {
-      return AuthorityDetailsAnswer.notFound(new HashMap<>());
+      return detailsAnswer;
     }
   }
 
@@ -125,6 +132,7 @@ public class ExternalAuthorityPagingTest {
   @BeforeEach
   public void reset() {
     SCRIPTED.answer = AuthoritySearchAnswer.nothing();
+    SCRIPTED.detailsAnswer = AuthorityDetailsAnswer.notFound(new HashMap<>());
     SCRIPTED.lastOffset = -1;
     SCRIPTED.lastLimit = -1;
     dataciteRequests.clear();
@@ -275,18 +283,121 @@ public class ExternalAuthorityPagingTest {
     assertFalse(partial.get("paging").has("next"), "a short page is the last one");
   }
 
+  /**
+   * A registry's refusal of a search keeps its status and is answered in the shared error body. What
+   * the route used to answer with is in objects.authorityAnswer, without the paging envelope of a page
+   * the registry never gave.
+   */
   @Test
-  public void aRegistryRefusalKeepsItsStatusAndReasonInsideTheEnvelope() throws Exception {
-    SCRIPTED.answer = AuthoritySearchAnswer.failed(409, List.of("quota exceeded"));
+  public void aRegistryRefusalOfASearchKeepsItsStatusInTheSharedErrorBody() throws Exception {
+    SCRIPTED.answer = AuthoritySearchAnswer.failed(409, List.of("quota exceeded", "try later"));
 
-    HttpResponse<String> response = send("/ext-auth/scripted/search-by-name?q=x");
-    JsonNode page = JsonMapper.STRICT_MAPPER.readTree(response.body());
+    JsonNode error = refusal(send("/ext-auth/scripted/search-by-name?q=x"), 409, 409,
+        "The scripted registry refused the request with HTTP 409.\nquota exceeded\ntry later");
 
-    assertEquals(409, response.statusCode());
-    assertFalse(page.get("found").asBoolean());
-    assertEquals("quota exceeded", page.get("errors").get(0).asText());
-    assertEquals(0, page.get("totalCount").asLong());
-    assertEquals(0, page.get("results").size());
+    assertEquals(JsonMapper.STRICT_MAPPER.readTree(
+            "{\"found\":false,\"results\":{},\"errors\":[\"quota exceeded\",\"try later\"]}"),
+        error.at("/objects/authorityAnswer"));
+  }
+
+  @Test
+  public void aSearchRefusalWithoutReasonsCarriesNone() throws Exception {
+    SCRIPTED.answer = AuthoritySearchAnswer.failed(503, null);
+
+    JsonNode error = refusal(send("/ext-auth/scripted/search-by-name?q=x"), 503, 503,
+        "The scripted registry failed with HTTP 503.");
+
+    assertEquals(JsonMapper.STRICT_MAPPER.readTree("{\"found\":false,\"results\":{}}"),
+        error.at("/objects/authorityAnswer"));
+  }
+
+  /**
+   * A registry that does not hold the identifier keeps the 404. The authority's answer, with found
+   * false, the identifier asked for and the registry's own answer, is in objects.authorityAnswer.
+   */
+  @Test
+  public void aRegistryRefusalOfALookupCarriesTheAuthoritysAnswer() throws Exception {
+    Map<String, Object> said = new HashMap<>();
+    said.put("rawResponse", Map.of("errors", List.of("no such record")));
+    said.put("name", null);
+    said.put("errors", List.of("no such record"));
+    SCRIPTED.detailsAnswer = AuthorityDetailsAnswer.failed(404, said);
+
+    JsonNode error = refusal(send("/ext-auth/scripted/R-1"), 404, 404,
+        "The scripted registry holds no entry for \"R-1\" (HTTP 404).\nno such record");
+
+    assertEquals(JsonMapper.STRICT_MAPPER.readTree("{\"found\":false,\"requestedId\":\"R-1\","
+            + "\"rawResponse\":{\"errors\":[\"no such record\"]},\"name\":null,\"errors\":[\"no such record\"]}"),
+        error.at("/objects/authorityAnswer"));
+  }
+
+  @Test
+  public void aLookupRefusalOtherThanNotFoundSaysTheRegistryRefusedTheRequest() throws Exception {
+    SCRIPTED.detailsAnswer = AuthorityDetailsAnswer.failed(429, new HashMap<>());
+
+    JsonNode error = refusal(send("/ext-auth/scripted/R-1"), 429, 429,
+        "The scripted registry refused the request with HTTP 429.");
+
+    assertEquals(JsonMapper.STRICT_MAPPER.readTree("{\"found\":false,\"requestedId\":\"R-1\"}"),
+        error.at("/objects/authorityAnswer"));
+  }
+
+  /**
+   * A status that is neither 200 nor a refusal is no answer this route can use, and the shared error
+   * body cannot carry a status below 400, so each route answers 502 and names the registry's status.
+   */
+  @Test
+  public void aStatusThatIsNeitherSuccessNorRefusalIsABadGateway() throws Exception {
+    SCRIPTED.answer = AuthoritySearchAnswer.failed(302, null);
+    SCRIPTED.detailsAnswer = AuthorityDetailsAnswer.failed(204, new HashMap<>());
+
+    refusal(send("/ext-auth/scripted/search-by-name?q=x"), 502, 302,
+        "The scripted registry answered HTTP 302, which this route cannot use.");
+    JsonNode lookup = refusal(send("/ext-auth/scripted/R-1"), 502, 204,
+        "The scripted registry answered HTTP 204, which this route cannot use.");
+    assertEquals("R-1", lookup.at("/objects/authorityAnswer/requestedId").asText());
+  }
+
+  /** A segment no authority is registered under is refused in the shared error body, naming the known ones. */
+  @Test
+  public void anUnknownAuthorityIsRefusedInTheSharedErrorBody() throws Exception {
+    for (String path : List.of("/ext-auth/nowhere/search-by-name?q=x", "/ext-auth/nowhere/R-1")) {
+      HttpResponse<String> response = send(path);
+      JsonNode error = SharedErrorBody.of(response, 404);
+      assertTrue(error.get("errorKey").isNull(), error.toString());
+      assertEquals("No external authority is served under \"nowhere\". Known: scripted, doi, ror.",
+          error.get("message").asText());
+      assertTrue(error.get("parameters").isEmpty(), error.toString());
+      assertTrue(error.get("objects").isEmpty(), error.toString());
+    }
+  }
+
+  /**
+   * Every paging refusal is the shared error body. The route's own refusals say what was wrong. A
+   * parameter that is not a number is refused by the framework before the route runs, with no message.
+   */
+  @Test
+  public void everyPagingRefusalIsASharedErrorBody() throws Exception {
+    for (String query : List.of("limit=0", "limit=501", "offset=-1", "pageSize=1", "page=-1", "pageSize=501",
+        "page=1&limit=10")) {
+      HttpResponse<String> response = send("/ext-auth/scripted/search-by-name?q=x&" + query);
+      JsonNode error = SharedErrorBody.of(response, 400);
+      assertFalse(error.get("message").asText("").isBlank(), query + " -> " + error);
+    }
+    for (String query : List.of("page=abc", "pageSize=abc", "limit=abc", "offset=abc")) {
+      SharedErrorBody.of(send("/ext-auth/scripted/search-by-name?q=x&" + query), 400);
+    }
+    assertEquals(-1, SCRIPTED.lastOffset, "the authority was asked anyway");
+  }
+
+  @Test
+  public void aRequestThatAcceptsNoJsonIsRefusedInTheSharedErrorBody() throws Exception {
+    for (String path : List.of("/ext-auth/scripted/search-by-name?q=x", "/ext-auth/scripted/R-1")) {
+      HttpRequest request = HttpRequest.newBuilder()
+          .uri(URI.create("http://127.0.0.1:" + SERVER.getLocalPort() + path)).header("Accept", "text/html")
+          .GET().build();
+      SharedErrorBody.of(CLIENT.send(request, HttpResponse.BodyHandlers.ofString()), 406);
+    }
   }
 
   @Test
@@ -407,6 +518,18 @@ public class ExternalAuthorityPagingTest {
   }
 
   // ---- helpers ---------------------------------------------------------------------------------
+
+  /** A registry's refusal: the status answered, the registry's own, and the message. */
+  private static JsonNode refusal(HttpResponse<String> response, int status, int registryStatus, String message)
+      throws Exception {
+    JsonNode error = SharedErrorBody.of(response, status);
+    assertEquals("upstreamServerError", error.get("errorKey").asText(), response.body());
+    assertEquals(message, error.get("message").asText());
+    assertEquals(registryStatus, error.at("/parameters/upstreamStatusCode").asInt(), response.body());
+    assertEquals("The scripted registry", error.at("/parameters/upstreamService").asText(), response.body());
+    assertFalse(error.at("/objects/authorityAnswer/found").asBoolean(true), response.body());
+    return error;
+  }
 
   private static Map<String, Object> terms(int from, int n) {
     Map<String, Object> out = new LinkedHashMap<>();

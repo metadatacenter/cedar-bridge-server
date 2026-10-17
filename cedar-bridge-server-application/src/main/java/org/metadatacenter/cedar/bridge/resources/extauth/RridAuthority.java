@@ -43,6 +43,11 @@ public class RridAuthority implements ExternalAuthority {
   }
 
   @Override
+  public String registryName() {
+    return "SciCrunch";
+  }
+
+  @Override
   public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarProcessingException {
     final String q = (query == null) ? "" : query;
     String requestBody = elasticQuery(q, offset, limit);

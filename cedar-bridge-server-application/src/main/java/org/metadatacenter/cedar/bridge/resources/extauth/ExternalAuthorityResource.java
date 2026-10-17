@@ -19,16 +19,20 @@ import jakarta.ws.rs.core.Response;
 import org.metadatacenter.util.http.CedarError;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.constant.HttpConstants;
+import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.http.CedarResponseStatus;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.PagedQuery;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.StringJoiner;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 
@@ -101,6 +105,35 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   private static final String PAGINATION_ERROR =
       "Invalid pagination parameters: page must be >= 0, pageSize must be > 1";
 
+  private static final String UPSTREAM_STATUS_CODE = "upstreamStatusCode";
+  private static final String UPSTREAM_SERVICE = "upstreamService";
+  private static final String AUTHORITY_ANSWER = "authorityAnswer";
+
+  /** How both routes answer a registry's refusal, as their documentation states it. */
+  private static final String REFUSAL_BODY = "A registry's refusal keeps the registry's status and is answered "
+      + "in the shared error body (upstreamServerError), with that status in parameters.upstreamStatusCode, "
+      + "the registry in parameters.upstreamService, and the authority's answer in objects.authorityAnswer, "
+      + "where `found` is false";
+  private static final String REFUSAL_STATUSES = "A registry may refuse with a status not listed below, which "
+      + "is relayed the same way. A status that is neither 200 nor a refusal, such as a redirect, is a 502.";
+  private static final String UNKNOWN_AUTHORITY = "No authority is served under this path segment (no error "
+      + "key, and the message names the segments that are served)";
+  private static final String REGISTRY_401 = "The registry refused the request this server made with 401 "
+      + "(upstreamServerError). These routes take no credentials of their own.";
+  private static final String REGISTRY_403 = "The registry refused the request this server made with 403 "
+      + "(upstreamServerError)";
+  private static final String REGISTRY_429 = "The registry is limiting this deployment's requests "
+      + "(upstreamServerError)";
+  private static final String REGISTRY_502 = "The registry answered with something that could not be read, or "
+      + "ORCID refused the credentials this server holds. A registry that answers 502 itself, or with a status "
+      + "that is neither 200 nor a refusal, is reported as upstreamServerError.";
+  private static final String REGISTRY_503 = "The registry did not answer, or the authority is not ready yet, "
+      + "in which case Retry-After says when to try again. A registry that answers 503 itself is reported as "
+      + "upstreamServerError.";
+  private static final String REGISTRY_504 = "The registry answered 504 (upstreamServerError)";
+  private static final String NOT_ACCEPTABLE = "The request does not accept a JSON response";
+  private static final String INTERNAL_ERROR = "Internal server error";
+
   private final Map<String, ExternalAuthority> authoritiesBySegment = new LinkedHashMap<>();
 
   /**
@@ -131,24 +164,36 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   @Path("/search-by-name")
   @Operation(summary = "Search an external registry by name",
       description = "These routes take no credentials. Neither builds a request context, so anyone who can reach this host can use them, and three of the seven authorities behind them spend credentials the deployment holds. Recorded here because a spec that claimed otherwise would be worse than one that says so. Search one external authority for entries matching a name, and return them with "
-          + "the paging that produced them. The status is the authority's own, so an upstream refusal "
-          + "is reported as that authority reported it. A registry that does not answer is a 503, and "
-          + "one whose answer cannot be read is a 502. An authority that has not finished loading "
+          + "the paging that produced them. " + REFUSAL_BODY + ". " + REFUSAL_STATUSES
+          + " A registry that does not answer is a 503, "
+          + "and one whose answer cannot be read is a 502. An authority that has not finished loading "
           + "answers 503 with Retry-After rather than an empty result.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "A page of matching entries, with the paging envelope and, "
           + "for clients that still page by number, `found`, `page` and `pageSize`",
           content = @Content(schema = @Schema(ref = "#/components/schemas/AuthoritySearchResults"))),
-      @ApiResponse(responseCode = "400", content = @Content(schema = @Schema(implementation = CedarError.class)),
-          description = "The limit or offset is out of range, `page` is negative or `pageSize` is not greater "
-              + "than one, or both kinds of paging were sent"),
-      @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
-      @ApiResponse(responseCode = "404", description = "No authority is served under this path segment"),
-      @ApiResponse(responseCode = "502", description = "The registry answered with something that could not be read, "
-          + "or refused the credentials this server holds",
+      @ApiResponse(responseCode = "400", description = "The limit or offset is out of range, `page` is negative or "
+          + "`pageSize` is not greater than one, both kinds of paging were sent, or a paging parameter is not a "
+          + "number. The registry refusing the search with 400 is reported too (upstreamServerError).",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
-      @ApiResponse(responseCode = "503", description = "The registry did not answer, or the authority is not ready yet; "
-          + "when it is not ready, Retry-After says when to try again",
+      @ApiResponse(responseCode = "401", description = REGISTRY_401,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "403", description = REGISTRY_403,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "404", description = UNKNOWN_AUTHORITY + ", or the registry answered the "
+          + "search with 404 (upstreamServerError)",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "406", description = NOT_ACCEPTABLE,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "429", description = REGISTRY_429,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "500", description = INTERNAL_ERROR,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "502", description = REGISTRY_502,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "503", description = REGISTRY_503,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "504", description = REGISTRY_504,
           content = @Content(schema = @Schema(implementation = CedarError.class)))
   })
   public Response searchByName(
@@ -204,13 +249,23 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
     } catch (AuthorityNotReadyException notReady) {
       return notReadyResponse(notReady);
     }
+    if (answer.statusCode() != HttpConstants.OK) {
+      // What the refusal body used to be, less the paging envelope of a page the registry never gave.
+      Map<String, Object> authorityAnswer = new LinkedHashMap<>();
+      authorityAnswer.put("found", answer.found());
+      authorityAnswer.put("results", answer.results());
+      if (answer.errors() != null) {
+        authorityAnswer.put("errors", answer.errors());
+      }
+      return refused(authority, answer.statusCode(), null, authorityAnswer, answer.errors());
+    }
 
     // The links page by offset and limit. Built from the request as sent, a request paging by number
     // gave links carrying both kinds of paging, which this route refuses.
     String linkBase = uriInfo.getRequestUriBuilder().replaceQueryParam("page").replaceQueryParam("pageSize")
         .build().toString();
     AuthoritySearchPage body = new AuthoritySearchPage(answer, linkBase, limitVal, offsetVal);
-    return answered(answer.statusCode(), body);
+    return answered(body);
   }
 
   @GET
@@ -218,23 +273,39 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   @Path("/{id}")
   @Operation(summary = "Resolve an identifier against an external registry",
       description = "These routes take no credentials. Neither builds a request context, so anyone who can reach this host can use them, and three of the seven authorities behind them spend credentials the deployment holds. Recorded here because a spec that claimed otherwise would be worse than one that says so. Look one identifier up in an external authority and return what it holds, with "
-          + "`found` saying whether it resolved and `requestedId` echoing what was asked. The status "
-          + "is the authority's own, so a registry that failed to look the identifier up is not "
-          + "reported as not holding it. A registry that does not answer is a 503, and one whose answer "
-          + "cannot be read is a 502. This path and the search path both match two segments; the "
-          + "literal `search-by-name` wins, so no authority can have an entry by that name.")
+          + "`found` saying whether it resolved and `requestedId` echoing what was asked. " + REFUSAL_BODY
+          + " and `requestedId` echoes what was asked. Because the status is the registry's, a registry "
+          + "that failed to look the identifier up is not reported as not holding it. " + REFUSAL_STATUSES
+          + " A registry that does not answer is a 503, and one whose answer cannot be read is a "
+          + "502. This path and the search path both match two segments; the literal `search-by-name` "
+          + "wins, so no authority can have an entry by that name.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "What the authority holds for the identifier",
           content = @Content(schema = @Schema(ref = "#/components/schemas/AuthorityDetails"))),
-      @ApiResponse(responseCode = "401", content = @Content(schema = @Schema(implementation = CedarError.class)), description = "Unauthorized"),
-      @ApiResponse(responseCode = "404",
-          description = "No authority is served under this path segment, or the authority does not "
-              + "hold this identifier"),
-      @ApiResponse(responseCode = "502", description = "The registry answered with something that could not be read, "
-          + "or refused the credentials this server holds",
+      @ApiResponse(responseCode = "400", description = "The registry refused the lookup with 400 "
+          + "(upstreamServerError)",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
-      @ApiResponse(responseCode = "503", description = "The registry did not answer, or the authority is not ready yet; "
-          + "when it is not ready, Retry-After says when to try again",
+      @ApiResponse(responseCode = "401", description = REGISTRY_401,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "403", description = REGISTRY_403,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "404", description = UNKNOWN_AUTHORITY + ", or ORCID or ROR holds no entry "
+          + "for the identifier (upstreamServerError). The body's objects.authorityAnswer then holds the "
+          + "authority's answer, with `found` false, `requestedId`, and the registry's own answer under "
+          + "`rawResponse`. The other authorities answer 200 with `found` false for an identifier their "
+          + "registry does not hold.",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "406", description = NOT_ACCEPTABLE,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "429", description = REGISTRY_429,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "500", description = INTERNAL_ERROR,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "502", description = REGISTRY_502,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "503", description = REGISTRY_503,
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
+      @ApiResponse(responseCode = "504", description = REGISTRY_504,
           content = @Content(schema = @Schema(implementation = CedarError.class)))
   })
   public Response details(
@@ -260,8 +331,10 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
     Map<String, Object> body = new HashMap<>(answer.body());
     body.put("found", answer.found());
     body.put("requestedId", id);
-
-    return answered(answer.statusCode(), body);
+    if (answer.statusCode() != HttpConstants.OK) {
+      return refused(authority, answer.statusCode(), id, body, body.get("errors"));
+    }
+    return answered(body);
   }
 
   /**
@@ -285,16 +358,64 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
     }
   }
 
+  /** What an authority found, which is a 200 whatever it found. */
+  private static Response answered(Object body) {
+    return CedarResponse.ok().entity(body).build();
+  }
+
   /**
-   * The registry's status, as the answer's. A status CEDAR names no constant for, such as 429 or
-   * 504, is the registry's as much as any other; looking it up gave null, and null is a 500.
+   * A registry's refusal, in the shared error body.
+   *
+   * <p>These routes relayed a refusal with the registry's status and a body of the authority's own,
+   * which a client could not read as it reads every other CEDAR error. The status is still the
+   * registry's, numeric where CEDAR names no constant for it, such as 429 or 504. A caller can
+   * therefore still tell an identifier ORCID or ROR does not hold, a 404, from a lookup a registry
+   * failed. A status that is neither 200 nor a refusal, such as a redirect, is an answer this server
+   * cannot use, and answers 502.
+   *
+   * <p>The body names the registry and its status in {@code parameters}, and repeats in the message
+   * the reasons the authority read off the refusal. {@code objects.authorityAnswer} holds the body
+   * the route answered with before, in the shape a success takes, so {@code found} is false there
+   * and a lookup echoes {@code requestedId}. ORCID and ROR also keep the registry's own answer there,
+   * under {@code rawResponse}.
+   *
+   * @param requestedId the identifier a lookup asked for, or null for a search
    */
-  private static Response answered(int statusCode, Object body) {
-    CedarResponseStatus status = CedarResponseStatus.fromStatusCode(statusCode);
-    if (status != null) {
-      return CedarResponse.status(status).entity(body).build();
+  private static Response refused(ExternalAuthority authority, int registryStatus, String requestedId,
+                                  Map<String, Object> authorityAnswer, Object reasons) {
+    String registry = authority.registryName();
+    boolean refusal = registryStatus >= 400 && registryStatus <= 599;
+    String explanation;
+    if (!refusal) {
+      explanation = registry + " answered HTTP " + registryStatus + ", which this route cannot use.";
+    } else if (registryStatus >= 500) {
+      explanation = registry + " failed with HTTP " + registryStatus + ".";
+    } else if (registryStatus == HttpConstants.NOT_FOUND && requestedId != null) {
+      explanation = registry + " holds no entry for \"" + requestedId + "\" (HTTP 404).";
+    } else {
+      explanation = registry + " refused the request with HTTP " + registryStatus + ".";
     }
-    return Response.fromResponse(CedarResponse.ok().entity(body).build()).status(statusCode).build();
+    String reasonText = reasonText(reasons);
+    return CedarResponse.status(refusal ? registryStatus : CedarResponseStatus.BAD_GATEWAY.getStatusCode())
+        .errorKey(CedarErrorKey.UPSTREAM_SERVER_ERROR)
+        .message(reasonText.isEmpty() ? explanation : explanation + "\n" + reasonText)
+        .parameter(UPSTREAM_STATUS_CODE, registryStatus)
+        .parameter(UPSTREAM_SERVICE, registry)
+        .object(AUTHORITY_ANSWER, authorityAnswer)
+        .build();
+  }
+
+  /** The reasons an authority read off a refusal, one per line, or nothing when it read none. */
+  private static String reasonText(Object reasons) {
+    StringJoiner lines = new StringJoiner("\n");
+    if (reasons instanceof Collection<?> collection) {
+      for (Object reason : collection) {
+        if (reason instanceof String text && !text.isBlank()) {
+          lines.add(text);
+        }
+      }
+    }
+    return lines.toString();
   }
 
   /**

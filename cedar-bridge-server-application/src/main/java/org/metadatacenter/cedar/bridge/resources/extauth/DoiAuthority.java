@@ -35,6 +35,11 @@ public class DoiAuthority implements ExternalAuthority {
   }
 
   @Override
+  public String registryName() {
+    return "DataCite";
+  }
+
+  @Override
   public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarProcessingException {
     final String q = (query == null) ? "" : query;
     // DataCite pages by number, counting from one, and cannot start at an arbitrary offset. An

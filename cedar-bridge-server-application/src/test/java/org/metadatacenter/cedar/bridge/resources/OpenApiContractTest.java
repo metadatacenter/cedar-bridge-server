@@ -15,8 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The DOI routes document every answer they give, each refusal in the shared error body. A refusal
- * DataCite makes carries DataCite's errors, and the document says where.
+ * The DOI and external-authority routes document every answer they give, each refusal in the shared
+ * error body. A refusal DataCite makes carries DataCite's errors, a refusal another registry makes
+ * carries the authority's answer, and the document says where.
  */
 class OpenApiContractTest {
 
@@ -45,6 +46,24 @@ class OpenApiContractTest {
       assertTrue(operation.at("/responses/" + status + "/description").asText().contains("objects.dataCiteErrors"),
           operation.at("/responses/" + status).toString());
     }
+  }
+
+  @Test
+  void authoritySearchDocumentsEveryAnswer() throws IOException {
+    JsonNode operation = readSpec().at("/paths/~1ext-auth~1{authority}~1search-by-name/get");
+    assertAnswers(operation, "200", "#/components/schemas/AuthoritySearchResults",
+        "400", "401", "403", "404", "406", "429", "500", "502", "503", "504");
+    assertTrue(operation.path("description").asText().contains("objects.authorityAnswer"),
+        operation.path("description").asText());
+  }
+
+  @Test
+  void authorityLookupDocumentsEveryAnswer() throws IOException {
+    JsonNode operation = readSpec().at("/paths/~1ext-auth~1{authority}~1{id}/get");
+    assertAnswers(operation, "200", "#/components/schemas/AuthorityDetails",
+        "400", "401", "403", "404", "406", "429", "500", "502", "503", "504");
+    assertTrue(operation.at("/responses/404/description").asText().contains("objects.authorityAnswer"),
+        operation.at("/responses/404").toString());
   }
 
   private static void assertAnswers(JsonNode operation, String successStatus, String success, String... refusals) {

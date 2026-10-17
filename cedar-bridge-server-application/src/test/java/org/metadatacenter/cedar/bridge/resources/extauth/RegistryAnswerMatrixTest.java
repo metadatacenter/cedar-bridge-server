@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -29,6 +30,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -51,7 +54,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * registry's own status; a 200 that cannot be read is a 502; and a refusal of the credentials the
  * deployment holds is a 502, since the caller can do nothing about them. Each authority keeps its own
  * way of saying that a registry does not hold an identifier: four answer 200 with {@code found}
- * false, two relay the 404. Which is right is a separate question, and nothing here settles it.
+ * false, two answer 404. Which is right is a separate question, and nothing here settles it.
+ *
+ * <p>Every answer other than a 200 is the shared error body. A refusal names the registry and its
+ * status and carries the authority's answer in {@code objects.authorityAnswer}, where {@code found}
+ * is false and a lookup echoes the identifier it was asked for.
  */
 public class RegistryAnswerMatrixTest {
 
@@ -99,6 +106,14 @@ public class RegistryAnswerMatrixTest {
   private static final Map<String, String> DETAIL_IDS = Map.of(
       "doi", "10.1234%2Fabc", "nih-grant", "R01GM000001", "pmid", "123", "rrid", "AB_1",
       "ror", "05a28rw58", "orcid", "0000-0001-2345-6789");
+
+  /** The registry each authority asks, as a refusal names it. */
+  private static final Map<String, String> REGISTRIES = Map.of(
+      "doi", "DataCite", "nih-grant", "NIH RePORTER", "pmid", "NCBI E-utilities", "rrid", "SciCrunch",
+      "ror", "ROR", "orcid", "ORCID");
+
+  /** The two authorities that keep the registry's own answer, and its reasons, in a refused lookup. */
+  private static final List<String> PASS_THE_REGISTRYS_ANSWER_THROUGH = List.of("ror", "orcid");
 
   private record Fault(String authority, String registryRequest, Answer answer) {
   }
@@ -192,13 +207,68 @@ public class RegistryAnswerMatrixTest {
     assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/json"),
         "the answer is JSON: " + response.headers().map());
     JsonNode body = JsonMapper.STRICT_MAPPER.readTree(response.body());
-    if (step.route().equals("details") && expected == 200) {
+    boolean details = step.route().equals("details");
+    String requestedId = details ? URLDecoder.decode(DETAIL_IDS.get(step.authority()), StandardCharsets.UTF_8) : null;
+    if (details && expected == 200) {
       assertEquals(answer == Answer.OK, body.path("found").asBoolean(),
           "only an answer that holds the identifier is a find: " + body);
+      if (answer != Answer.OK) {
+        assertEquals(JsonMapper.STRICT_MAPPER.readTree("{\"found\":false,\"requestedId\":\"" + requestedId + "\"}"),
+            body, "a registry that does not hold the identifier is a 200 that found nothing");
+      }
     }
-    if (expected != 200) {
-      assertFalse(body.path("found").asBoolean(false), "a failure is not a find: " + body);
+    if (expected == 200) {
+      return;
     }
+
+    JsonNode error = SharedErrorBody.of(response, expected);
+    assertFalse(error.get("message").asText("").isBlank(), "the refusal says why: " + body);
+    if (answer == Answer.UNREADABLE || answer == Answer.NO_ANSWER || step.registryRequest().equals("token")) {
+      assertTrue(error.get("objects").isEmpty(), "no registry refusal to carry: " + body);
+      return;
+    }
+
+    // The registry refused, and the shared error body says so.
+    assertEquals("upstreamServerError", error.get("errorKey").asText(), body.toString());
+    assertEquals(answer.status, error.at("/parameters/upstreamStatusCode").asInt(), body.toString());
+    String registry = REGISTRIES.get(step.authority());
+    assertEquals(registry, error.at("/parameters/upstreamService").asText(), body.toString());
+    String explanation = answer.status >= 500 ? registry + " failed with HTTP " + answer.status + "."
+        : details && answer == Answer.NOT_FOUND ? registry + " holds no entry for \"" + requestedId + "\" (HTTP 404)."
+        : registry + " refused the request with HTTP " + answer.status + ".";
+    // ORCID reads its reason off a refusal that is JSON. ROR reads reasons only from a list, which none
+    // of these refusals holds.
+    String reason = step.authority().equals("orcid") && answer.body.startsWith("{")
+        ? "\n" + JsonMapper.STRICT_MAPPER.readTree(answer.body).path("error").asText() : "";
+    assertEquals(explanation + reason, error.get("message").asText());
+
+    JsonNode said = error.at("/objects/authorityAnswer");
+    assertTrue(said.isObject(), "the authority's answer is carried: " + body);
+    assertFalse(said.path("found").asBoolean(true), "a refusal is not a find: " + body);
+    if (!details) {
+      // Only ORCID reads reasons off a refused search.
+      assertEquals(step.authority().equals("orcid") ? Set.of("errors", "found", "results") : Set.of("found", "results"),
+          keys(said), body.toString());
+      assertTrue(said.path("results").isObject() && said.path("results").isEmpty(), body.toString());
+      return;
+    }
+    assertEquals(requestedId, said.path("requestedId").asText(), body.toString());
+    if (PASS_THE_REGISTRYS_ANSWER_THROUGH.contains(step.authority())) {
+      assertEquals(Set.of("errors", "found", "name", "rawResponse", "requestedId"), keys(said), body.toString());
+      JsonNode registryAnswer = answer.body.startsWith("{") ? JsonMapper.STRICT_MAPPER.readTree(answer.body)
+          : JsonMapper.STRICT_MAPPER.nullNode();
+      assertEquals(registryAnswer, said.get("rawResponse"), body.toString());
+      assertTrue(said.get("name").isNull(), body.toString());
+      assertTrue(said.get("errors").isArray(), body.toString());
+    } else {
+      assertEquals(Set.of("found", "requestedId"), keys(said), body.toString());
+    }
+  }
+
+  private static Set<String> keys(JsonNode node) {
+    Set<String> keys = new TreeSet<>();
+    node.fieldNames().forEachRemaining(keys::add);
+    return keys;
   }
 
   // The registry
