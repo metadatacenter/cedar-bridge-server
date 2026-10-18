@@ -7,6 +7,7 @@ import com.sun.net.httpserver.HttpServer;
 import org.apache.hc.core5.http.message.BasicClassicHttpResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -69,6 +70,7 @@ import static org.mockito.Mockito.when;
  * DataCiteResourceTest exercises the same routes against DataCite itself. It is tagged
  * {@code datacite} and excluded from the default build.
  */
+@Tag("integration")
 class DataCiteDoiRoutesTest {
 
   private static final String PREFIX = "10.5072";

@@ -8,6 +8,7 @@ import io.dropwizard.testing.ResourceHelpers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -62,6 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * status and carries the authority's answer in {@code objects.authorityAnswer}, where {@code found}
  * is false and a lookup echoes the identifier it was asked for.
  */
+@Tag("integration")
 public class RegistryAnswerMatrixTest {
 
   private static final HttpServer REGISTRY = startRegistry();

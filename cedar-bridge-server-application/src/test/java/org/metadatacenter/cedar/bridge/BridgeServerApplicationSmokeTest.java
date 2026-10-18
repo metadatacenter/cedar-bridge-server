@@ -5,6 +5,7 @@ import io.dropwizard.testing.ResourceHelpers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.metadatacenter.config.environment.CedarEnvironmentSource;
 
@@ -22,6 +23,7 @@ import java.util.Map;
  * resource that reaches one of them while being constructed stops the whole server from
  * starting.
  */
+@Tag("integration")
 public class BridgeServerApplicationSmokeTest {
 
   static {

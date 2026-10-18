@@ -9,6 +9,7 @@ import io.dropwizard.testing.ResourceHelpers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.metadatacenter.cedar.bridge.BridgeServerApplication;
 import org.metadatacenter.cedar.bridge.BridgeServerConfiguration;
@@ -45,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * serve an offset that falls inside a page, and ROR, which can be read only one upstream page deep.
  * Both read a registry stood up here, on a local port, rather than the real one.
  */
+@Tag("integration")
 public class ExternalAuthorityPagingTest {
 
   private static final HttpServer REGISTRY = startRegistry();
