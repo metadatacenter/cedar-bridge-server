@@ -1,14 +1,18 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
 import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -84,6 +88,7 @@ import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "External authorities")
 public class ExternalAuthorityResource extends CedarMicroserviceResource {
+  public record VerificationRequest(String iri) {}
 
   /** The default page size all seven have always used. */
   private static final int DEFAULT_PAGE_SIZE = 100;
@@ -312,6 +317,71 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
       return refused(authority, answer.statusCode(), id, body, body.get("errors"));
     }
     return answered(body);
+  }
+
+  @POST
+  @Timed
+  @Path("/verify")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Operation(summary = "Verify a stored authority identifier",
+      description = "Recognizes the authority-specific IRI, then resolves its exact identifier using "
+          + "the configured authority and circuit breaker. Returns a passed, failed or unavailable "
+          + "semantic fact, independently of save policy. No arbitrary submitted URL is fetched. "
+          + "DataCite absence is unavailable because DataCite does not register every DOI.")
+  @RequestBody(required = true, content = @Content(schema = @Schema(implementation = VerificationRequest.class)))
+  @ApiResponse(responseCode = "200", description = "Semantic verification facts", content = @Content(schema = @Schema(implementation = AuthorityVerification.class)))
+  @ApiResponse(responseCode = "400", description = "Malformed identifier or request shape", content = @Content(schema = @Schema(implementation = CedarError.class)))
+  @ApiResponse(responseCode = "404", description = UNKNOWN_AUTHORITY, content = @Content(schema = @Schema(implementation = CedarError.class)))
+  public Response verify(@PathParam("authority") String segment, @Parameter(hidden = true) JsonNode request) {
+    ExternalAuthority authority = authoritiesBySegment.get(segment);
+    if (authority == null) return unknownAuthority(segment);
+    if (request == null || !request.isObject() || request.size() != 1
+        || !request.path("iri").isTextual() || request.path("iri").textValue().isBlank()) {
+      return CedarResponse.badRequest().message("Expected an object containing a nonempty iri string.").build();
+    }
+    String iri = request.path("iri").textValue();
+    try {
+      if (!org.metadatacenter.model.validation.IriReference.toUri(iri).isAbsolute()) {
+        return CedarResponse.badRequest().message("iri must be an absolute IRI.").build();
+      }
+    } catch (java.net.URISyntaxException e) {
+      return CedarResponse.badRequest().message("iri must be an absolute IRI.").build();
+    }
+    Optional<String> identifier = AuthorityIdentifier.extract(segment, iri);
+    if (identifier.isEmpty()) return verification("failed", "authorityIdentifier",
+        "The identifier does not identify a record in this authority.", iri);
+    try {
+      String lookup = "nih-grant".equals(segment) ? "https://reporter.nih.gov/project-details/" + identifier.get() : identifier.get();
+      AuthorityDetailsAnswer answer = ask(segment, () -> authority.details(lookup));
+      if (!answer.definitive()) return verification("unavailable", "semanticUnavailable",
+          "The authority returned an incomplete verification answer.", iri);
+      if (answer.statusCode() == HttpConstants.OK && answer.found()) {
+        // Resolvers must not turn a fuzzy match, a redirect to another record or an incomplete
+        // upstream body into a proof about the submitted identifier.
+        Object resolved = answer.body().get("id");
+        Optional<String> resolvedId = resolved instanceof String value
+            ? AuthorityIdentifier.extract(segment, value) : Optional.empty();
+        boolean same = resolvedId.isPresent() && ("doi".equals(segment)
+            ? resolvedId.get().equalsIgnoreCase(identifier.get())
+            : resolvedId.get().equals(identifier.get()));
+        if (!same) return verification("unavailable", "semanticUnavailable",
+            "The authority did not return an exact identifier match.", iri);
+        return verification("passed", "authorityVerified", "The authority verified this identifier.", iri);
+      }
+      if (answer.statusCode() == HttpConstants.OK || answer.statusCode() == HttpConstants.NOT_FOUND) {
+        if ("doi".equals(segment)) return verification("unavailable", "semanticUnavailable",
+            "DataCite does not hold this DOI; other DOI registration agencies were not checked.", iri);
+        return verification("failed", "authorityMembership", "The authority does not hold this identifier.", iri);
+      }
+      return verification("unavailable", "semanticUnavailable", "The authority could not verify this identifier.", iri);
+    } catch (CedarException | RuntimeException e) {
+      // Outages, unusable upstream bodies and a registry still loading are never negative evidence.
+      return verification("unavailable", "semanticUnavailable", "The authority is unavailable for verification.", iri);
+    }
+  }
+
+  private static Response verification(String status, String code, String message, String iri) {
+    return answered(new AuthorityVerification(status, code, message, iri));
   }
 
   /**

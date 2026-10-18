@@ -89,7 +89,18 @@ public class NihGrantAuthority implements ExternalAuthority {
       return AuthorityDetailsAnswer.notFound(new HashMap<>());
     }
 
-    String body = String.format("{\"criteria\":{\"project_nums\":[\"%s\"]}}", id.trim().toUpperCase(Locale.ROOT));
+    // The stored IRI uses an application ID, while an interactive search can supply a grant
+    // number. NIH documents appl_ids for the former and project_nums for the latter:
+    // https://api.reporter.nih.gov/?urls.primaryName=V2.0
+    String projectIdRequested = null;
+    java.util.regex.Matcher projectIri = java.util.regex.Pattern.compile(
+        "https?://reporter\\.nih\\.gov/project-details/([1-9][0-9]*)/?", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(id);
+    if (projectIri.matches()) projectIdRequested = projectIri.group(1);
+    com.fasterxml.jackson.databind.node.ObjectNode query = org.metadatacenter.util.json.JsonMapper.STRICT_MAPPER.createObjectNode();
+    com.fasterxml.jackson.databind.node.ObjectNode criteria = query.putObject("criteria");
+    if (projectIdRequested != null) criteria.putArray("appl_ids").add(new java.math.BigInteger(projectIdRequested));
+    else criteria.putArray("project_nums").add(id.trim().toUpperCase(Locale.ROOT));
+    String body = query.toString();
 
     RegistryReply reply = RegistryReply.post(reporterApi, defaultHeaders(), body);
     if (reply.status() == HttpConstants.NOT_FOUND) {
@@ -101,15 +112,18 @@ public class NihGrantAuthority implements ExternalAuthority {
     }
 
     JsonNode results = reply.json().path("results");
-    if (!results.isArray() || results.isEmpty()) {
-      return AuthorityDetailsAnswer.notFound(new HashMap<>());
-    }
+    if (!results.isArray()) return AuthorityDetailsAnswer.incomplete(new HashMap<>());
+    if (results.isEmpty()) return AuthorityDetailsAnswer.notFound(new HashMap<>());
 
     JsonNode first = results.get(0);
     String projectId = asTextOrNull(first, "project_id");
     String title = asTextOrNull(first, "project_title");
+    if (projectIdRequested != null && !projectIdRequested.equals(projectId)) {
+      // A mismatched record is an unusable answer, not proof that the requested project is absent.
+      return AuthorityDetailsAnswer.failed(502, new HashMap<>());
+    }
     if (projectId == null || title == null) {
-      return AuthorityDetailsAnswer.notFound(new HashMap<>());
+      return AuthorityDetailsAnswer.incomplete(new HashMap<>());
     }
 
     Map<String, Object> found = new HashMap<>(term(first, title));

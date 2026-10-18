@@ -118,10 +118,76 @@ public class RegistryAnswerMatrixTest {
   /** The two authorities that keep the registry's own answer, and its reasons, in a refused lookup. */
   private static final List<String> PASS_THE_REGISTRYS_ANSWER_THROUGH = List.of("ror", "orcid");
 
-  private record Fault(String authority, String registryRequest, Answer answer) {
+  private record Fault(String authority, String registryRequest, Answer answer, String body) {
+    Fault(String authority, String registryRequest, Answer answer) { this(authority, registryRequest, answer, null); }
   }
 
   private static final AtomicReference<Fault> FAULT = new AtomicReference<>();
+
+  static Stream<Arguments> verificationCases() {
+    Map<String, String> iris = Map.of("doi", "https://doi.org/10.1234/abc",
+        "nih-grant", "https://reporter.nih.gov/project-details/1", "pmid", "https://pubmed.ncbi.nlm.nih.gov/123",
+        "rrid", "https://identifiers.org/RRID:AB_1", "ror", "https://ror.org/05a28rw58",
+        "orcid", "https://orcid.org/0000-0001-2345-6789");
+    return iris.entrySet().stream().flatMap(entry -> Stream.of(Answer.OK, Answer.NOT_FOUND, Answer.UNREADABLE,
+        Answer.SERVER_ERROR).map(answer -> Arguments.of(entry.getKey(), entry.getValue(), answer)));
+  }
+
+  @ParameterizedTest @MethodSource("verificationCases")
+  void semanticVerificationUsesAnExactAuthorityLookup(String authority, String iri, Answer answer) throws Exception {
+    FAULT.set(new Fault(authority, "details", answer));
+    String body = JsonMapper.STRICT_MAPPER.createObjectNode().put("iri", iri).toString();
+    HttpResponse<String> response = CLIENT.send(HttpRequest.newBuilder()
+        .uri(URI.create("http://localhost:" + SERVER.getLocalPort() + "/ext-auth/" + authority + "/verify"))
+        .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
+    assertEquals(200, response.statusCode(), response.body());
+    JsonNode result = JsonMapper.STRICT_MAPPER.readTree(response.body());
+    String expected = answer == Answer.OK ? "passed"
+        : answer == Answer.NOT_FOUND && !"doi".equals(authority) ? "failed" : "unavailable";
+    assertEquals(expected, result.path("status").asText(), response.body());
+    assertEquals(iri, result.path("iri").asText());
+  }
+
+  static Stream<Arguments> verificationEnvelopeCases() {
+    return Stream.of(
+        Arguments.of("nih-grant", "https://reporter.nih.gov/project-details/1", "{}", "unavailable"),
+        Arguments.of("nih-grant", "https://reporter.nih.gov/project-details/1", "{\"results\":{}}", "unavailable"),
+        Arguments.of("nih-grant", "https://reporter.nih.gov/project-details/1", "{\"results\":[]}", "failed"),
+        Arguments.of("nih-grant", "https://reporter.nih.gov/project-details/1", "{\"results\":[{\"project_id\":\"1\"}]}", "unavailable"),
+        Arguments.of("rrid", "https://identifiers.org/RRID:AB_1", "{}", "unavailable"),
+        Arguments.of("rrid", "https://identifiers.org/RRID:AB_1", "{\"hits\":{}}", "unavailable"),
+        Arguments.of("rrid", "https://identifiers.org/RRID:AB_1", "{\"hits\":{\"hits\":[]}}", "failed"),
+        Arguments.of("rrid", "https://identifiers.org/RRID:AB_1", "{\"hits\":{\"hits\":[{}]}}", "unavailable"),
+        Arguments.of("rrid", "https://identifiers.org/RRID:AB_1", "{\"hits\":{\"hits\":[{\"_source\":{\"item\":{\"identifier\":\"AB_1\"}}}]}}", "unavailable"),
+        Arguments.of("pmid", "https://pubmed.ncbi.nlm.nih.gov/123", "{}", "unavailable"),
+        Arguments.of("pmid", "https://pubmed.ncbi.nlm.nih.gov/123", "{\"result\":{}}", "unavailable"),
+        Arguments.of("pmid", "https://pubmed.ncbi.nlm.nih.gov/123", "{\"result\":{\"uids\":[]}}", "failed"),
+        Arguments.of("pmid", "https://pubmed.ncbi.nlm.nih.gov/123", "{\"result\":{\"uids\":[\"123\"],\"123\":{}}}", "unavailable"),
+        Arguments.of("pmid", "https://pubmed.ncbi.nlm.nih.gov/123", "{\"result\":{\"123\":{\"title\":\"\"}}}", "unavailable"),
+        Arguments.of("doi", "https://doi.org/10.1234/abc", "{}", "unavailable"),
+        Arguments.of("doi", "https://doi.org/10.1234/abc", "{\"data\":{\"attributes\":{\"doi\":\"10.1234/abc\"}}}", "unavailable"));
+  }
+
+  @ParameterizedTest @MethodSource("verificationEnvelopeCases")
+  void semanticVerificationDistinguishesIncompleteRecordsFromExplicitAbsence(String authority, String iri,
+      String registryBody, String expected) throws Exception {
+    FAULT.set(new Fault(authority, "details", Answer.OK, registryBody));
+    String body = JsonMapper.STRICT_MAPPER.createObjectNode().put("iri", iri).toString();
+    HttpResponse<String> response = CLIENT.send(HttpRequest.newBuilder()
+        .uri(URI.create("http://localhost:" + SERVER.getLocalPort() + "/ext-auth/" + authority + "/verify"))
+        .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
+    assertEquals(200, response.statusCode(), response.body());
+    JsonNode result = JsonMapper.STRICT_MAPPER.readTree(response.body());
+    assertEquals(expected, result.path("status").asText(), registryBody + " -> " + response.body());
+    assertEquals("failed".equals(expected) ? "authorityMembership" : "semanticUnavailable", result.path("code").asText());
+    assertEquals(iri, result.path("iri").asText());
+    // The legacy details contract stays 200/found:false for those same incomplete envelopes.
+    HttpResponse<String> details = CLIENT.send(HttpRequest.newBuilder()
+        .uri(URI.create("http://localhost:" + SERVER.getLocalPort() + "/ext-auth/" + authority + "/" + DETAIL_IDS.get(authority)))
+        .GET().build(), HttpResponse.BodyHandlers.ofString());
+    assertEquals(200, details.statusCode(), details.body());
+    assertFalse(JsonMapper.STRICT_MAPPER.readTree(details.body()).path("found").asBoolean());
+  }
 
   static {
     redirectEnvironment();
@@ -311,6 +377,13 @@ public class RegistryAnswerMatrixTest {
       return new String[]{"doi", "search"};
     }
     if (path.startsWith("/nih")) {
+      if (body.contains("appl_ids")) {
+        JsonNode query;
+        try { query = JsonMapper.STRICT_MAPPER.readTree(body); }
+        catch (IOException e) { throw new IllegalArgumentException(e); }
+        assertEquals(1, query.path("criteria").path("appl_ids").get(0).asInt());
+        return new String[]{"nih-grant", "details"};
+      }
       return new String[]{"nih-grant", body.contains("project_nums") ? "details" : "search"};
     }
     if (path.startsWith("/eutils/esearch")) {
@@ -374,7 +447,8 @@ public class RegistryAnswerMatrixTest {
       exchange.close();
       return;
     }
-    String content = answer == Answer.OK ? ANSWERS.getOrDefault(request[0] + " " + request[1], "{}") : answer.body;
+    String content = fault != null && fault.authority().equals(request[0]) && fault.registryRequest().equals(request[1]) && fault.body() != null
+        ? fault.body() : answer == Answer.OK ? ANSWERS.getOrDefault(request[0] + " " + request[1], "{}") : answer.body;
     byte[] payload = content.getBytes(StandardCharsets.UTF_8);
     exchange.getResponseHeaders().set("Content-Type",
         content.startsWith("<") ? "text/html" : "application/json");

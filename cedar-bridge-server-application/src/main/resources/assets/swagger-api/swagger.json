@@ -566,6 +566,64 @@
         "tags" : [ "External authorities" ]
       }
     },
+    "/ext-auth/{authority}/verify" : {
+      "post" : {
+        "description" : "Recognizes the authority-specific IRI, then resolves its exact identifier using the configured authority and circuit breaker. Returns a passed, failed or unavailable semantic fact, independently of save policy. No arbitrary submitted URL is fetched. DataCite absence is unavailable because DataCite does not register every DOI.",
+        "operationId" : "verify",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "authority",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VerificationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthorityVerification"
+                }
+              }
+            },
+            "description" : "Semantic verification facts"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Malformed identifier or request shape"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "No authority is served under this path segment (no error key, and the message names the segments that are served)"
+          }
+        },
+        "summary" : "Verify a stored authority identifier",
+        "tags" : [ "External authorities" ]
+      }
+    },
     "/ext-auth/{authority}/{id}" : {
       "get" : {
         "description" : "These routes take no credentials. Neither builds a request context, so anyone who can reach this host can use them, and three of the seven authorities behind them spend credentials the deployment holds. Recorded here because a spec that claimed otherwise would be worse than one that says so. Look one identifier up in an external authority and return what it holds, with `found` saying whether it resolved and `requestedId` echoing what was asked. A registry's refusal is answered in the shared error body (upstreamServerError), with the registry's status in parameters.upstreamStatusCode, the registry in parameters.upstreamService, and the authority's answer in objects.authorityAnswer, where `found` is false and `requestedId` echoes what was asked. A refusal of the request itself keeps the registry's status, which may be one not listed below, such as 409. A registry that refuses this deployment's access (401 or 403), limits its requests (429) or fails (5xx) is a 502, since the caller can do nothing about it. So is a status that is neither 200 nor an error, such as a redirect. These routes therefore never answer 401. A failed lookup is a 502, so it is never reported as an identifier the registry does not hold. A registry that does not answer is a 503, and one whose answer cannot be read is a 502. This path and the search path both match two segments; the literal `search-by-name` wins, so no authority can have an entry by that name.",
@@ -1097,6 +1155,23 @@
           }
         }
       },
+      "AuthorityVerification" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "iri" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        }
+      },
       "CedarError" : {
         "type" : "object",
         "additionalProperties" : false,
@@ -1307,6 +1382,14 @@
           "schema:name" : {
             "type" : "string",
             "description" : "Display name."
+          }
+        }
+      },
+      "VerificationRequest" : {
+        "type" : "object",
+        "properties" : {
+          "iri" : {
+            "type" : "string"
           }
         }
       }

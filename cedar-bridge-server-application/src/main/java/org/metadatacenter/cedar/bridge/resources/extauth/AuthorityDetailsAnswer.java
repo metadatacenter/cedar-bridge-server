@@ -18,8 +18,14 @@ import java.util.Map;
  *                   {@code UpstreamRefusal} classifies it
  * @param found      whether the identifier resolved
  * @param body       everything this authority has to say about it, its own keys
+ * @param definitive whether the answer establishes existence or absence, rather than a malformed response
  */
-public record AuthorityDetailsAnswer(int statusCode, boolean found, Map<String, Object> body) {
+public record AuthorityDetailsAnswer(int statusCode, boolean found, Map<String, Object> body, boolean definitive) {
+
+  /** Preserve the details API while distinguishing an incomplete registry answer for verification. */
+  public AuthorityDetailsAnswer(int statusCode, boolean found, Map<String, Object> body) {
+    this(statusCode, found, body, true);
+  }
 
   public AuthorityDetailsAnswer {
     body = (body == null) ? new LinkedHashMap<>() : body;
@@ -31,6 +37,11 @@ public record AuthorityDetailsAnswer(int statusCode, boolean found, Map<String, 
 
   public static AuthorityDetailsAnswer notFound(Map<String, Object> body) {
     return new AuthorityDetailsAnswer(HttpConstants.OK, false, body);
+  }
+
+  /** A readable 200 lacked the envelope or record fields needed to establish existence or absence. */
+  public static AuthorityDetailsAnswer incomplete(Map<String, Object> body) {
+    return new AuthorityDetailsAnswer(HttpConstants.OK, false, body, false);
   }
 
   /**

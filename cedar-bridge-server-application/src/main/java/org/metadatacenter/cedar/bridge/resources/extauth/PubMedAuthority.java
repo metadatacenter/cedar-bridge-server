@@ -145,10 +145,14 @@ public class PubMedAuthority implements ExternalAuthority {
       return AuthorityDetailsAnswer.failed(reply.status(), new HashMap<>());
     }
 
-    JsonNode result = reply.json().path("result").path(pmid);
+    JsonNode envelope = reply.json().path("result");
+    if (envelope.path("uids").isArray() && envelope.path("uids").isEmpty() && !envelope.has(pmid)) {
+      return AuthorityDetailsAnswer.notFound(new HashMap<>());
+    }
+    JsonNode result = envelope.path(pmid);
     String title = asTextOrNull(result, "title");
     if (title == null || title.isBlank()) {
-      return AuthorityDetailsAnswer.notFound(new HashMap<>());
+      return AuthorityDetailsAnswer.incomplete(new HashMap<>());
     }
 
     Map<String, Object> body = new HashMap<>();

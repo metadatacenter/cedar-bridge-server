@@ -98,15 +98,14 @@ public class RridAuthority implements ExternalAuthority {
     }
 
     JsonNode hits = reply.json().path("hits").path("hits");
-    if (!hits.isArray() || hits.isEmpty()) {
-      return AuthorityDetailsAnswer.notFound(new HashMap<>());
-    }
+    if (!hits.isArray()) return AuthorityDetailsAnswer.incomplete(new HashMap<>());
+    if (hits.isEmpty()) return AuthorityDetailsAnswer.notFound(new HashMap<>());
 
     JsonNode item = hits.get(0).path("_source").path("item");
     String identifier = item.path("identifier").asText(null);
     String name = item.path("name").asText(null);
     if (identifier == null || name == null) {
-      return AuthorityDetailsAnswer.notFound(new HashMap<>());
+      return AuthorityDetailsAnswer.incomplete(new HashMap<>());
     }
 
     Map<String, Object> body = new HashMap<>();

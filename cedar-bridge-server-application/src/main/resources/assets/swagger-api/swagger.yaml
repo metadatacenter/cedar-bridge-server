@@ -470,6 +470,49 @@ paths:
       summary: Search an external registry by name
       tags:
       - External authorities
+  /ext-auth/{authority}/verify:
+    post:
+      description: "Recognizes the authority-specific IRI, then resolves its exact\
+        \ identifier using the configured authority and circuit breaker. Returns a\
+        \ passed, failed or unavailable semantic fact, independently of save policy.\
+        \ No arbitrary submitted URL is fetched. DataCite absence is unavailable because\
+        \ DataCite does not register every DOI."
+      operationId: verify
+      parameters:
+      - in: path
+        name: authority
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerificationRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthorityVerification"
+          description: Semantic verification facts
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: Malformed identifier or request shape
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: "No authority is served under this path segment (no error key,\
+            \ and the message names the segments that are served)"
+      summary: Verify a stored authority identifier
+      tags:
+      - External authorities
   /ext-auth/{authority}/{id}:
     get:
       description: "These routes take no credentials. Neither builds a request context,\
@@ -896,6 +939,17 @@ components:
           type: string
           description: "The entry's display name, chosen by the authority from the\
             \ names the registry holds."
+    AuthorityVerification:
+      type: object
+      properties:
+        code:
+          type: string
+        iri:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
     CedarError:
       type: object
       additionalProperties: false
@@ -1236,6 +1290,11 @@ components:
         schema:name:
           type: string
           description: Display name.
+    VerificationRequest:
+      type: object
+      properties:
+        iri:
+          type: string
   securitySchemes:
     api_key:
       description: "Your CEDAR API key, using the format 'apiKey <yourApiKey>'"

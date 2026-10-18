@@ -115,7 +115,7 @@ public class DoiAuthority implements ExternalAuthority {
     String doi = attributes.path("doi").asText(null);
     String title = title(attributes);
     if (doi == null || title == null) {
-      return AuthorityDetailsAnswer.notFound(new HashMap<>());
+      return AuthorityDetailsAnswer.incomplete(new HashMap<>());
     }
 
     Map<String, Object> body = new HashMap<>();
