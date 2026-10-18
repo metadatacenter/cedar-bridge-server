@@ -1,5 +1,7 @@
 package org.metadatacenter.cedar.bridge.resource.datacite;
 
+import java.util.Locale;
+
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.id.CedarFQResourceId;
 
@@ -18,7 +20,7 @@ public class GenerateMetadataInstance {
   public static MetadataInstance getDefaultInstance(String sourceArtifactId, String userID, String templateId, CedarConfig cedarConfig) {
     String openViewUrl = GenerateOpenViewUrl.getOpenViewUrl(sourceArtifactId, cedarConfig);
     String resourceType = CedarFQResourceId.build(sourceArtifactId).getType().getValue();
-    String capitalizedResourceType = resourceType.substring(0, 1).toUpperCase() + resourceType.substring(1);
+    String capitalizedResourceType = resourceType.substring(0, 1).toUpperCase(Locale.ROOT) + resourceType.substring(1);
     String prefix = cedarConfig.getBridgeConfig().getDataCite().getPrefix();
     String publicationYear = Year.now().getValue() + "-01-01";
     String nowAsString = Instant.ofEpochSecond(System.currentTimeMillis() / 1000).toString();

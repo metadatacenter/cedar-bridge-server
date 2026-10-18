@@ -1,5 +1,7 @@
 package org.metadatacenter.cedar.bridge.resource.datacite;
 
+import java.util.Locale;
+
 import org.metadatacenter.cedar.bridge.resource.datacite.form.*;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.id.CedarFQResourceId;
@@ -411,7 +413,7 @@ public class CedarInstanceParser {
 
   private static DataCiteType parseTypeValue(String resourceType) {
     DataCiteType dataCiteType = new DataCiteType();
-    String capitalizedResourceType = resourceType.substring(0, 1).toUpperCase() + resourceType.substring(1);
+    String capitalizedResourceType = resourceType.substring(0, 1).toUpperCase(Locale.ROOT) + resourceType.substring(1);
 //        String resourceTypeGeneral = resourceTypeElement.getResourceTypeGeneral().toString();
     dataCiteType.setResourceTypeGeneral(RESOURCE_TYPE_GENERAL);
     dataCiteType.setResourceType(capitalizedResourceType);

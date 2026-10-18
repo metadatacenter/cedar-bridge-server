@@ -1,5 +1,7 @@
 package org.metadatacenter.cedar.bridge.resources;
 
+import java.util.Locale;
+
 import com.codahale.metrics.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -710,7 +712,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     if (!(folderServerResource.isOpen() || folderSession.isArtifactOpenImplicitly(sourceArtifactId))) {
       return CedarResponse
           .badRequest()
-          .message("Please make the " + sourceArtifactType.getValue().toLowerCase() + " open to create a DOI")
+          .message("Please make the " + sourceArtifactType.getValue().toLowerCase(Locale.ROOT) + " open to create a DOI")
           .build();
     }
 

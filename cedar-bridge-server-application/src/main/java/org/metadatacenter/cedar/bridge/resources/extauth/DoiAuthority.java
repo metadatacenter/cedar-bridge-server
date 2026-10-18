@@ -1,5 +1,7 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
+import java.util.Locale;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.exception.CedarProcessingException;
@@ -134,7 +136,7 @@ public class DoiAuthority implements ExternalAuthority {
       id = id.substring("https://doi.org/".length());
     } else if (id.startsWith("http://doi.org/")) {
       id = id.substring("http://doi.org/".length());
-    } else if (id.toLowerCase().startsWith("doi:")) {
+    } else if (id.toLowerCase(Locale.ROOT).startsWith("doi:")) {
       id = id.substring("doi:".length());
     }
     return id;

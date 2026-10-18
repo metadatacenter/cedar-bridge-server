@@ -1,5 +1,7 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
+import java.util.Locale;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -164,7 +166,7 @@ public class RridAuthority implements ExternalAuthority {
     if (id.startsWith("http://") || id.startsWith("https://")) {
       id = id.substring(id.lastIndexOf('/') + 1);
     }
-    return id.toUpperCase().startsWith("RRID:") ? id : "RRID:" + id;
+    return id.toUpperCase(Locale.ROOT).startsWith("RRID:") ? id : "RRID:" + id;
   }
 
   private static String buildDetails(JsonNode itemNode) {

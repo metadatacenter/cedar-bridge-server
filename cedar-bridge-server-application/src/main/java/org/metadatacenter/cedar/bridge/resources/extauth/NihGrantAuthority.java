@@ -68,7 +68,7 @@ public class NihGrantAuthority implements ExternalAuthority {
     for (JsonNode hit : reply.json().path("results")) {
       String title = asTextOrNull(hit, "project_title");
       String projectId = asTextOrNull(hit, "project_id");
-      if (title != null && projectId != null && title.toLowerCase().contains(query.toLowerCase())) {
+      if (title != null && projectId != null && title.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT))) {
         matching.add(Map.entry(NIH_REPORTER_IRI_PREFIX + projectId, term(hit, title)));
       }
     }
