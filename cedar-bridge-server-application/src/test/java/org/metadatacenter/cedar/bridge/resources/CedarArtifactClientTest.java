@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -12,14 +13,16 @@ import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.config.ServerConfig;
 import org.metadatacenter.constant.CedarHeaderParameters;
 import org.metadatacenter.exception.CedarDependencyUnavailableException;
+import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.id.CedarArtifactId;
 import org.metadatacenter.id.CedarTemplateId;
 import org.metadatacenter.model.CedarResourceType;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.url.ResourceMicroserviceUrlProvider;
+import org.metadatacenter.util.http.CedarError;
 import org.metadatacenter.util.json.JsonMapper;
+import org.junit.jupiter.api.function.Executable;
 
-import jakarta.ws.rs.WebApplicationException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -29,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.*;
 
+@Tag("integration")
 class CedarArtifactClientTest {
 
   private static final String TEMPLATE_ID = "https://repo.metadatacenter.org/templates/12345678-1234-1234-1234-123456789abc";
@@ -96,19 +100,29 @@ class CedarArtifactClientTest {
   void preservesReadRejectionsWithoutParsingTheirBodies(int status) {
     readStatus = status;
     readBody = "this is deliberately not JSON";
-    WebApplicationException failure = assertThrows(WebApplicationException.class,
-        () -> client.read(CedarResourceType.TEMPLATE, CedarTemplateId.build(TEMPLATE_ID), context));
-    assertEquals(status, failure.getResponse().getStatus());
+    assertFailure(status, "The resource server answered HTTP " + status + " when asked for the template "
+        + TEMPLATE_ID + ".", () -> client.read(CedarResourceType.TEMPLATE, CedarTemplateId.build(TEMPLATE_ID), context));
     assertEquals(1, requests.size(), "A rejection must not be retried or trigger a fallback");
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {409, 500, 501})
+  void reportsAnUnusableReadStatusAsABadGatewayNamingIt(int status) {
+    readStatus = status;
+    assertFailure(502, "The resource server answered HTTP " + status + " when asked for the template "
+        + TEMPLATE_ID + ".", () -> client.read(CedarResourceType.TEMPLATE, CedarTemplateId.build(TEMPLATE_ID), context));
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"", "not JSON", "null", "[]"})
   void rejectsMalformedSuccessfulReads(String body) {
     readBody = body;
-    assertEquals(502, assertThrows(WebApplicationException.class,
-        () -> client.read(CedarResourceType.TEMPLATE, CedarTemplateId.build(TEMPLATE_ID), context))
-        .getResponse().getStatus());
+    String expected = body.equals("not JSON")
+        ? "The resource server's answer could not be read when asked for the template " + TEMPLATE_ID + "."
+        : "The resource server answered with something other than a JSON object when asked for the template "
+            + TEMPLATE_ID + ".";
+    assertFailure(502, expected,
+        () -> client.read(CedarResourceType.TEMPLATE, CedarTemplateId.build(TEMPLATE_ID), context));
   }
 
   @Test
@@ -137,9 +151,8 @@ class CedarArtifactClientTest {
   @Test
   void stopsBeforeValidationWhenTemplateReadIsDenied() {
     readStatus = 403;
-    assertEquals(403, assertThrows(WebApplicationException.class,
-        () -> client.validate(TEMPLATE_ID, JsonNodeFactory.instance.objectNode(), context))
-        .getResponse().getStatus());
+    assertFailure(403, "The resource server answered HTTP 403 when asked for the template " + TEMPLATE_ID + ".",
+        () -> client.validate(TEMPLATE_ID, JsonNodeFactory.instance.objectNode(), context));
     assertEquals(1, requests.size());
   }
 
@@ -150,18 +163,16 @@ class CedarArtifactClientTest {
     assertFalse(result.getLeft());
     assertEquals("invalid instance", result.getRight().path("errors").get(0).asText());
     validationBody = "{\"error\":\"missing verdict\"}";
-    assertEquals(502, assertThrows(WebApplicationException.class,
-        () -> client.validate(TEMPLATE_ID, JsonNodeFactory.instance.objectNode(), context))
-        .getResponse().getStatus());
+    assertFailure(502, "The resource server's validation of the DataCite metadata gave no verdict.",
+        () -> client.validate(TEMPLATE_ID, JsonNodeFactory.instance.objectNode(), context));
   }
 
   @Test
   void validationFailureCannotMasqueradeAsASuccessfulVerdict() {
     validationStatus = 500;
     validationBody = "{\"validates\":\"true\"}";
-    assertEquals(502, assertThrows(WebApplicationException.class,
-        () -> client.validate(TEMPLATE_ID, JsonNodeFactory.instance.objectNode(), context))
-        .getResponse().getStatus());
+    assertFailure(502, "The resource server answered HTTP 500 when asked for the validation of the DataCite "
+        + "metadata.", () -> client.validate(TEMPLATE_ID, JsonNodeFactory.instance.objectNode(), context));
   }
 
   @Test
@@ -182,12 +193,24 @@ class CedarArtifactClientTest {
     };
     readStatus = 403;
     readBody = "{\"error\":\"forbidden\"}";
-    assertEquals(403, assertThrows(WebApplicationException.class,
-        () -> resource.createDOIStart(TEMPLATE_ID)).getResponse().getStatus());
-    assertEquals(403, assertThrows(WebApplicationException.class,
-        () -> resource.createDOI(TEMPLATE_ID, "publish", JsonNodeFactory.instance.objectNode()))
-        .getResponse().getStatus());
+    String denied = "The resource server answered HTTP 403 when asked for the template " + TEMPLATE_ID + ".";
+    assertFailure(403, denied, () -> resource.createDOIStart(TEMPLATE_ID));
+    assertFailure(403, denied, () -> resource.createDOI(TEMPLATE_ID, "publish", JsonNodeFactory.instance.objectNode()));
     verifyNoInteractions(services, datacite, writer);
+  }
+
+  /**
+   * A resource answer the workflow cannot use is refused with an exception the shared error body reports.
+   * The body the exception mapper builds from it keeps both the status and the message, where a bodyless
+   * WebApplicationException left the body with its status alone.
+   */
+  private static void assertFailure(int status, String message, Executable call) {
+    CedarProcessingException failure = assertThrows(CedarProcessingException.class, call);
+    CedarError body = CedarError.from(failure.getErrorPack(), null);
+    assertEquals(status, body.statusCode);
+    assertEquals(message, body.message);
+    assertEquals("upstreamServerError", body.errorKey);
+    assertTrue(failure.getErrorPack().hasResolvedStatus());
   }
 
   private record CapturedRequest(String method, String uri, String authorization, String requestId,

@@ -1,5 +1,6 @@
 package org.metadatacenter.cedar.bridge;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance;
@@ -37,16 +38,29 @@ class CedarInstanceParserTest {
   private static final String SOURCE_ARTIFACT =
       "https://repo.metadatacenter.org/template-instances/8bc64ab5-df6b-48c8-8c61-6c016245918e";
 
+  private static Object environmentPrefix;
+
   /**
-   * The fixture builder leaves its PREFIX static unset, so every instance it produces would be
-   * refused for a missing prefix before reaching anything else. Setting it once here makes the
-   * fixtures usable for the mapping cases; the missing-prefix case builds its own instance instead.
+   * The fixture builder takes its PREFIX static from the environment, which a unit build may leave
+   * unset or set to another prefix. Setting it here makes the mapping cases independent of the
+   * environment. The missing-prefix case builds its own instance instead. The environment's value
+   * is restored afterwards, because the live DataCite suite reads the same fixtures in the same JVM.
    */
   @BeforeAll
   static void givePrefixToTheFixtures() throws Exception {
+    environmentPrefix = fixturePrefix().get(null);
+    fixturePrefix().set(null, PREFIX);
+  }
+
+  @AfterAll
+  static void restoreTheFixturePrefix() throws Exception {
+    fixturePrefix().set(null, environmentPrefix);
+  }
+
+  private static Field fixturePrefix() throws NoSuchFieldException {
     Field prefix = GenerateMetadataInstanceTests.class.getDeclaredField("PREFIX");
     prefix.setAccessible(true);
-    prefix.set(null, PREFIX);
+    return prefix;
   }
 
   private static CedarConfig config(String prefix) {

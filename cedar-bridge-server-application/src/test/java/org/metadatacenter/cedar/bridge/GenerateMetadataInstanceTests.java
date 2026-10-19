@@ -1,6 +1,8 @@
 package org.metadatacenter.cedar.bridge;
 
 import org.metadatacenter.cedar.bridge.resource.datacite.DataciteConstants;
+import org.metadatacenter.config.environment.CedarEnvironmentSource;
+import org.metadatacenter.config.environment.CedarEnvironmentVariable;
 
 import java.time.Instant;
 import java.time.Year;
@@ -35,7 +37,9 @@ public class GenerateMetadataInstanceTests {
   private static final String publicationYear = Year.now().getValue() + "-01-01";
   private static final String nowAsString = Instant.ofEpochSecond(System.currentTimeMillis() / 1000).toString();
 
-  private static String PREFIX = null;
+  // The configuration reads its DataCite prefix from the same variable, so the live suite registers
+  // under the prefix its server is configured with.
+  private static String PREFIX = CedarEnvironmentSource.get(CedarEnvironmentVariable.CEDAR_DATACITE_REPOSITORY_PREFIX.getName());
 
   public static MetadataInstance getInstanceRequiredOnly() {
     return new MetadataInstance(

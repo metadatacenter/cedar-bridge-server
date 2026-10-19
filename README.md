@@ -7,6 +7,13 @@ metadata into DataCite records, mints DOIs, and retrieves DOI metadata. Its exte
 normalizes search and detail lookups across ORCID, ROR, PFAS/CompTox, PubMed, RRID, NIH grants, and
 DOI providers.
 
+`POST /ext-auth/{authority}/verify` accepts `{ "iri": "..." }` and returns `status`, `code`,
+`message` and the unchanged `iri`. It recognizes the authority's identifier before resolving it
+through the existing registry service, and requires the returned record to identify the requested
+entry. `passed` and `failed` describe completed checks; unavailable registries or unusable answers
+produce `unavailable`. DataCite absence is also `unavailable`, because other DOI registration
+agencies were not checked. Malformed requests return 400. These facts do not decide save policy.
+
 The reactor contains `cedar-bridge-server-core` for DataCite model and transformation logic and
 `cedar-bridge-server-application` for the deployable Dropwizard service and external-authority adapters.
 
@@ -21,6 +28,6 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 17)
 ./mvnw test
 ```
 
-Use `cedar-development/ops/cedar-services.sh` to run the service with the rest of the native stack.
+Use `cedarcli native start all` to run the service with the rest of the native stack.
 The canonical setup, build, test, dependency, and runtime instructions are in the
 [CEDAR backend runbook](https://github.com/metadatacenter/cedar-development/blob/develop/ops/BACKEND-RUNBOOK.md).

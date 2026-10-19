@@ -81,7 +81,8 @@ final class RegistryReply {
 
   /**
    * What a refusal said, when it said it in JSON, and null when it did not. A refusal is answered
-   * with the registry's status whatever its body holds, so an HTML error page is no reason to fail.
+   * according to the registry's status whatever its body holds, so an HTML error page is no reason to
+   * fail.
    */
   JsonNode refusal() {
     try {

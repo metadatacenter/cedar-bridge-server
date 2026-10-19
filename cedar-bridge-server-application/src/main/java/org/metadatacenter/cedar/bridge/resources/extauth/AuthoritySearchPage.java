@@ -1,6 +1,5 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import org.metadatacenter.util.http.PagedListResponse;
 
 import java.util.Map;
@@ -13,6 +12,9 @@ import java.util.Map;
  * and {@code pageSize}, the published embeddable editor among them, reads what it always read.
  * {@code page} is the offset divided by the limit, which is exact whenever the offset falls on a
  * page boundary, as it always does for such a client.
+ *
+ * <p>A page holds only what a registry offered. A registry's refusal is answered in the shared error
+ * body instead, so no page carries a refusal's reasons.
  */
 public final class AuthoritySearchPage extends PagedListResponse {
 
@@ -20,15 +22,12 @@ public final class AuthoritySearchPage extends PagedListResponse {
   private final Map<String, ?> results;
   private final int page;
   private final int pageSize;
-  @JsonInclude(JsonInclude.Include.NON_NULL)
-  private final Object errors;
 
   AuthoritySearchPage(AuthoritySearchAnswer answer, String requestUrl, int limit, int offset) {
     this.found = answer.found();
     this.results = answer.results();
     this.page = offset / limit;
     this.pageSize = limit;
-    this.errors = answer.errors();
     if (answer.totalCount() != null) {
       page(requestUrl, answer.totalCount(), limit, offset, answer.countCapped());
     } else {
@@ -54,9 +53,5 @@ public final class AuthoritySearchPage extends PagedListResponse {
 
   public int getPageSize() {
     return pageSize;
-  }
-
-  public Object getErrors() {
-    return errors;
   }
 }

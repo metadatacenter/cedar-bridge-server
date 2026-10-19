@@ -1,5 +1,7 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
+import java.util.Locale;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -40,6 +42,11 @@ public class RridAuthority implements ExternalAuthority {
   @Override
   public String pathSegment() {
     return PATH_SEGMENT;
+  }
+
+  @Override
+  public String registryName() {
+    return "SciCrunch";
   }
 
   @Override
@@ -91,15 +98,14 @@ public class RridAuthority implements ExternalAuthority {
     }
 
     JsonNode hits = reply.json().path("hits").path("hits");
-    if (!hits.isArray() || hits.isEmpty()) {
-      return AuthorityDetailsAnswer.notFound(new HashMap<>());
-    }
+    if (!hits.isArray()) return AuthorityDetailsAnswer.incomplete(new HashMap<>());
+    if (hits.isEmpty()) return AuthorityDetailsAnswer.notFound(new HashMap<>());
 
     JsonNode item = hits.get(0).path("_source").path("item");
     String identifier = item.path("identifier").asText(null);
     String name = item.path("name").asText(null);
     if (identifier == null || name == null) {
-      return AuthorityDetailsAnswer.notFound(new HashMap<>());
+      return AuthorityDetailsAnswer.incomplete(new HashMap<>());
     }
 
     Map<String, Object> body = new HashMap<>();
@@ -159,7 +165,7 @@ public class RridAuthority implements ExternalAuthority {
     if (id.startsWith("http://") || id.startsWith("https://")) {
       id = id.substring(id.lastIndexOf('/') + 1);
     }
-    return id.toUpperCase().startsWith("RRID:") ? id : "RRID:" + id;
+    return id.toUpperCase(Locale.ROOT).startsWith("RRID:") ? id : "RRID:" + id;
   }
 
   private static String buildDetails(JsonNode itemNode) {

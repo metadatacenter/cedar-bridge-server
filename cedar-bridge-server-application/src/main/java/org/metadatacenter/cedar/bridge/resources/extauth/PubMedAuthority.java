@@ -57,6 +57,11 @@ public class PubMedAuthority implements ExternalAuthority {
   }
 
   @Override
+  public String registryName() {
+    return "NCBI E-utilities";
+  }
+
+  @Override
   public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarProcessingException {
     if (query == null || query.isBlank()) {
       return AuthoritySearchAnswer.nothing();
@@ -140,10 +145,14 @@ public class PubMedAuthority implements ExternalAuthority {
       return AuthorityDetailsAnswer.failed(reply.status(), new HashMap<>());
     }
 
-    JsonNode result = reply.json().path("result").path(pmid);
+    JsonNode envelope = reply.json().path("result");
+    if (envelope.path("uids").isArray() && envelope.path("uids").isEmpty() && !envelope.has(pmid)) {
+      return AuthorityDetailsAnswer.notFound(new HashMap<>());
+    }
+    JsonNode result = envelope.path(pmid);
     String title = asTextOrNull(result, "title");
     if (title == null || title.isBlank()) {
-      return AuthorityDetailsAnswer.notFound(new HashMap<>());
+      return AuthorityDetailsAnswer.incomplete(new HashMap<>());
     }
 
     Map<String, Object> body = new HashMap<>();

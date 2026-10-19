@@ -5,6 +5,7 @@ import io.dropwizard.testing.DropwizardTestSupport;
 import io.dropwizard.testing.ResourceHelpers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -40,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>Authorities are named by path segment, which is what the route actually is: PFAS is served
  * under {@code comp-tox} and NIH Grant under {@code nih-grant}.
  */
+@Tag("integration")
 public class ExternalAuthorityContractTest {
 
   /** The seven path segments, which are the bridge's external-authority surface. */

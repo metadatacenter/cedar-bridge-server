@@ -36,6 +36,11 @@ public class RorAuthority implements ExternalAuthority {
   }
 
   @Override
+  public String registryName() {
+    return "ROR";
+  }
+
+  @Override
   public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarException {
     // ROR matches a whole word unless asked otherwise, and a field is searched as it is typed.
     String fragment = query;

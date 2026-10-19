@@ -1,5 +1,7 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
+import java.util.Locale;
+
 import org.metadatacenter.cedar.bridge.resources.Substance;
 import org.metadatacenter.cedar.bridge.resources.SubstanceRegistry;
 
@@ -40,6 +42,11 @@ public class PfasAuthority implements ExternalAuthority {
   }
 
   @Override
+  public String registryName() {
+    return "EPA CompTox";
+  }
+
+  @Override
   public AuthoritySearchAnswer search(String query, int offset, int limit) {
     requireLoaded();
 
@@ -47,13 +54,13 @@ public class PfasAuthority implements ExternalAuthority {
       return AuthoritySearchAnswer.nothing();
     }
 
-    final String fragmentLower = query.toLowerCase();
+    final String fragmentLower = query.toLowerCase(Locale.ROOT);
     Map<String, Substance> substances = substanceRegistry.getSubstanceInfoByDtxsid();
 
     List<Map.Entry<String, Substance>> matches = new ArrayList<>();
     for (Map.Entry<String, Substance> entry : substances.entrySet()) {
       String preferredName = entry.getValue().getPreferredName();
-      if (preferredName != null && preferredName.toLowerCase().contains(fragmentLower)) {
+      if (preferredName != null && preferredName.toLowerCase(Locale.ROOT).contains(fragmentLower)) {
         matches.add(entry);
       }
     }

@@ -6,7 +6,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarProcessingException;
+import org.metadatacenter.http.CedarResponseStatus;
 import org.metadatacenter.id.CedarArtifactId;
 import org.metadatacenter.id.CedarTemplateId;
 import org.metadatacenter.model.CedarResourceType;
@@ -15,7 +17,6 @@ import org.metadatacenter.server.url.ResourceMicroserviceUrlProvider;
 import org.metadatacenter.util.http.ProxyUtil;
 import org.metadatacenter.util.json.JsonMapper;
 
-import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
@@ -34,7 +35,7 @@ final class CedarArtifactClient {
   JsonNode read(CedarResourceType type, CedarArtifactId id, CedarRequestContext context)
       throws CedarProcessingException {
     return jsonResponse(ProxyUtil.proxyGet(resource.getArtifactTypeWithId(type, id), context,
-        Map.of(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON)));
+        Map.of(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON)), "the " + type.getValue() + " " + id.getId());
   }
 
   Pair<Boolean, JsonNode> validate(String templateId, JsonNode instance, CedarRequestContext context)
@@ -46,15 +47,15 @@ final class CedarArtifactClient {
     // Forward the actual caller credential and request identity. A user's first stored API key is
     // neither the incoming identity nor a service credential.
     JsonNode report = jsonResponse(ProxyUtil.proxyPost(resource.getValidateCommand("instance"), context,
-        body.toString()));
+        body.toString()), "the validation of the DataCite metadata");
     String validates = report.path("validates").asText();
     if (!"true".equals(validates) && !"false".equals(validates)) {
-      throw new WebApplicationException("Invalid CEDAR validation response", 502);
+      throw failure(502, "The resource server's validation of the DataCite metadata gave no verdict.");
     }
     return Pair.of("true".equals(validates), report);
   }
 
-  private JsonNode jsonResponse(ClassicHttpResponse response) {
+  private JsonNode jsonResponse(ClassicHttpResponse response, String what) throws CedarProcessingException {
     try {
       int status = response.getCode();
       if (status != 200) {
@@ -64,21 +65,37 @@ final class CedarArtifactClient {
           case 400, 401, 403, 404, 429, 503 -> status;
           default -> 502;
         };
-        throw new WebApplicationException("CEDAR resource request failed", failureStatus);
+        throw failure(failureStatus, "The resource server answered HTTP " + status + " when asked for " + what + ".");
       }
       if (response.getEntity() == null) {
-        throw new WebApplicationException("Empty CEDAR resource response", 502);
+        throw failure(502, "The resource server answered with no body when asked for " + what + ".");
       }
       JsonNode body = JsonMapper.STRICT_MAPPER.readTree(
           EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8));
       if (body == null || !body.isObject()) {
-        throw new WebApplicationException("Invalid CEDAR resource response", 502);
+        throw failure(502, "The resource server answered with something other than a JSON object when asked for "
+            + what + ".");
       }
       return body;
     } catch (IOException | ParseException e) {
-      throw new WebApplicationException("Invalid CEDAR resource response", 502);
+      throw failure(502, "The resource server's answer could not be read when asked for " + what + ".", e);
     } finally {
       EntityUtils.consumeQuietly(response.getEntity());
     }
+  }
+
+  /**
+   * A resource answer the DOI workflow cannot use, as an exception the shared error body reports with
+   * its message. A bodyless WebApplicationException left the body with its status and no words.
+   */
+  private static CedarProcessingException failure(int status, String message) {
+    return failure(status, message, null);
+  }
+
+  private static CedarProcessingException failure(int status, String message, Exception cause) {
+    CedarProcessingException failure = new CedarProcessingException(message, cause);
+    failure.errorKey(CedarErrorKey.UPSTREAM_SERVER_ERROR);
+    failure.getErrorPack().status(CedarResponseStatus.fromStatusCode(status));
+    return failure;
   }
 }

@@ -29,6 +29,15 @@ public interface ExternalAuthority {
   String pathSegment();
 
   /**
+   * The registry this authority asks, as a refusal identifies it.
+   *
+   * <p>A registry's refusal is answered in the shared error body, and its
+   * {@code parameters.upstreamService} identifies the registry that refused rather than the path
+   * segment the caller sent, so a refusal from the {@code doi} authority names DataCite.
+   */
+  String registryName();
+
+  /**
    * The terms this authority offers for a name: at most {@code limit} of them, skipping the first
    * {@code offset}.
    *

@@ -1,9 +1,9 @@
 {
   "openapi" : "3.0.1",
   "info" : {
-    "description" : "Better Metadata - Better Science\n\nFolders and artifacts use type-qualified selectors: `folders/<uuid>`, `templates/<uuid>`,\n`template-elements/<uuid>`, `template-fields/<uuid>`, or `template-instances/<uuid>`.\nTyped routes include the type once, for example `/templates/<uuid>`. Query parameters and\ncommand-body selectors retain the type, including folder parameters. Percent-encoded full\nIRIs remain accepted for compatibility. Stored document identities and references remain\nfull IRIs; legacy repository hosts must remain absolute until their data is migrated.\n\nThe bridge server is CEDAR's connection to registries outside it. It mints DOIs through DataCite\nso a CEDAR artifact can be cited, and it resolves and searches identifiers held by seven external\nauthorities: DOI, NIH grants, ORCID, CompTox, PubMed, ROR and RRID.\n\nWhere an answer comes from outside, the status comes from outside with it: an upstream refusal is\nreported as that registry reported it, rather than flattened into a 500.\n",
+    "description" : "Better Metadata - Better Science\n\nFolders and artifacts use type-qualified selectors: `folders/<uuid>`, `templates/<uuid>`,\n`template-elements/<uuid>`, `template-fields/<uuid>`, or `template-instances/<uuid>`.\nTyped routes include the type once, for example `/templates/<uuid>`. Query parameters and\ncommand-body selectors retain the type, including folder parameters. Percent-encoded full\nIRIs remain accepted for compatibility. Stored document identities and references remain\nfull IRIs; legacy repository hosts must remain absolute until their data is migrated.\n\nThe bridge server is CEDAR's connection to registries outside it. It mints DOIs through DataCite\nso a CEDAR artifact can be cited, and it resolves and searches identifiers held by seven external\nauthorities: DOI, NIH grants, ORCID, CompTox, PubMed, ROR and RRID.\n\nAn upstream refusal is answered in the shared error body with the key `upstreamServerError`,\nrather than flattened into a 500. Its parameters name the upstream service and the status it\nanswered, and its objects carry what it answered. A refusal keeps the upstream status, except that\nDataCite or an external registry failing, refusing this deployment's credentials or access, or\nlimiting its requests answers 502, as does an upstream answer that is neither a success nor a\nrefusal. The external-authority routes, which take no credentials, therefore never answer 401.\n",
     "title" : "CEDAR Bridge Server API",
-    "version" : "2.9.24"
+    "version" : "2.9.25"
   },
   "paths" : {
     "/" : {
@@ -57,7 +57,7 @@
                 }
               }
             },
-            "description" : "DataCite integration is disabled, or the artifact is not eligible for a DOI"
+            "description" : "DataCite integration is disabled (dataCiteDOIDisabled), the artifact is not eligible for a DOI, or the resource server refused a read (upstreamServerError)"
           },
           "401" : {
             "content" : {
@@ -67,7 +67,7 @@
                 }
               }
             },
-            "description" : "Unauthorized"
+            "description" : "The request carries no valid credentials, the caller cannot edit the source artifact (noWriteAccessToArtifact), or the resource server refused a read (upstreamServerError)"
           },
           "403" : {
             "content" : {
@@ -77,7 +77,7 @@
                 }
               }
             },
-            "description" : "The caller cannot read the source artifact or the DataCite template"
+            "description" : "The caller cannot read the source artifact or the DataCite template (upstreamServerError), or lacks the template read permission"
           },
           "404" : {
             "content" : {
@@ -89,6 +89,16 @@
             },
             "description" : "The source artifact or DataCite template was not found"
           },
+          "406" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "The request does not accept a JSON response"
+          },
           "409" : {
             "content" : {
               "application/json" : {
@@ -97,7 +107,7 @@
                 }
               }
             },
-            "description" : "The artifact already has a findable DOI"
+            "description" : "The artifact already has a findable DOI (doiAlreadyExists)"
           },
           "429" : {
             "content" : {
@@ -107,7 +117,7 @@
                 }
               }
             },
-            "description" : "Resource requests are being rate limited"
+            "description" : "The caller, or the reads the workflow makes of the resource server, exceeded the deployment's request rate"
           },
           "500" : {
             "content" : {
@@ -127,7 +137,7 @@
                 }
               }
             },
-            "description" : "DataCite could not be reached, or CEDAR returned an invalid upstream response"
+            "description" : "DataCite could not be reached or refused the draft lookup, whose errors are then in objects.dataCiteErrors, or the resource server's answer could not be used (upstreamServerError)"
           },
           "503" : {
             "content" : {
@@ -137,7 +147,7 @@
                 }
               }
             },
-            "description" : "A CEDAR dependency is unavailable"
+            "description" : "The graph database or another service the request depends on is unavailable"
           }
         },
         "security" : [ {
@@ -206,7 +216,7 @@
                 }
               }
             },
-            "description" : "DataCite integration is disabled, `state` is neither draft nor publish, the artifact is not eligible, or the metadata failed validation"
+            "description" : "DataCite integration is disabled (dataCiteDOIDisabled), `state` is neither draft nor publish, the body is not JSON (malformedJsonRequestBody), the artifact is not eligible, the metadata failed validation (invalidInput, with the report in objects.validationResult), or DataCite refused the metadata (invalidInput, with DataCite's errors in objects.dataCiteErrors). The resource server refusing a read is also reported (upstreamServerError)."
           },
           "401" : {
             "content" : {
@@ -216,7 +226,7 @@
                 }
               }
             },
-            "description" : "Unauthorized"
+            "description" : "The request carries no valid credentials, the caller cannot edit the source artifact (noWriteAccessToArtifact), or the resource server refused a read (upstreamServerError)"
           },
           "403" : {
             "content" : {
@@ -226,7 +236,7 @@
                 }
               }
             },
-            "description" : "The caller cannot read the source artifact or the DataCite template"
+            "description" : "The caller cannot read the source artifact or the DataCite template (upstreamServerError), or lacks the template read permission"
           },
           "404" : {
             "content" : {
@@ -236,7 +246,17 @@
                 }
               }
             },
-            "description" : "The source artifact or DataCite template was not found"
+            "description" : "The source artifact or DataCite template was not found, or DataCite no longer holds the draft it was asked to update (upstreamServerError, with DataCite's errors in objects.dataCiteErrors)"
+          },
+          "406" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "The request does not accept a JSON response"
           },
           "409" : {
             "content" : {
@@ -246,7 +266,17 @@
                 }
               }
             },
-            "description" : "The artifact already has a findable DOI"
+            "description" : "The artifact already has a findable DOI (doiAlreadyExists), or DataCite refused the registration as a conflict (upstreamServerError, with DataCite's errors in objects.dataCiteErrors)"
+          },
+          "415" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "The body is not declared as JSON"
           },
           "429" : {
             "content" : {
@@ -256,7 +286,7 @@
                 }
               }
             },
-            "description" : "Resource requests are being rate limited"
+            "description" : "The caller, or the reads the workflow makes of the resource server, exceeded the deployment's request rate"
           },
           "500" : {
             "content" : {
@@ -276,7 +306,7 @@
                 }
               }
             },
-            "description" : "DataCite could not be reached, or CEDAR returned an invalid upstream response"
+            "description" : "DataCite could not be reached, failed, refused the repository credentials this server holds, or limited this deployment's requests (upstreamServerError, with DataCite's errors in objects.dataCiteErrors when it gave any). The resource server's answer could not be used (upstreamServerError), or the DOI was minted but could not be recorded in CEDAR, which parameters.reconciliationRequired reports."
           },
           "503" : {
             "content" : {
@@ -286,7 +316,7 @@
                 }
               }
             },
-            "description" : "A CEDAR dependency is unavailable"
+            "description" : "The graph database or another service the request depends on is unavailable"
           }
         },
         "security" : [ {
@@ -298,7 +328,7 @@
     },
     "/datacite/get-doi-metadata/{id}" : {
       "get" : {
-        "description" : "Fetch what DataCite holds for a DOI, including affiliation detail. The status is DataCite's own, so a DOI DataCite does not know comes back as its 404 rather than this server's. DataCite integration can be switched off by configuration, and every route here answers 400 when it is.",
+        "description" : "Fetch what DataCite holds for a DOI, including affiliation detail. A refusal of the request itself keeps DataCite's status, so a DOI DataCite does not know is a 404. Every refusal DataCite makes is answered in the shared error body (upstreamServerError), with DataCite's own errors in objects.dataCiteErrors and its status in parameters.upstreamStatusCode. DataCite integration can be switched off by configuration, and every route here answers 400 when it is.",
         "operationId" : "getDOIMetadata",
         "parameters" : [ {
           "description" : "The DOI as a URL. Example: https://doi.org/10.82658/abcd-1234",
@@ -328,7 +358,7 @@
                 }
               }
             },
-            "description" : "DataCite integration is disabled"
+            "description" : "DataCite integration is disabled (dataCiteDOIDisabled), or DataCite refused the request (upstreamServerError)"
           },
           "401" : {
             "content" : {
@@ -338,10 +368,37 @@
                 }
               }
             },
-            "description" : "Unauthorized"
+            "description" : "The request carries no valid credentials"
           },
           "404" : {
-            "description" : "DataCite holds no such DOI; the body is DataCite's own"
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "DataCite holds no such DOI (upstreamServerError). The body's objects.dataCiteErrors holds DataCite's errors."
+          },
+          "406" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "The request does not accept a JSON response"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "The deployment limits each user's request rate, and the caller exceeded it"
           },
           "500" : {
             "content" : {
@@ -361,7 +418,17 @@
                 }
               }
             },
-            "description" : "DataCite could not be reached"
+            "description" : "DataCite could not be reached, failed, refused the repository credentials this server holds, or limited this deployment's requests (upstreamServerError, with DataCite's errors in objects.dataCiteErrors when it gave any)."
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "The graph database or another service the request depends on is unavailable"
           }
         },
         "security" : [ {
@@ -373,7 +440,7 @@
     },
     "/ext-auth/{authority}/search-by-name" : {
       "get" : {
-        "description" : "These routes take no credentials. Neither builds a request context, so anyone who can reach this host can use them, and three of the seven authorities behind them spend credentials the deployment holds. Recorded here because a spec that claimed otherwise would be worse than one that says so. Search one external authority for entries matching a name, and return them with the paging that produced them. The status is the authority's own, so an upstream refusal is reported as that authority reported it. A registry that does not answer is a 503, and one whose answer cannot be read is a 502. An authority that has not finished loading answers 503 with Retry-After rather than an empty result.",
+        "description" : "These routes take no credentials. Neither builds a request context, so anyone who can reach this host can use them, and three of the seven authorities behind them spend credentials the deployment holds. Recorded here because a spec that claimed otherwise would be worse than one that says so. Search one external authority for entries matching a name, and return them with the paging that produced them. A registry's refusal is answered in the shared error body (upstreamServerError), with the registry's status in parameters.upstreamStatusCode, the registry in parameters.upstreamService, and the authority's answer in objects.authorityAnswer, where `found` is false. A refusal of the request itself keeps the registry's status, which may be one not listed below, such as 409. A registry that refuses this deployment's access (401 or 403), limits its requests (429) or fails (5xx) is a 502, since the caller can do nothing about it. So is a status that is neither 200 nor an error, such as a redirect. These routes therefore never answer 401. A registry that does not answer is a 503, and one whose answer cannot be read is a 502. An authority that has not finished loading answers 503 with Retry-After rather than an empty result.",
         "operationId" : "searchByName",
         "parameters" : [ {
           "description" : "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`, `pmid`, `ror`, `rrid`. A segment no authority is registered under answers 404 naming the ones that are.",
@@ -442,9 +509,9 @@
                 }
               }
             },
-            "description" : "The limit or offset is out of range, `page` is negative or `pageSize` is not greater than one, or both kinds of paging were sent"
+            "description" : "The limit or offset is out of range, `page` is negative or `pageSize` is not greater than one, both kinds of paging were sent, or a paging parameter is not a number. The registry refusing the search with 400 is reported too (upstreamServerError)."
           },
-          "401" : {
+          "404" : {
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -452,10 +519,27 @@
                 }
               }
             },
-            "description" : "Unauthorized"
+            "description" : "No authority is served under this path segment (no error key, and the message names the segments that are served), or the registry answered the search with 404 (upstreamServerError)"
           },
-          "404" : {
-            "description" : "No authority is served under this path segment"
+          "406" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "The request does not accept a JSON response"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Internal server error"
           },
           "502" : {
             "content" : {
@@ -465,7 +549,7 @@
                 }
               }
             },
-            "description" : "The registry answered with something that could not be read, or refused the credentials this server holds"
+            "description" : "The registry answered with something that could not be read, or ORCID refused the credentials this server holds. A registry that refuses this deployment's access (401 or 403), limits its requests (429), fails (5xx), or answers with a status that is neither 200 nor an error is reported as upstreamServerError, with its status in parameters.upstreamStatusCode."
           },
           "503" : {
             "content" : {
@@ -475,16 +559,74 @@
                 }
               }
             },
-            "description" : "The registry did not answer, or the authority is not ready yet; when it is not ready, Retry-After says when to try again"
+            "description" : "The registry did not answer, or the authority is not ready yet, in which case Retry-After says when to try again."
           }
         },
         "summary" : "Search an external registry by name",
         "tags" : [ "External authorities" ]
       }
     },
+    "/ext-auth/{authority}/verify" : {
+      "post" : {
+        "description" : "Recognizes the authority-specific IRI, then resolves its exact identifier using the configured authority and circuit breaker. Returns a passed, failed or unavailable semantic fact, independently of save policy. No arbitrary submitted URL is fetched. DataCite absence is unavailable because DataCite does not register every DOI.",
+        "operationId" : "verify",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "authority",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VerificationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthorityVerification"
+                }
+              }
+            },
+            "description" : "Semantic verification facts"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Malformed identifier or request shape"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "No authority is served under this path segment (no error key, and the message names the segments that are served)"
+          }
+        },
+        "summary" : "Verify a stored authority identifier",
+        "tags" : [ "External authorities" ]
+      }
+    },
     "/ext-auth/{authority}/{id}" : {
       "get" : {
-        "description" : "These routes take no credentials. Neither builds a request context, so anyone who can reach this host can use them, and three of the seven authorities behind them spend credentials the deployment holds. Recorded here because a spec that claimed otherwise would be worse than one that says so. Look one identifier up in an external authority and return what it holds, with `found` saying whether it resolved and `requestedId` echoing what was asked. The status is the authority's own, so a registry that failed to look the identifier up is not reported as not holding it. A registry that does not answer is a 503, and one whose answer cannot be read is a 502. This path and the search path both match two segments; the literal `search-by-name` wins, so no authority can have an entry by that name.",
+        "description" : "These routes take no credentials. Neither builds a request context, so anyone who can reach this host can use them, and three of the seven authorities behind them spend credentials the deployment holds. Recorded here because a spec that claimed otherwise would be worse than one that says so. Look one identifier up in an external authority and return what it holds, with `found` saying whether it resolved and `requestedId` echoing what was asked. A registry's refusal is answered in the shared error body (upstreamServerError), with the registry's status in parameters.upstreamStatusCode, the registry in parameters.upstreamService, and the authority's answer in objects.authorityAnswer, where `found` is false and `requestedId` echoes what was asked. A refusal of the request itself keeps the registry's status, which may be one not listed below, such as 409. A registry that refuses this deployment's access (401 or 403), limits its requests (429) or fails (5xx) is a 502, since the caller can do nothing about it. So is a status that is neither 200 nor an error, such as a redirect. These routes therefore never answer 401. A failed lookup is a 502, so it is never reported as an identifier the registry does not hold. A registry that does not answer is a 503, and one whose answer cannot be read is a 502. This path and the search path both match two segments; the literal `search-by-name` wins, so no authority can have an entry by that name.",
         "operationId" : "details",
         "parameters" : [ {
           "description" : "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`, `pmid`, `ror`, `rrid`. A segment no authority is registered under answers 404 naming the ones that are.",
@@ -514,7 +656,7 @@
             },
             "description" : "What the authority holds for the identifier"
           },
-          "401" : {
+          "400" : {
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -522,10 +664,37 @@
                 }
               }
             },
-            "description" : "Unauthorized"
+            "description" : "The registry refused the lookup with 400 (upstreamServerError)"
           },
           "404" : {
-            "description" : "No authority is served under this path segment, or the authority does not hold this identifier"
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "No authority is served under this path segment (no error key, and the message names the segments that are served), or ORCID or ROR holds no entry for the identifier (upstreamServerError). The body's objects.authorityAnswer then holds the authority's answer, with `found` false, `requestedId`, and the registry's own answer under `rawResponse`. The other authorities answer 200 with `found` false for an identifier their registry does not hold."
+          },
+          "406" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "The request does not accept a JSON response"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "Internal server error"
           },
           "502" : {
             "content" : {
@@ -535,7 +704,7 @@
                 }
               }
             },
-            "description" : "The registry answered with something that could not be read, or refused the credentials this server holds"
+            "description" : "The registry answered with something that could not be read, or ORCID refused the credentials this server holds. A registry that refuses this deployment's access (401 or 403), limits its requests (429), fails (5xx), or answers with a status that is neither 200 nor an error is reported as upstreamServerError, with its status in parameters.upstreamStatusCode."
           },
           "503" : {
             "content" : {
@@ -545,7 +714,7 @@
                 }
               }
             },
-            "description" : "The registry did not answer, or the authority is not ready yet; when it is not ready, Retry-After says when to try again"
+            "description" : "The registry did not answer, or the authority is not ready yet, in which case Retry-After says when to try again."
           }
         },
         "summary" : "Resolve an identifier against an external registry",
@@ -862,7 +1031,7 @@
       "AuthorityDetails" : {
         "type" : "object",
         "additionalProperties" : true,
-        "description" : "What one authority holds for one identifier. Only `found` and `requestedId` are added by\nCEDAR; the rest of the object is the authority's own, and the keys below are the ones every\nauthority sets when it resolves an identifier. ORCID and ROR also pass the registry's whole\nrecord through under `rawResponse`, and its errors under `errors`.\n",
+        "description" : "What one authority holds for one identifier. Only `found` and `requestedId` are added by\nCEDAR; the rest of the object is the authority's own, and the keys below are the ones every\nauthority sets when it resolves an identifier. ORCID and ROR also pass the registry's whole\nrecord through under `rawResponse`. A registry's refusal is answered in the shared error body,\nwhose `objects.authorityAnswer` holds this object with `found` false. There ORCID and ROR\ncarry the registry's own answer under `rawResponse`, null when it was not JSON, and its reasons\nunder `errors`.\n",
         "properties" : {
           "details" : {
             "type" : "string",
@@ -870,7 +1039,7 @@
           },
           "errors" : {
             "type" : "array",
-            "description" : "What the registry said went wrong, one message per entry.",
+            "description" : "What the registry said went wrong, one message per entry. Set by ORCID and ROR, and only\nin a refusal's `objects.authorityAnswer`.\n",
             "items" : {
               "type" : "string"
             }
@@ -921,7 +1090,7 @@
       "AuthoritySearchResults" : {
         "type" : "object",
         "additionalProperties" : false,
-        "description" : "The entries one authority offers for a name, in CEDAR's paging envelope. The status is the\nauthority's own, so an upstream refusal arrives with the registry's status and its reason\nunder `errors`. `found`, `page` and `pageSize` are the fields the route answered with before\nit took `limit` and `offset`, kept for clients that still page by number.\n",
+        "description" : "The entries one authority offers for a name, in CEDAR's paging envelope. A registry's refusal\nis not a page. It is answered in the shared error body, with `found`, `results` and any reasons\nthe authority read off the refusal in `objects.authorityAnswer`. `found`, `page` and `pageSize`\nare the fields the route answered with before it took `limit` and `offset`, kept for clients\nthat still page by number.\n",
         "properties" : {
           "countCapped" : {
             "type" : "boolean",
@@ -931,13 +1100,6 @@
             "type" : "integer",
             "format" : "int64",
             "description" : "The offset of the first entry on this page."
-          },
-          "errors" : {
-            "type" : "array",
-            "description" : "What the registry said went wrong, one message per entry. Present only where the registry\nreported something; only ORCID does.\n",
-            "items" : {
-              "type" : "string"
-            }
           },
           "found" : {
             "type" : "boolean",
@@ -990,6 +1152,23 @@
           "name" : {
             "type" : "string",
             "description" : "The entry's display name, chosen by the authority from the names the registry holds."
+          }
+        }
+      },
+      "AuthorityVerification" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "iri" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
           }
         }
       },
@@ -1203,6 +1382,14 @@
           "schema:name" : {
             "type" : "string",
             "description" : "Display name."
+          }
+        }
+      },
+      "VerificationRequest" : {
+        "type" : "object",
+        "properties" : {
+          "iri" : {
+            "type" : "string"
           }
         }
       }

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.metadatacenter.cedar.bridge.BridgeServerApplicationTest;
 import org.metadatacenter.cedar.bridge.BridgeServerConfiguration;
 import org.metadatacenter.config.CedarConfig;
@@ -23,6 +24,7 @@ import jakarta.ws.rs.client.Client;
 import java.util.HashMap;
 import java.util.Map;
 
+@Tag("integration")
 public abstract class AbstractBridgeServerResourceTest
 {
   protected static CedarConfig cedarConfig;

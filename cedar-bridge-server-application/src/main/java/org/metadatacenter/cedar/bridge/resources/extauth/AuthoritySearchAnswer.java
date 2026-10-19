@@ -17,7 +17,8 @@ import java.util.Map;
  * {@code countCapped} saying there are more. One narrows what its registry returns after the fact
  * and cannot know the total at all, which a null {@code totalCount} records.
  *
- * @param statusCode  the status to answer with, which is the registry's own when it was not 200
+ * @param statusCode  200, or the registry's status when it refused, which the route answers as
+ *                    {@code UpstreamRefusal} classifies it
  * @param results     term IRI to {@code {name, details}}, in the order the registry offered them
  * @param errors      whatever the registry said went wrong, or null
  * @param totalCount  how many terms match, or null when the authority cannot know

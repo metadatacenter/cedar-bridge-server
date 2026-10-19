@@ -6,6 +6,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.metadatacenter.cedar.bridge.resources.DataCiteResource;
 import org.metadatacenter.cedar.bridge.resources.extauth.ExternalAuthorityResource;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
  * request needs no such call, so this runs in the default suite and keeps the server's authenticated
  * surface covered when the tagged tests are skipped.
  */
+@Tag("integration")
 public class BridgeRoutesRespondTest {
 
   static {
