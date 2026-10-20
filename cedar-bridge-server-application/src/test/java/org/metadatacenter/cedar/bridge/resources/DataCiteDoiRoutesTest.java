@@ -113,6 +113,10 @@ class DataCiteDoiRoutesTest {
   void setUp() throws Exception {
     resourceServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
     resourceServer.createContext("/", exchange -> {
+      // Read the whole request before answering. A validation request carries the DataCite template,
+      // and a reply sent while the client is still writing it closes the connection under the client,
+      // which fails as a broken pipe wherever the socket buffers are smaller than the template.
+      exchange.getRequestBody().readAllBytes();
       String path = exchange.getRequestURI().getPath();
       String reply;
       int status = 200;
