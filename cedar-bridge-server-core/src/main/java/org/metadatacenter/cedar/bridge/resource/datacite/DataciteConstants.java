@@ -22,6 +22,8 @@ public class DataciteConstants {
   public static final String QUERY_AFFILIATION = "?affiliation=true";
   public static final String QUERY_DETAIL = "&detail=true";
   public static final String QUERY_PUBLISHER = "&query=publisher:CEDAR";
+  public static final String QUERY_CLIENT_ID = "&client-id=";
+  public static final String QUERY_STATE_DRAFT = "&state=draft";
   public static final String RESOURCE_ID = "resourceId";
   public static final String SOURCE_ARTIFACT = "sourceArtifact";
   public static final String SOURCE_ARTIFACT_TYPE = "sourceArtifactType";

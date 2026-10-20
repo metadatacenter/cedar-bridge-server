@@ -518,6 +518,21 @@ class DataCiteDoiRoutesTest {
     assertDraftLookupIdentifiesTheArtifact(sentToDataCite.get(0));
   }
 
+  /** A findable DOI cannot go back to draft, so one DataCite lists for the landing page is not resumed. */
+  @Test
+  void aFindableDoiForTheLandingPageIsNotTakenForADraft() throws Exception {
+    dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP,
+        new Reply(200, draftLookup().replace("\"state\": \"draft\"", "\"state\": \"findable\"")));
+
+    Response response = resource.createDOIStart(SOURCE_ID);
+
+    assertEquals(200, response.getStatus());
+    Map<String, Object> entity = entity(response);
+    assertNull(entity.get("draftDoi"));
+    JsonNode prefilled = assertInstanceOf(JsonNode.class, entity.get("existingDataCiteMetadata"));
+    assertEquals("Default DataCite Instance", prefilled.path("schema:name").asText());
+  }
+
   /** The form is built from the template, so a template the model cannot read opens no form. */
   @Test
   void refusesToOpenTheFormOnATemplateTheModelCannotRead() throws Exception {
@@ -539,10 +554,15 @@ class DataCiteDoiRoutesTest {
     verifyNoInteractions(annotationWriter);
   }
 
-  /** CEDAR keeps no record of a draft, so the lookup asks DataCite for one by publisher and landing page. */
+  /**
+   * CEDAR keeps no record of a draft, so the lookup asks DataCite for one by publisher and landing
+   * page. DataCite lists a draft only to a request that names the repository and asks for drafts.
+   */
   private static void assertDraftLookupIdentifiesTheArtifact(SentToDataCite lookup) {
     String query = lookup.uri().getRawQuery();
     assertTrue(lookup.uri().toString().startsWith(ENDPOINT + "?"), lookup.uri().toString());
+    assertTrue(query.contains("client-id=cedar.test"), query);
+    assertTrue(query.contains("state=draft"), query);
     assertTrue(query.contains("query=publisher:CEDAR"), query);
     assertTrue(query.contains("url:%22" + URLEncoder.encode(OPENVIEW_URL, StandardCharsets.UTF_8) + "%22"), query);
   }
