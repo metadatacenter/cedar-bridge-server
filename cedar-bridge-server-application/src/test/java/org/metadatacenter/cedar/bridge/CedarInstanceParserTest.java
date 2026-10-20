@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
  */
 class CedarInstanceParserTest {
 
-  private static final String PREFIX = "10.82658";
+  static final String PREFIX = "10.82658";
   private static final String OPENVIEW_BASE = "https://openview.metadatacenter.orgx/";
   private static final String SOURCE_ARTIFACT =
       "https://repo.metadatacenter.org/template-instances/8bc64ab5-df6b-48c8-8c61-6c016245918e";
@@ -63,14 +63,14 @@ class CedarInstanceParserTest {
     return prefix;
   }
 
-  private static CedarConfig config(String prefix) {
+  static CedarConfig config(String prefix) {
     CedarConfig config = mock(CedarConfig.class, RETURNS_DEEP_STUBS);
     when(config.getBridgeConfig().getDataCite().getPrefix()).thenReturn(prefix);
     when(config.getServers().getOpenview().getUriBase()).thenReturn(OPENVIEW_BASE);
     return config;
   }
 
-  private static DataCiteSchema convert(MetadataInstance instance, String state)
+  static DataCiteSchema convert(MetadataInstance instance, String state)
       throws DataCiteInstanceValidationException {
     DataCiteSchema schema = new DataCiteSchema();
     CedarInstanceParser.parseCedarInstance(instance, schema, SOURCE_ARTIFACT, state, config(PREFIX));
