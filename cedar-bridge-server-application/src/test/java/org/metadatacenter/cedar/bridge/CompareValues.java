@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.metadatacenter.artifacts.model.reader.JsonArtifactReader;
 import org.metadatacenter.cedar.bridge.resource.datacite.CedarInstanceParser;
 import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteInstanceValidationException;
 import org.metadatacenter.cedar.bridge.resource.datacite.form.*;
@@ -14,7 +16,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-import static org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance;
 
 public class CompareValues {
   public static boolean compareResponseWithGivenMetadata(JsonNode givenMetadata, JsonNode responseMetadata, String sourceArtifactId, String state, CedarConfig cedarConfig) throws JsonProcessingException, DataCiteInstanceValidationException {
@@ -25,17 +26,11 @@ public class CompareValues {
 //    mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
 
     try {
-      //Deserialize givenMetadata to CedarDataCiteInstance Class
-      String givenMetadataString = givenMetadata.toString();
-//      CedarDataCiteInstance cedarInstance = mapper.readValue(givenMetadataString, CedarDataCiteInstance.class);
+      // Convert the given instance as the create-doi route does
       DataCiteSchema cedarConvertedDataCiteSchema = new DataCiteSchema();
-
-      // Pass the value from cedarDataCiteInstance to dataCiteRequest
-//      CedarInstanceParser.parseCedarInstance(cedarInstance, cedarConvertedDataCiteSchema, sourceArtifactId, state);
-
-      // Deserialize givenMetadata to MetadataInstance Class using Matthew's code
-      MetadataInstance metadataInstance = mapper.readValue(givenMetadataString, MetadataInstance.class);
-      CedarInstanceParser.parseCedarInstance(metadataInstance, cedarConvertedDataCiteSchema, sourceArtifactId, state, cedarConfig);
+      CedarInstanceParser.parseCedarInstance(
+          new JsonArtifactReader().readTemplateInstanceArtifact((ObjectNode) givenMetadata),
+          cedarConvertedDataCiteSchema, sourceArtifactId, state, cedarConfig);
 
       String cedarConvertedDataCiteSchemaString = mapper.writeValueAsString(cedarConvertedDataCiteSchema);
       System.out.println("Cedar Given Instance Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);

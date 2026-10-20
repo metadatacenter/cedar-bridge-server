@@ -22,18 +22,24 @@
     </dependency>
 
     <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.metadatacenter</groupId>
       <artifactId>cedar-model-library</artifactId>
+    </dependency>
+
+    <!-- Reads and builds DataCite template instances, and reads the template they are based on. -->
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-artifact-library</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.metadatacenter</groupId>
       <artifactId>cedar-core-library</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
     </dependency>
 
     <dependency>

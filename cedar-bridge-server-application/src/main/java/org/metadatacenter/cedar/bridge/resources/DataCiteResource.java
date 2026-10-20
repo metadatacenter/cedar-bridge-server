@@ -26,7 +26,10 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.util.http.CedarError;
 import org.metadatacenter.util.artifact.InstanceArtifactDocument;
 import org.metadatacenter.bridge.CedarDataServices;
-import org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance;
+import org.metadatacenter.artifacts.model.core.TemplateInstanceArtifact;
+import org.metadatacenter.artifacts.model.core.TemplateSchemaArtifact;
+import org.metadatacenter.artifacts.model.reader.ArtifactParseException;
+import org.metadatacenter.artifacts.model.reader.JsonArtifactReader;
 import org.metadatacenter.cedar.bridge.resource.datacite.*;
 import org.metadatacenter.cedar.bridge.resource.datacite.form.Attributes;
 import org.metadatacenter.cedar.bridge.resource.datacite.form.DataCiteSchema;
@@ -262,6 +265,18 @@ public class DataCiteResource extends CedarMicroserviceResource {
     String dataCiteTemplateIdS = cedarConfig.getBridgeConfig().getDataCite().getTemplateId();
     CedarTemplateId dataCiteTemplateId = CedarTemplateId.build(dataCiteTemplateIdS);
     JsonNode dataCiteTemplateProxyJson = artifactClient.read(CedarResourceType.TEMPLATE, dataCiteTemplateId, c);
+    TemplateSchemaArtifact dataCiteTemplate;
+    try {
+      if (!(dataCiteTemplateProxyJson instanceof ObjectNode templateDocument)) {
+        throw new ArtifactParseException("The template is not a JSON object", "", "");
+      }
+      dataCiteTemplate = new JsonArtifactReader().readTemplateSchemaArtifact(templateDocument);
+    } catch (ArtifactParseException e) {
+      return CedarResponse.internalServerError()
+          .message("The DataCite metadata template cannot be read: " + e.getMessage())
+          .exception(e)
+          .build();
+    }
 
     sourceArtifactId = linkedDataUtil.resolveResourceId(sourceArtifactId);
     CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
@@ -302,12 +317,14 @@ public class DataCiteResource extends CedarMicroserviceResource {
             JsonMapper.TOLERANT_MAPPER.treeToValue(attributesNode, Attributes.class);
 
         // Pass the value from dataCiteResponse to cedarDataCiteInstance
-        MetadataInstance cedarExistingDoiMetadata = DataCiteMetadataParser.parseDataCiteSchema(existingDoiMetadata, userID, cedarConfig);
+        ObjectNode cedarExistingDoiMetadata =
+            DataCiteMetadataParser.parseDataCiteSchema(existingDoiMetadata, userID, dataCiteTemplate, cedarConfig);
         response.put(DataciteConstants.EXISTING_DATACITE_METADATA, cedarExistingDoiMetadata);
         response.put(DataciteConstants.DRAFT_DOI, draftDoi);
       } else {
         // if draft DOI is not available, set the url and resourceType fields
-        MetadataInstance defaultInstance = GenerateMetadataInstance.getDefaultInstance(sourceArtifactId, userID, templateId, cedarConfig);
+        ObjectNode defaultInstance =
+            DataCiteMetadataParser.getDefaultInstance(sourceArtifactId, userID, dataCiteTemplate, cedarConfig);
         response.put(DataciteConstants.EXISTING_DATACITE_METADATA, defaultInstance);
         response.put(DataciteConstants.DRAFT_DOI, null);
       }
@@ -740,11 +757,12 @@ public class DataCiteResource extends CedarMicroserviceResource {
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
     DataCiteSchema dataCiteSchema = new DataCiteSchema();
     try {
-      // Deserialize JSON-LD to MetadataInstance Class. A stored CEDAR instance is a record this
-      // service consumes rather than owns, so the read takes the tolerant policy.
-      String metadataString = metadata.toString();
-      MetadataInstance cedarInstance =
-          JsonMapper.TOLERANT_MAPPER.readValue(metadataString, MetadataInstance.class);
+      // Read the instance into the model. It has been validated against the DataCite template, and a
+      // child the mapping does not name is read and left alone.
+      if (!(metadata instanceof ObjectNode instanceDocument)) {
+        throw new IllegalArgumentException("The DataCite metadata must be a JSON object");
+      }
+      TemplateInstanceArtifact cedarInstance = new JsonArtifactReader().readTemplateInstanceArtifact(instanceDocument);
 
       // Pass the value from dataCiteInstance to dataCiteRequest
       CedarInstanceParser.parseCedarInstance(cedarInstance, dataCiteSchema, sourceArtifactId, state, cedarConfig);

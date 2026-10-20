@@ -1,0 +1,138 @@
+{
+  "@id" : "https://repo.metadatacenter.org/template-instances/d81d2038-50ce-43fe-bb18-385e821c5afe",
+  "schema:name" : "Missing Prefix",
+  "schema:description" : "Missing required property Prefix",
+  "schema:isBasedOn" : "https://repo.metadatacenter.org/templates/f2c2d19d-d94c-420e-80bd-77a9d65e5dc7",
+  "pav:createdOn" : "2026-10-20T00:23:02Z",
+  "pav:createdBy" : "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44",
+  "pav:lastUpdatedOn" : "2026-10-20T00:23:02Z",
+  "oslc:modifiedBy" : "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44",
+  "pav:derivedFrom" : "https://repo.metadatacenter.org/templates/f2c2d19d-d94c-420e-80bd-77a9d65e5dc7",
+  "prefix" : {
+    "@value" : null
+  },
+  "url" : {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/b45d192a-e77e-416b-b44b-88ea62747226"
+  },
+  "creator" : [ {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/0a5e62e0-d7d7-45b2-bd14-fddb99bbbab6",
+    "creatorName" : {
+      "@value" : "John Doe"
+    },
+    "nameType" : { },
+    "givenName" : {
+      "@value" : null
+    },
+    "familyName" : {
+      "@value" : null
+    },
+    "affiliation" : [ ],
+    "nameIdentifier" : [ ],
+    "@context" : {
+      "creatorName" : "https://schema.metadatacenter.org/properties/8acde937-9aac-4830-901d-18827533d9ee",
+      "nameType" : "https://schema.metadatacenter.org/properties/c5257a64-69a4-4262-93ff-b7624fd00900",
+      "givenName" : "https://schema.metadatacenter.org/properties/6f29b11a-2c3e-4ebd-92f5-8b6ca863c484",
+      "familyName" : "https://schema.metadatacenter.org/properties/8a8c322b-7f15-4a7a-b687-ad969e71defe",
+      "affiliation" : "https://schema.metadatacenter.org/properties/6a01f57f-8ce9-4b5a-8731-784eaea5bed0",
+      "nameIdentifier" : "https://schema.metadatacenter.org/properties/54d8ce77-6c50-4e77-b2b7-8bd33c846d1d"
+    }
+  } ],
+  "title" : [ {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/94aabab7-80b9-4168-9a22-c37f3de39d24",
+    "title" : {
+      "@value" : "Required properties only"
+    },
+    "titleType" : { },
+    "@context" : {
+      "title" : "https://schema.metadatacenter.org/properties/c9a3f95f-d076-4a78-9b30-93ba8caf8d05",
+      "titleType" : "https://schema.metadatacenter.org/properties/9b5eb75f-3355-4ddb-903d-c716f4816b12"
+    }
+  } ],
+  "publicationYear" : {
+    "@type" : "xsd:date",
+    "@value" : "2026-01-01"
+  },
+  "publisher" : {
+    "@value" : "CEDAR"
+  },
+  "resourceType" : {
+    "@value" : "Template"
+  },
+  "subject" : [ ],
+  "contributor" : [ ],
+  "date" : [ ],
+  "language" : {
+    "@value" : null
+  },
+  "alternateIdentifier" : [ ],
+  "relatedIdentifier" : [ ],
+  "size" : [ ],
+  "format" : [ ],
+  "version" : {
+    "@value" : null
+  },
+  "rights" : [ ],
+  "description" : [ ],
+  "geoLocation" : [ ],
+  "fundingReference" : [ ],
+  "relatedItem" : [ ],
+  "@context" : {
+    "prefix" : "https://schema.metadatacenter.org/properties/95407cd5-7773-4c8e-8ca0-de8f6f416d77",
+    "url" : "https://schema.metadatacenter.org/properties/fa894c1e-6458-43c9-bed7-8c63b807a267",
+    "creator" : "https://schema.metadatacenter.org/properties/7ce1864a-78f1-44d4-a544-5e58de03e31b",
+    "title" : "https://schema.metadatacenter.org/properties/00d247f7-dd85-453b-95ff-f6233abc569e",
+    "publicationYear" : "https://schema.metadatacenter.org/properties/2c53713a-90a1-47a8-aac9-688d7fa0bf16",
+    "publisher" : "https://schema.metadatacenter.org/properties/53d616cb-46ea-416d-83e2-73f3922e41f1",
+    "resourceType" : "https://schema.metadatacenter.org/properties/7bff2713-afa5-4b54-8d61-3dd11133c16b",
+    "subject" : "https://schema.metadatacenter.org/properties/91e23221-dd5c-43e5-a6c6-a8df26a526d4",
+    "contributor" : "https://schema.metadatacenter.org/properties/94fa21f9-1d4f-4e53-be0b-166b547bd6e6",
+    "date" : "https://schema.metadatacenter.org/properties/717029a8-eed6-4158-849d-f7a6c4625c12",
+    "language" : "https://schema.metadatacenter.org/properties/77af7ff0-cb2f-4410-9f29-6f8ddb6bfe4c",
+    "alternateIdentifier" : "https://schema.metadatacenter.org/properties/bb2ae4af-72d0-464d-ace2-4e107d335a59",
+    "relatedIdentifier" : "https://schema.metadatacenter.org/properties/1de465ba-40e9-4901-a0b0-dc9ddbb9be3e",
+    "size" : "https://schema.metadatacenter.org/properties/20b07bfd-a06f-4f48-9605-d4602076ac41",
+    "format" : "https://schema.metadatacenter.org/properties/69fe75b5-ae78-4fa7-b24b-8fa1f465ec11",
+    "version" : "https://schema.metadatacenter.org/properties/cfc8a113-0e96-42cc-bebe-b874cad3e2a2",
+    "rights" : "https://schema.metadatacenter.org/properties/952b66b3-7a38-409e-b218-e1611a32c01e",
+    "description" : "https://schema.metadatacenter.org/properties/405f720e-b44f-4da4-910f-b6a82ab8fb14",
+    "geoLocation" : "https://schema.metadatacenter.org/properties/886afcf3-e4e5-4421-893c-45d40a533520",
+    "fundingReference" : "https://schema.metadatacenter.org/properties/cb7c3d4f-539d-48d6-801c-cdbfe6d368cf",
+    "relatedItem" : "https://schema.metadatacenter.org/properties/9751f6d3-41b7-4e06-be4a-6c9c874d57b3",
+    "schema" : "http://schema.org/",
+    "xsd" : "http://www.w3.org/2001/XMLSchema#",
+    "skos" : "http://www.w3.org/2004/02/skos/core#",
+    "rdfs" : "http://www.w3.org/2000/01/rdf-schema#",
+    "oslc" : "http://open-services.net/ns/core#",
+    "pav" : "http://purl.org/pav/",
+    "pav:createdOn" : {
+      "@type" : "xsd:dateTime"
+    },
+    "pav:createdBy" : {
+      "@type" : "@id"
+    },
+    "rdfs:label" : {
+      "@type" : "xsd:string"
+    },
+    "oslc:modifiedBy" : {
+      "@type" : "@id"
+    },
+    "pav:derivedFrom" : {
+      "@type" : "@id"
+    },
+    "skos:notation" : {
+      "@type" : "xsd:string"
+    },
+    "schema:isBasedOn" : {
+      "@type" : "@id"
+    },
+    "schema:description" : {
+      "@type" : "xsd:string"
+    },
+    "pav:lastUpdatedOn" : {
+      "@type" : "xsd:dateTime"
+    },
+    "schema:name" : {
+      "@type" : "xsd:string"
+    }
+  }
+}

@@ -1,0 +1,492 @@
+{
+  "@id" : "https://repo.metadatacenter.org/template-instances/89e1b51b-0fff-48ce-bbe1-6a6dff7eb09e",
+  "schema:name" : "Update Rich Metadata with Deleted And New Added Instances of Each Element",
+  "schema:description" : "Update Rich Metadata with Deleted And New Added Instances of Each Element",
+  "schema:isBasedOn" : "https://repo.metadatacenter.org/templates/f2c2d19d-d94c-420e-80bd-77a9d65e5dc7",
+  "pav:createdOn" : "2026-10-20T00:23:02Z",
+  "pav:createdBy" : "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44",
+  "pav:lastUpdatedOn" : "2026-10-20T00:23:02Z",
+  "oslc:modifiedBy" : "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44",
+  "pav:derivedFrom" : "https://repo.metadatacenter.org/templates/f2c2d19d-d94c-420e-80bd-77a9d65e5dc7",
+  "prefix" : {
+    "@value" : "10.82658"
+  },
+  "url" : {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/b94f6ebe-7e7c-4bb3-9a51-ab96e023c922"
+  },
+  "creator" : [ {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/b9c476cb-c139-4b26-8739-68c526d08b17",
+    "creatorName" : {
+      "@value" : "Potter Winner"
+    },
+    "nameType" : {
+      "@id" : "http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal",
+      "rdfs:label" : "Personal"
+    },
+    "givenName" : {
+      "@value" : "Potter"
+    },
+    "familyName" : {
+      "@value" : "Winner"
+    },
+    "affiliation" : [ ],
+    "nameIdentifier" : [ ],
+    "@context" : {
+      "creatorName" : "https://schema.metadatacenter.org/properties/8acde937-9aac-4830-901d-18827533d9ee",
+      "nameType" : "https://schema.metadatacenter.org/properties/c5257a64-69a4-4262-93ff-b7624fd00900",
+      "givenName" : "https://schema.metadatacenter.org/properties/6f29b11a-2c3e-4ebd-92f5-8b6ca863c484",
+      "familyName" : "https://schema.metadatacenter.org/properties/8a8c322b-7f15-4a7a-b687-ad969e71defe",
+      "affiliation" : "https://schema.metadatacenter.org/properties/6a01f57f-8ce9-4b5a-8731-784eaea5bed0",
+      "nameIdentifier" : "https://schema.metadatacenter.org/properties/54d8ce77-6c50-4e77-b2b7-8bd33c846d1d"
+    }
+  } ],
+  "title" : [ {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/6c435c64-6373-469f-acb1-aec89cf8c544",
+    "title" : {
+      "@value" : "Update Rich Metadata with Deleted And New Added Instances of Each Element"
+    },
+    "titleType" : {
+      "@id" : "http://purl.org/datacite/v4.4/OtherTitle",
+      "rdfs:label" : "Subtitle"
+    },
+    "@context" : {
+      "title" : "https://schema.metadatacenter.org/properties/c9a3f95f-d076-4a78-9b30-93ba8caf8d05",
+      "titleType" : "https://schema.metadatacenter.org/properties/9b5eb75f-3355-4ddb-903d-c716f4816b12"
+    }
+  } ],
+  "publicationYear" : {
+    "@type" : "xsd:date",
+    "@value" : "2026-01-01"
+  },
+  "publisher" : {
+    "@value" : "CEDAR"
+  },
+  "resourceType" : {
+    "@value" : "Template"
+  },
+  "subject" : [ {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/91962786-412d-4d21-98d2-5086fc4fdaf3",
+    "subject" : {
+      "@value" : "computer science"
+    },
+    "subjectScheme" : {
+      "@value" : "dewey"
+    },
+    "schemeURI" : {
+      "@id" : "http://dewey.info/"
+    },
+    "valueURI" : {
+      "@id" : "http://value.uri/"
+    },
+    "classificationCode" : {
+      "@value" : "333"
+    },
+    "@context" : {
+      "subject" : "https://schema.metadatacenter.org/properties/a9cee9cf-656d-4383-b2a1-9594d46dc7ea",
+      "subjectScheme" : "https://schema.metadatacenter.org/properties/c029122f-b9b4-4176-b235-d3fff6f5167b",
+      "schemeURI" : "https://schema.metadatacenter.org/properties/342428c4-c748-47bf-a3c1-e6b96a5e9e32",
+      "valueURI" : "https://schema.metadatacenter.org/properties/7420f8aa-4a00-418f-92cb-8874c0c770cd",
+      "classificationCode" : "https://schema.metadatacenter.org/properties/f9115bda-17ee-4073-b66b-886a256bc944"
+    }
+  } ],
+  "contributor" : [ {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/8de76783-a609-4fda-8d3f-a84262045568",
+    "contributorName" : {
+      "@value" : "Mark, Ten"
+    },
+    "nameType" : {
+      "@id" : "http://www.semanticweb.org/ambrish/ontologies/2020/10/untitled-ontology-24#Personal",
+      "rdfs:label" : "Personal"
+    },
+    "givenName" : {
+      "@value" : "Mark"
+    },
+    "familyName" : {
+      "@value" : "Ten"
+    },
+    "contributorType" : {
+      "@id" : "http://purl.org/datacite/v4.4/ProjectLeader",
+      "rdfs:label" : "ProjectLeader"
+    },
+    "affiliation" : [ {
+      "@id" : "https://repo.metadatacenter.org/template-element-instances/442b8f5a-0985-442b-ac74-2dd35c2dff7d",
+      "name" : {
+        "@value" : null
+      },
+      "affiliationIdentifier" : {
+        "@value" : "affiliation identifier 2"
+      },
+      "affiliationIdentifierScheme" : {
+        "@value" : "ROR"
+      },
+      "schemeURI" : {
+        "@id" : "http://affiliation_identification_scheme_uri"
+      },
+      "@context" : {
+        "name" : "https://schema.metadatacenter.org/properties/99f7c112-3dd5-410c-9d2f-535f05b7ea5d",
+        "affiliationIdentifier" : "https://schema.metadatacenter.org/properties/6f15a99a-f987-4267-a4ff-b3c0098f8d90",
+        "affiliationIdentifierScheme" : "https://schema.metadatacenter.org/properties/5c191497-bccf-408d-bf04-ae39cd4d7c2e",
+        "schemeURI" : "https://schema.metadatacenter.org/properties/30ff6748-4bde-41f5-8fea-b4d0518fc092"
+      }
+    } ],
+    "nameIdentifier" : [ {
+      "@id" : "https://repo.metadatacenter.org/template-element-instances/54ecc07b-bced-461e-81ed-3113b991465f",
+      "name" : {
+        "@value" : "name identifier 2"
+      },
+      "nameIdentifierScheme" : {
+        "@value" : "ORCID18"
+      },
+      "schemeURI" : { },
+      "@context" : {
+        "name" : "https://schema.metadatacenter.org/properties/0fd96dfa-0d23-4075-a6ca-6b12205e437e",
+        "nameIdentifierScheme" : "https://schema.metadatacenter.org/properties/ba910380-8046-4298-94bb-27a7f76d54a4",
+        "schemeURI" : "https://schema.metadatacenter.org/properties/9a319e93-6bd2-42a3-a1c2-5ec980395882"
+      }
+    } ],
+    "@context" : {
+      "contributorName" : "https://schema.metadatacenter.org/properties/f9284b7a-1775-4a1f-b7f7-026198b9aa64",
+      "nameType" : "https://schema.metadatacenter.org/properties/f3554aad-6be5-468a-b665-568a192cb9d1",
+      "givenName" : "https://schema.metadatacenter.org/properties/fd548b4a-0670-4660-9c77-b4210526672b",
+      "familyName" : "https://schema.metadatacenter.org/properties/a431cb7f-8675-46dd-b53c-d8461b433f8b",
+      "contributorType" : "https://schema.metadatacenter.org/properties/ad2f2387-2231-4023-982d-ed3db7c31ac0",
+      "affiliation" : "https://schema.metadatacenter.org/properties/aa96bd1d-b7e9-4502-88e2-b4de09aaa8ae",
+      "nameIdentifier" : "https://schema.metadatacenter.org/properties/348f45aa-f191-43e4-bfed-a3dfb69502ae"
+    }
+  } ],
+  "date" : [ {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/87ee67bc-0e77-4dbd-9f1e-0d431f63cb5d",
+    "date" : {
+      "@type" : "xsd:date",
+      "@value" : "2023-06-30"
+    },
+    "dateType" : {
+      "@id" : "http://purl.org/datacite/v4.4/Issued",
+      "rdfs:label" : "Issued"
+    },
+    "dateInformation" : {
+      "@value" : null
+    },
+    "@context" : {
+      "date" : "https://schema.metadatacenter.org/properties/85eb2413-48da-4dd9-904b-a828cd5d2b4d",
+      "dateType" : "https://schema.metadatacenter.org/properties/77e6d4be-3c5f-4076-8517-46ad4759d315",
+      "dateInformation" : "https://schema.metadatacenter.org/properties/ba5937f5-4b85-4770-be1c-5c62df8bb6c7"
+    }
+  } ],
+  "language" : {
+    "@value" : "ar"
+  },
+  "alternateIdentifier" : [ {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/b72a9008-df28-4551-af68-7ed24866b7ac",
+    "alternateIdentifier" : {
+      "@value" : "https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.0.xml"
+    },
+    "alternateIdentifierType" : {
+      "@value" : "URL"
+    },
+    "@context" : {
+      "alternateIdentifier" : "https://schema.metadatacenter.org/properties/da9e58cf-9dcc-4ef9-9cf9-f4bc58936f8b",
+      "alternateIdentifierType" : "https://schema.metadatacenter.org/properties/47a48fd6-97a2-4198-8c06-b9b96608db7e"
+    }
+  } ],
+  "relatedIdentifier" : [ {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/8f93982b-568e-4a84-83c8-2b4c31b183de",
+    "relatedIdentifier" : {
+      "@value" : "https://data.datacite.org/application/citeproc+json/10.5072/example-full"
+    },
+    "relatedIdentifierType" : {
+      "@id" : "http://purl.org/datacite/v4.4/ARK",
+      "rdfs:label" : "ARK"
+    },
+    "relationType" : {
+      "@id" : "http://purl.org/datacite/v4.4/Compiles",
+      "rdfs:label" : "Compiles"
+    },
+    "relatedMetadataScheme" : {
+      "@value" : "json"
+    },
+    "schemeURI" : { },
+    "schemeType" : {
+      "@value" : null
+    },
+    "resourceTypeGeneral" : { },
+    "@context" : {
+      "relatedIdentifier" : "https://schema.metadatacenter.org/properties/6a6f9a9f-6824-4591-9582-d9f3aa5b8422",
+      "relatedIdentifierType" : "https://schema.metadatacenter.org/properties/886dba05-0110-4768-82c8-f0ceee4944bb",
+      "relationType" : "https://schema.metadatacenter.org/properties/24b03c68-f713-44e1-bb63-f39e7a006d61",
+      "relatedMetadataScheme" : "https://schema.metadatacenter.org/properties/3eb9d332-a035-46ae-8559-834028a50980",
+      "schemeURI" : "https://schema.metadatacenter.org/properties/a985716f-3b3d-4b32-8267-3badd7353c29",
+      "schemeType" : "https://schema.metadatacenter.org/properties/9abe3743-9af2-4520-b85a-79b9292c3c39",
+      "resourceTypeGeneral" : "https://schema.metadatacenter.org/properties/e7e7821a-f1cc-4243-b817-638276fa33fb"
+    }
+  } ],
+  "size" : [ {
+    "@value" : "30KB"
+  } ],
+  "format" : [ {
+    "@value" : "PDF"
+  } ],
+  "version" : {
+    "@value" : "4.4"
+  },
+  "rights" : [ {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/7da1c251-c041-4786-a311-65da86b6f6a9",
+    "rights" : {
+      "@value" : "rights 3"
+    },
+    "rightsURI" : { },
+    "rightsIdentifier" : {
+      "@value" : null
+    },
+    "rightsIdentifierScheme" : {
+      "@value" : null
+    },
+    "schemeURI" : { },
+    "@context" : {
+      "rights" : "https://schema.metadatacenter.org/properties/4e328407-a40d-4393-8d9b-cc3923afe5f8",
+      "rightsURI" : "https://schema.metadatacenter.org/properties/3e8de9e1-2649-42e2-95c5-717247d0060e",
+      "rightsIdentifier" : "https://schema.metadatacenter.org/properties/d4acc73e-f030-4902-9ec8-3cf166040679",
+      "rightsIdentifierScheme" : "https://schema.metadatacenter.org/properties/f1195818-b92e-4916-a5c8-f326b0a546f0",
+      "schemeURI" : "https://schema.metadatacenter.org/properties/9b429a92-5dc3-4ff3-995c-24deaabc9c15"
+    }
+  } ],
+  "description" : [ {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/1fd7a2e4-3080-4631-b94c-c3978a1894d1",
+    "description" : {
+      "@value" : "the third description"
+    },
+    "descriptionType" : {
+      "@id" : "http://purl.org/datacite/v4.4/Abstract",
+      "rdfs:label" : "Abstract"
+    },
+    "@context" : {
+      "description" : "https://schema.metadatacenter.org/properties/828a6904-4440-4f16-9369-4883f795f983",
+      "descriptionType" : "https://schema.metadatacenter.org/properties/ba34a97c-9400-4e79-9581-b9218651231d"
+    }
+  } ],
+  "geoLocation" : [ {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/28dbb7f9-c520-4602-81a1-f80b5042e92d",
+    "geoLocationPlace" : {
+      "@value" : "Stanford"
+    },
+    "geoLocationPoint" : {
+      "@id" : "https://repo.metadatacenter.org/template-element-instances/4fecb9e1-d151-4497-87e4-7c959ce2819f",
+      "pointLongitude" : {
+        "@type" : "xsd:decimal",
+        "@value" : "21"
+      },
+      "pointLatitude" : {
+        "@type" : "xsd:decimal",
+        "@value" : "50"
+      },
+      "@context" : {
+        "pointLongitude" : "https://schema.metadatacenter.org/properties/89e06703-c7b7-420e-b24a-48969fb58ccb",
+        "pointLatitude" : "https://schema.metadatacenter.org/properties/9f74832e-0eb9-4b3b-bb73-8c9e4f4fa52a"
+      }
+    },
+    "geoLocationBox" : {
+      "@id" : "https://repo.metadatacenter.org/template-element-instances/01b04a69-5a24-4caf-badc-19e36eb7a22f",
+      "westBoundLongitude" : {
+        "@type" : "xsd:decimal",
+        "@value" : "100"
+      },
+      "eastBoundLongitude" : {
+        "@type" : "xsd:decimal",
+        "@value" : "60"
+      },
+      "southBoundLatitude" : {
+        "@type" : "xsd:decimal",
+        "@value" : "20"
+      },
+      "northBoundLatitude" : {
+        "@type" : "xsd:decimal",
+        "@value" : "-50"
+      },
+      "@context" : {
+        "westBoundLongitude" : "https://schema.metadatacenter.org/properties/dd27b92a-04d1-435c-bab1-b6acdc1df9eb",
+        "eastBoundLongitude" : "https://schema.metadatacenter.org/properties/9cee2101-38ad-4ae9-922c-55a89e049741",
+        "southBoundLatitude" : "https://schema.metadatacenter.org/properties/a4171ee9-162e-4e32-89dd-cad62d60f4d9",
+        "northBoundLatitude" : "https://schema.metadatacenter.org/properties/5f41ba88-3fb0-4871-88ef-23d0a7f1326e"
+      }
+    },
+    "@context" : {
+      "geoLocationPlace" : "https://schema.metadatacenter.org/properties/37cbffe7-b904-472d-bd36-887b003177ab",
+      "geoLocationPoint" : "https://schema.metadatacenter.org/properties/bc661527-448d-455c-8871-9e19d6233b49",
+      "geoLocationBox" : "https://schema.metadatacenter.org/properties/00a33d1e-f500-42dd-9d13-1e09f02be601"
+    }
+  } ],
+  "fundingReference" : [ {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/6cee6ec1-4e98-47ca-b251-9fcdc10119ef",
+    "funderName" : {
+      "@value" : "Stanford"
+    },
+    "funderIdentifier" : {
+      "@value" : null
+    },
+    "funderIdentifierType" : { },
+    "schemeURI" : { },
+    "awardNumber" : {
+      "@value" : null
+    },
+    "awardURI" : { },
+    "awardTitle" : {
+      "@value" : null
+    },
+    "@context" : {
+      "funderName" : "https://schema.metadatacenter.org/properties/18666fcd-6f8e-4886-90f7-153d1193985c",
+      "funderIdentifier" : "https://schema.metadatacenter.org/properties/67927c8d-4572-4ba5-b5da-0c1d89f77c7c",
+      "funderIdentifierType" : "https://schema.metadatacenter.org/properties/a666abd0-8f05-43d7-9aea-dab007d4454a",
+      "schemeURI" : "https://schema.metadatacenter.org/properties/b6061a0d-d09c-46ad-a9da-813034ce6b9f",
+      "awardNumber" : "https://schema.metadatacenter.org/properties/3aa01f27-0495-43e9-9bf4-b89c8ce8ea32",
+      "awardURI" : "https://schema.metadatacenter.org/properties/30a02941-ea11-433d-b145-c1694997e152",
+      "awardTitle" : "https://schema.metadatacenter.org/properties/9afc27b4-407a-4079-98c5-e7669f012d69"
+    }
+  } ],
+  "relatedItem" : [ {
+    "@id" : "https://repo.metadatacenter.org/template-element-instances/6fc30b88-8bad-474a-957c-6c46e7e42bf0",
+    "relatedItemType" : {
+      "@id" : "http://purl.org/datacite/v4.4/Audiovisual",
+      "rdfs:label" : "Audiovisual"
+    },
+    "relationType" : {
+      "@id" : "http://purl.org/datacite/v4.4/Continues",
+      "rdfs:label" : "Continues"
+    },
+    "relatedIdentifier" : {
+      "@value" : "0370-2693"
+    },
+    "relatedIdentifierType" : {
+      "@id" : "http://purl.org/datacite/v4.4/ARK",
+      "rdfs:label" : "ARK"
+    },
+    "relatedMetadataScheme" : {
+      "@value" : "related metadata scheme"
+    },
+    "schemeURI" : { },
+    "schemeType" : {
+      "@value" : "DOI"
+    },
+    "title" : [ {
+      "@id" : "https://repo.metadatacenter.org/template-element-instances/8dfba060-fd50-42cb-93f9-49df13101a9a",
+      "title" : {
+        "@value" : "related item title 3"
+      },
+      "titleType" : { },
+      "@context" : {
+        "title" : "https://schema.metadatacenter.org/properties/c9a3f95f-d076-4a78-9b30-93ba8caf8d05",
+        "titleType" : "https://schema.metadatacenter.org/properties/9b5eb75f-3355-4ddb-903d-c716f4816b12"
+      }
+    } ],
+    "relatedItemCreator" : [ ],
+    "number" : {
+      "@value" : "10"
+    },
+    "numberType" : {
+      "@id" : "http://purl.org/ontology/bibo/Chapter",
+      "rdfs:label" : "Chapter"
+    },
+    "volume" : {
+      "@value" : "56"
+    },
+    "issue" : {
+      "@value" : null
+    },
+    "firstPage" : {
+      "@value" : null
+    },
+    "lastPage" : {
+      "@value" : null
+    },
+    "publicationYear" : {
+      "@type" : "xsd:date",
+      "@value" : "2018"
+    },
+    "publisher" : {
+      "@value" : "Stanford"
+    },
+    "edition" : {
+      "@value" : "4"
+    },
+    "relatedItemContributor" : [ ],
+    "@context" : {
+      "relatedItemType" : "https://schema.metadatacenter.org/properties/234f4448-88d6-461c-9ea0-fd465cdbbbf1",
+      "relationType" : "https://schema.metadatacenter.org/properties/c4642f68-3d9b-463a-9d88-c4b7ee1478f3",
+      "relatedIdentifier" : "https://schema.metadatacenter.org/properties/767e3ad6-099d-4093-a319-540c12543b65",
+      "relatedIdentifierType" : "https://schema.metadatacenter.org/properties/90e2b96c-98fe-4841-ba09-fc968ad76ad7",
+      "relatedMetadataScheme" : "https://schema.metadatacenter.org/properties/cfb49da2-d22e-4820-9138-c3ea327162f9",
+      "schemeURI" : "https://schema.metadatacenter.org/properties/6d1defe6-85da-406d-8379-323e061be90d",
+      "schemeType" : "https://schema.metadatacenter.org/properties/f890c53a-1758-48f5-9cd4-71a0c9289bbc",
+      "title" : "https://schema.metadatacenter.org/properties/60a7b270-006a-4964-aea8-e314131c19b4",
+      "relatedItemCreator" : "https://schema.metadatacenter.org/properties/cbf702a6-dd73-434b-97d7-6bdb2e30b2ed",
+      "number" : "https://schema.metadatacenter.org/properties/fbf488d1-8dd3-4eac-bf7a-d27999756900",
+      "numberType" : "https://schema.metadatacenter.org/properties/96efcb35-06cd-4c37-b12c-6247def3bf76",
+      "volume" : "https://schema.metadatacenter.org/properties/9bdeae88-1488-468a-b94a-e15470e2a9cf",
+      "issue" : "https://schema.metadatacenter.org/properties/e402cccc-d8b2-41a3-baf3-516a296e780c",
+      "firstPage" : "https://schema.metadatacenter.org/properties/344171db-4639-4c95-9785-70a0182b3cba",
+      "lastPage" : "https://schema.metadatacenter.org/properties/4f8e526e-98bd-46c6-b42f-a569c5cc093b",
+      "publicationYear" : "https://schema.metadatacenter.org/properties/ffedb4fa-e352-416d-a7cb-8757cb7bfcea",
+      "publisher" : "https://schema.metadatacenter.org/properties/6709e7aa-d79b-4f0b-b3b2-e2c4aa84e9f2",
+      "edition" : "https://schema.metadatacenter.org/properties/97dd4fbb-b5c2-4d80-b410-b48315470d9c",
+      "relatedItemContributor" : "https://schema.metadatacenter.org/properties/c7ef98c4-bd86-4f97-a052-224bfdf80974"
+    }
+  } ],
+  "@context" : {
+    "prefix" : "https://schema.metadatacenter.org/properties/95407cd5-7773-4c8e-8ca0-de8f6f416d77",
+    "url" : "https://schema.metadatacenter.org/properties/fa894c1e-6458-43c9-bed7-8c63b807a267",
+    "creator" : "https://schema.metadatacenter.org/properties/7ce1864a-78f1-44d4-a544-5e58de03e31b",
+    "title" : "https://schema.metadatacenter.org/properties/00d247f7-dd85-453b-95ff-f6233abc569e",
+    "publicationYear" : "https://schema.metadatacenter.org/properties/2c53713a-90a1-47a8-aac9-688d7fa0bf16",
+    "publisher" : "https://schema.metadatacenter.org/properties/53d616cb-46ea-416d-83e2-73f3922e41f1",
+    "resourceType" : "https://schema.metadatacenter.org/properties/7bff2713-afa5-4b54-8d61-3dd11133c16b",
+    "subject" : "https://schema.metadatacenter.org/properties/91e23221-dd5c-43e5-a6c6-a8df26a526d4",
+    "contributor" : "https://schema.metadatacenter.org/properties/94fa21f9-1d4f-4e53-be0b-166b547bd6e6",
+    "date" : "https://schema.metadatacenter.org/properties/717029a8-eed6-4158-849d-f7a6c4625c12",
+    "language" : "https://schema.metadatacenter.org/properties/77af7ff0-cb2f-4410-9f29-6f8ddb6bfe4c",
+    "alternateIdentifier" : "https://schema.metadatacenter.org/properties/bb2ae4af-72d0-464d-ace2-4e107d335a59",
+    "relatedIdentifier" : "https://schema.metadatacenter.org/properties/1de465ba-40e9-4901-a0b0-dc9ddbb9be3e",
+    "size" : "https://schema.metadatacenter.org/properties/20b07bfd-a06f-4f48-9605-d4602076ac41",
+    "format" : "https://schema.metadatacenter.org/properties/69fe75b5-ae78-4fa7-b24b-8fa1f465ec11",
+    "version" : "https://schema.metadatacenter.org/properties/cfc8a113-0e96-42cc-bebe-b874cad3e2a2",
+    "rights" : "https://schema.metadatacenter.org/properties/952b66b3-7a38-409e-b218-e1611a32c01e",
+    "description" : "https://schema.metadatacenter.org/properties/405f720e-b44f-4da4-910f-b6a82ab8fb14",
+    "geoLocation" : "https://schema.metadatacenter.org/properties/886afcf3-e4e5-4421-893c-45d40a533520",
+    "fundingReference" : "https://schema.metadatacenter.org/properties/cb7c3d4f-539d-48d6-801c-cdbfe6d368cf",
+    "relatedItem" : "https://schema.metadatacenter.org/properties/9751f6d3-41b7-4e06-be4a-6c9c874d57b3",
+    "schema" : "http://schema.org/",
+    "xsd" : "http://www.w3.org/2001/XMLSchema#",
+    "skos" : "http://www.w3.org/2004/02/skos/core#",
+    "rdfs" : "http://www.w3.org/2000/01/rdf-schema#",
+    "oslc" : "http://open-services.net/ns/core#",
+    "pav" : "http://purl.org/pav/",
+    "pav:createdOn" : {
+      "@type" : "xsd:dateTime"
+    },
+    "pav:createdBy" : {
+      "@type" : "@id"
+    },
+    "rdfs:label" : {
+      "@type" : "xsd:string"
+    },
+    "oslc:modifiedBy" : {
+      "@type" : "@id"
+    },
+    "pav:derivedFrom" : {
+      "@type" : "@id"
+    },
+    "skos:notation" : {
+      "@type" : "xsd:string"
+    },
+    "schema:isBasedOn" : {
+      "@type" : "@id"
+    },
+    "schema:description" : {
+      "@type" : "xsd:string"
+    },
+    "pav:lastUpdatedOn" : {
+      "@type" : "xsd:dateTime"
+    },
+    "schema:name" : {
+      "@type" : "xsd:string"
+    }
+  }
+}
