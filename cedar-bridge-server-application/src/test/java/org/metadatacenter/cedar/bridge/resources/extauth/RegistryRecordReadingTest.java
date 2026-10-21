@@ -553,27 +553,37 @@ public class RegistryRecordReadingTest {
    * What was typed is one value of the query DataCite is asked. A space could not be sent at all, and
    * the search failed as though DataCite were down; an ampersand ended the query, and the text after
    * it set DataCite's other parameters.
+   *
+   * <p>Within that value the words are grouped, and DataCite requires every word of a group, so each
+   * must appear in the title, in any order. Ungrouped, only the first word was a title term, and the
+   * rest matched any field DataCite searches. Each character DataCite's query syntax reads as an
+   * operator is escaped, and so is each operator word, so what was typed stays text. The slash is
+   * left as typed, because DataCite escapes it itself and refuses one escaped twice.
    */
   @Test
-  public void aDoiSearchSendsWhatWasTypedAsOneQueryValue() throws Exception {
+  public void aDoiSearchAsksForEveryWordTypedInTheTitleAsText() throws Exception {
     DoiAuthority doi = new DoiAuthority(BASE + "/dois");
 
+    doi.search("climate", 0, 10);
     doi.search("climate change", 0, 10);
     doi.search("a&page[size]=1000", 0, 10);
+    doi.search("NOT \"sea-level\" rise* (OR) a:b AND ~2^ \\!", 0, 10);
+    doi.search("10.5061/dryad", 0, 10);
 
-    assertEquals(List.of(
-            Map.of("query", List.of("titles.title:climate change"), "page[number]", List.of("1"),
-                "page[size]", List.of("10")),
-            Map.of("query", List.of("titles.title:a&page[size]=1000"), "page[number]", List.of("1"),
-                "page[size]", List.of("10"))),
-        RECEIVED.stream().map(RegistryRecordReadingTest::parameters).toList());
+    assertEquals(List.of("titles.title:(climate)", "titles.title:(climate change)",
+            "titles.title:(a\\&page\\[size\\]\\=1000)",
+            "titles.title:(\\NOT \\\"sea\\-level\\\" rise\\* \\(OR\\) a\\:b \\AND \\~2\\^ \\\\\\!)",
+            "titles.title:(10.5061/dryad)"),
+        RECEIVED.stream().map(request -> parameters(request).get("query")).map(values -> values.get(0)).toList());
+    assertEquals(Map.of("query", List.of("titles.title:(climate change)"), "page[number]", List.of("1"),
+        "page[size]", List.of("10")), parameters(RECEIVED.get(1)));
   }
 
   /**
    * A request this server cannot build is no evidence that the registry has stopped answering. Five
    * searches containing a space opened DataCite's breaker, after which every DOI search answered 503.
-   * A lookup can still build a request that cannot be sent, from an identifier with a space; that
-   * fails as this server's error, a 500, and leaves the breaker closed.
+   * A lookup can still build a request that cannot be sent, from a DOI holding a character a URL
+   * cannot carry; that fails as this server's error, a 500, and leaves the breaker closed.
    */
   @Test
   public void aRequestThisServerCannotBuildDoesNotOpenTheBreaker() throws Exception {
@@ -584,7 +594,7 @@ public class RegistryRecordReadingTest {
       breaker.call(() -> doi.search("climate change", 0, 10));
     }
     for (int i = 0; i < AuthorityCircuitBreaker.FAILURES_BEFORE_OPENING; i++) {
-      CedarException failure = assertThrows(CedarException.class, () -> breaker.call(() -> doi.details("10.1234/a b")));
+      CedarException failure = assertThrows(CedarException.class, () -> breaker.call(() -> doi.details("10.1234/a<b>")));
       assertEquals(500, failure.getErrorPack().getStatusCode(), failure.getMessage());
     }
 

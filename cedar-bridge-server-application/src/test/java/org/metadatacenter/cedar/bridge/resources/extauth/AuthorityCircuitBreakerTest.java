@@ -5,6 +5,7 @@ import org.metadatacenter.exception.CedarProcessingException;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -119,6 +120,85 @@ class AuthorityCircuitBreakerTest {
       }));
     }
     assertFalse(breaker.isOpen());
+  }
+
+  // ---- failures that happen here ----------------------------------------------------------------
+
+  /** A call that fails before it reaches the registry, because its URL holds a space and cannot be sent. */
+  private String unbuildable() throws CedarProcessingException {
+    calls.incrementAndGet();
+    RegistryReply.get("https://registry.example/a b", new HashMap<>());
+    throw new AssertionError("a URL holding a space cannot have been sent");
+  }
+
+  @Test
+  void aRequestThisServerCannotBuildIsNotARegistryFailure() throws Exception {
+    AuthorityCircuitBreaker breaker = breaker();
+
+    for (int attempt = 0; attempt < AuthorityCircuitBreaker.FAILURES_BEFORE_OPENING * 2; attempt++) {
+      CedarProcessingException failure = assertThrows(CedarProcessingException.class, () -> breaker.call(this::unbuildable));
+      assertEquals(500, failure.getErrorPack().getStatusCode(), "the failure is this server's");
+    }
+
+    assertFalse(breaker.isOpen(), "a request that was never sent is no evidence that the registry is down");
+    assertEquals("ok", breaker.call(() -> "ok"));
+  }
+
+  /**
+   * Counted as a success, a request this server could not build reset a run of answerless calls, so a
+   * registry that had stopped answering went on being asked.
+   */
+  @Test
+  void aRequestThisServerCannotBuildDoesNotResetTheCount() {
+    AuthorityCircuitBreaker breaker = breaker();
+    for (int attempt = 0; attempt < AuthorityCircuitBreaker.FAILURES_BEFORE_OPENING - 1; attempt++) {
+      assertThrows(CedarProcessingException.class, () -> breaker.call(this::answerless));
+    }
+
+    assertThrows(CedarProcessingException.class, () -> breaker.call(this::unbuildable));
+    assertThrows(CedarProcessingException.class, () -> breaker.call(this::answerless));
+
+    assertTrue(breaker.isOpen(), "the run of answerless calls goes on counting");
+  }
+
+  /**
+   * A malformed request let through a half-open breaker as its probe fails here, and learns nothing
+   * about the registry. It neither starts the wait again nor closes the breaker, so the next request
+   * probes in its place, and one answerless call opens the breaker again where a closed one would take
+   * five. Counted as a success, it closed the breaker on a registry nobody had asked.
+   */
+  @Test
+  void aMalformedProbeNeitherClosesNorOpensTheBreaker() {
+    AuthorityCircuitBreaker breaker = breaker();
+    for (int attempt = 0; attempt < AuthorityCircuitBreaker.FAILURES_BEFORE_OPENING; attempt++) {
+      assertThrows(CedarProcessingException.class, () -> breaker.call(this::answerless));
+    }
+    now.set(now.get().plusSeconds(31));
+
+    assertThrows(CedarProcessingException.class, () -> breaker.call(this::unbuildable));
+    assertFalse(breaker.isOpen(), "a malformed probe does not start the wait again");
+
+    int reached = calls.get();
+    assertThrows(org.metadatacenter.exception.CedarDependencyUnavailableException.class,
+        () -> breaker.call(this::answerless));
+    assertEquals(reached + 1, calls.get(), "the next request is let through to probe");
+    assertTrue(breaker.isOpen(), "a malformed probe does not close the breaker");
+  }
+
+  /** A registry that answers with something that cannot be read has answered, and is not down. */
+  @Test
+  void anAnswerThatCannotBeReadIsStillAnAnswer() {
+    AuthorityCircuitBreaker breaker = breaker();
+    for (int attempt = 0; attempt < AuthorityCircuitBreaker.FAILURES_BEFORE_OPENING - 1; attempt++) {
+      assertThrows(CedarProcessingException.class, () -> breaker.call(this::answerless));
+    }
+
+    assertThrows(CedarProcessingException.class, () -> breaker.call(() -> {
+      throw RegistryReply.unreadable(new java.io.IOException("not JSON"));
+    }));
+    assertThrows(CedarProcessingException.class, () -> breaker.call(this::answerless));
+
+    assertFalse(breaker.isOpen(), "the answer ended the run of answerless calls");
   }
 
 }

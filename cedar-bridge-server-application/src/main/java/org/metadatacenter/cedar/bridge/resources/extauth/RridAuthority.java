@@ -82,6 +82,12 @@ public class RridAuthority implements ExternalAuthority {
   }
 
   @Override
+  public boolean couldIdentify(String id) {
+    String rrid = extractBaseRrid(id);
+    return AuthorityIdentifier.printable(rrid.substring(rrid.indexOf(':') + 1));
+  }
+
+  @Override
   public AuthorityDetailsAnswer details(String id) throws CedarProcessingException {
     final String resolverUrl = resolverApi + extractBaseRrid(id) + ".json";
 

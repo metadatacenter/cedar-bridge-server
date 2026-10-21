@@ -193,7 +193,8 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
       @QueryParam("q") String query,
       @Parameter(description = "How many entries to return, from 1 to 500. Defaults to 100.")
       @QueryParam("limit") Optional<Integer> limit,
-      @Parameter(description = "How many matching entries to skip. Defaults to 0.")
+      @Parameter(description = "How many matching entries to skip. Defaults to 0. `nih-grant` refuses an offset "
+          + "beyond 14999, the furthest NIH RePORTER pages.")
       @QueryParam("offset") Optional<Integer> offset,
       @Parameter(description = "Zero-based page number, for clients that page by number. Cannot be sent with "
           + "`limit` or `offset`. Defaults to 0.")
@@ -279,7 +280,8 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
           + "for the identifier (upstreamServerError). The body's objects.authorityAnswer then holds the "
           + "authority's answer, with `found` false, `requestedId`, and the registry's own answer under "
           + "`rawResponse`. The other authorities answer 200 with `found` false for an identifier their "
-          + "registry does not hold.",
+          + "registry does not hold. `doi` and `rrid` answer so without asking for one that cannot be a DOI or "
+          + "an RRID, such as one holding a space.",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "406", description = NOT_ACCEPTABLE,
           content = @Content(schema = @Schema(implementation = CedarError.class))),
@@ -302,10 +304,16 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
     }
 
     AuthorityDetailsAnswer answer;
-    try {
-      answer = ask(segment, () -> authority.details(id));
-    } catch (AuthorityNotReadyException notReady) {
-      return notReadyResponse(notReady);
+    if (!authority.couldIdentify(id)) {
+      // No request is made for an identifier the registry cannot hold. One built from it could not be
+      // sent, and the lookup answered 500.
+      answer = AuthorityDetailsAnswer.notFound(new HashMap<>());
+    } else {
+      try {
+        answer = ask(segment, () -> authority.details(id));
+      } catch (AuthorityNotReadyException notReady) {
+        return notReadyResponse(notReady);
+      }
     }
 
     // `found` and `requestedId` are on every one of the seven answers, so an authority states

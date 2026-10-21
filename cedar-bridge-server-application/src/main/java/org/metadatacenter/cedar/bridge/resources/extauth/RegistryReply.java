@@ -113,8 +113,25 @@ final class RegistryReply {
 
   /** An answer that could not be read, which is a 502: the registry, not this server, failed. */
   static CedarProcessingException unreadable(Exception cause) {
-    CedarProcessingException failure = new CedarProcessingException("The registry's answer could not be read", cause);
+    CedarProcessingException failure = new UnreadableAnswer(cause);
     failure.getErrorPack().status(CedarResponseStatus.BAD_GATEWAY);
     return failure;
+  }
+
+  /** Whether a failure is, or was caused by, an answer the registry gave that could not be read. */
+  static boolean unreadableAnswer(Throwable failure) {
+    for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+      if (cause instanceof UnreadableAnswer) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** The failure {@link #unreadable} raises, told apart from one that happened before any answer. */
+  private static final class UnreadableAnswer extends CedarProcessingException {
+    UnreadableAnswer(Exception cause) {
+      super("The registry's answer could not be read", cause);
+    }
   }
 }

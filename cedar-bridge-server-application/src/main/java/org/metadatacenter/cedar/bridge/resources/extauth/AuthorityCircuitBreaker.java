@@ -23,7 +23,9 @@ import java.util.function.Supplier;
  *
  * <p>Only a failure to get an answer counts. A registry that replies 500 has answered, quickly, and
  * is not the case this exists for; so has one that replies 404. Opening on those would stop asking a
- * registry that is working.
+ * registry that is working. A failure that happens here, before any answer, is no evidence either
+ * way: it neither counts nor resets the count, and as the probe of a half-open breaker it neither
+ * closes the breaker nor opens it again.
  *
  * <p>An open breaker reports itself through {@link AuthorityNotReadyException}, which the route
  * already answers as a 503 carrying {@code Retry-After}. That is the same thing PFAS says while its
@@ -87,10 +89,13 @@ final class AuthorityCircuitBreaker {
     } catch (RuntimeException | CedarException failure) {
       if (transportFailure(failure)) {
         failed();
-      } else {
+      } else if (RegistryReply.unreadableAnswer(failure)) {
         // An answered response that could not be parsed is not a transport outage.
         succeeded();
       }
+      // Any other failure happened here, without an answer: a request this server could not build,
+      // or one it refused to send. That says nothing about the registry, so the count stands, and a
+      // half-open breaker stays half-open for the next request to probe.
       throw failure;
     } finally {
       if (probe) {

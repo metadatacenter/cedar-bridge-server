@@ -466,7 +466,7 @@
             "format" : "int32"
           }
         }, {
-          "description" : "How many matching entries to skip. Defaults to 0.",
+          "description" : "How many matching entries to skip. Defaults to 0. `nih-grant` refuses an offset beyond 14999, the furthest NIH RePORTER pages.",
           "in" : "query",
           "name" : "offset",
           "schema" : {
@@ -674,7 +674,7 @@
                 }
               }
             },
-            "description" : "No authority is served under this path segment (no error key, and the message names the segments that are served), or ORCID or ROR holds no entry for the identifier (upstreamServerError). The body's objects.authorityAnswer then holds the authority's answer, with `found` false, `requestedId`, and the registry's own answer under `rawResponse`. The other authorities answer 200 with `found` false for an identifier their registry does not hold."
+            "description" : "No authority is served under this path segment (no error key, and the message names the segments that are served), or ORCID or ROR holds no entry for the identifier (upstreamServerError). The body's objects.authorityAnswer then holds the authority's answer, with `found` false, `requestedId`, and the registry's own answer under `rawResponse`. The other authorities answer 200 with `found` false for an identifier their registry does not hold. `doi` and `rrid` answer so without asking for one that cannot be a DOI or an RRID, such as one holding a space."
           },
           "406" : {
             "content" : {

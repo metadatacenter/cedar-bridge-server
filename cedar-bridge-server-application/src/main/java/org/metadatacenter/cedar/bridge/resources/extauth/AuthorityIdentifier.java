@@ -9,6 +9,17 @@ import java.util.regex.Pattern;
 final class AuthorityIdentifier {
   private AuthorityIdentifier() {}
 
+  /** A space or another separator, or a control, format, private-use or unassigned character. */
+  private static final Pattern UNPRINTABLE = Pattern.compile("[\\p{Z}\\p{C}]");
+
+  /**
+   * Whether {@code id} has at least one character and every one of them is printable, as each
+   * character of a DOI or an RRID must be.
+   */
+  static boolean printable(String id) {
+    return !id.isEmpty() && !UNPRINTABLE.matcher(id).find();
+  }
+
   static Optional<String> extract(String authority, String iri) {
     String pattern = switch (authority) {
       case "orcid" -> "https?://orcid\\.org/(\\d{4}-\\d{4}-\\d{4}-\\d{3}[\\dX])/?";

@@ -488,6 +488,26 @@ class DataCiteDoiRoutesTest {
   }
 
   /**
+   * What DataCite holds for a DOI fills the DOI form, so an answer the DataCite model cannot map, such as
+   * one holding a field the model knows in a shape it does not, is a bad gateway rather than metadata
+   * relayed into a form that cannot read it.
+   */
+  @Test
+  void refusesADataCiteAnswerTheModelCannotMapAsABadGateway() throws Exception {
+    dataCiteReplies.put(DataCiteCall.METADATA_READ, new Reply(200, """
+        {"data": {"id": "%1$s", "type": "dois", "attributes": {"doi": "%1$s", "publicationYear": "not a year"}}}
+        """.formatted(NEW_DOI)));
+
+    Response response = resource.getDOIMetadata("https://doi.org/" + NEW_DOI);
+
+    assertEquals(502, response.getStatus());
+    CedarError error = assertInstanceOf(CedarError.class, response.getEntity());
+    assertEquals(502, error.statusCode);
+    assertEquals("The DataCite metadata request failed", error.message);
+    assertEquals(List.of(DataCiteCall.METADATA_READ), calls());
+  }
+
+  /**
    * A DOI DataCite does not know is a 404 the caller can act on. The answer is the shared error body,
    * which carries DataCite's errors in objects.dataCiteErrors rather than relaying DataCite's own body.
    */

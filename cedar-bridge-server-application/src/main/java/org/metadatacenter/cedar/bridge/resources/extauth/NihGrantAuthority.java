@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.ws.rs.core.MediaType;
 import org.metadatacenter.constant.HttpConstants;
+import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.exception.CedarProcessingException;
+import org.metadatacenter.rest.exception.CedarAssertionException;
 import org.metadatacenter.util.json.JsonMapper;
 
 import java.util.ArrayList;
@@ -37,6 +39,12 @@ public class NihGrantAuthority implements ExternalAuthority {
    */
   private static final int REPORTER_MAX_LIMIT = 500;
 
+  /**
+   * The furthest RePORTER pages, as it documents its {@code offset}: "Maximum allowed value is 14,999"
+   * (https://api.reporter.nih.gov/). It refuses a deeper offset with a 400 of its own.
+   */
+  private static final int REPORTER_MAX_OFFSET = 14_999;
+
   private final String reporterApi;
 
   public NihGrantAuthority() {
@@ -59,7 +67,12 @@ public class NihGrantAuthority implements ExternalAuthority {
   }
 
   @Override
-  public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarProcessingException {
+  public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarException {
+    if (offset > REPORTER_MAX_OFFSET) {
+      // Refused here rather than relayed, so the caller learns why in words it can show.
+      throw new CedarAssertionException("NIH RePORTER cannot page beyond an offset of 14,999. "
+          + "Narrow the search to reach later matches.").parameter("offset", offset).badRequest();
+    }
     if (query == null || query.isBlank()) {
       return AuthoritySearchAnswer.nothing();
     }

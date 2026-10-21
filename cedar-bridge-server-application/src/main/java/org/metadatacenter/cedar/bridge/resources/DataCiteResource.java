@@ -189,9 +189,11 @@ public class DataCiteResource extends CedarMicroserviceResource {
       }
       JsonNode jsonResource = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
 
-      // Deserialize DataCite response json file to DataCiteRequest Class. DataCite owns this
-      // payload and adds fields to it, so the read takes the tolerant policy.
-      DataCiteSchema dataCiteResponse = JsonMapper.TOLERANT_MAPPER.readValue(jsonResponse, DataCiteSchema.class);
+      // A deliberate shape check, whose result is not used. This answer fills the DOI form, so relaying
+      // one the DataCite model cannot map would put unreadable metadata into the form. Mapping it here
+      // fails instead, and the failure is answered as a 502. DataCite owns this payload and adds fields
+      // to it, so the read takes the tolerant policy, and only a shape the model cannot map fails it.
+      JsonMapper.TOLERANT_MAPPER.readValue(jsonResponse, DataCiteSchema.class);
 
       return Response.status(statusCode).entity(jsonResource).build();
     } catch (InterruptedException e) {
