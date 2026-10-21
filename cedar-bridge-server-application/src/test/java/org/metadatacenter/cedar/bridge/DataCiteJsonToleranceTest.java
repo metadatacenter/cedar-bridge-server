@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import org.junit.jupiter.api.Test;
-import org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance;
 import org.metadatacenter.cedar.bridge.resource.datacite.form.Attributes;
 import org.metadatacenter.cedar.bridge.resource.datacite.form.DataCiteSchema;
 import org.metadatacenter.util.json.JsonMapper;
@@ -71,18 +70,5 @@ class DataCiteJsonToleranceTest {
 
     assertEquals(1, substances.size());
     assertEquals("DTXSID7020182", substances.get(0).getDtxsid());
-  }
-
-  @Test
-  void aStoredCedarInstanceCarryingANewFieldStillReads() throws Exception {
-    String instance = """
-        {"@id": "https://repo.metadatacenter.org/template-instances/abc",
-         "fieldAnotherCedarReleaseAddedLater": {"@value": "and did not tell us"}}
-        """;
-
-    MetadataInstance read =
-        JsonMapper.TOLERANT_MAPPER.readValue(instance, MetadataInstance.class);
-
-    assertNotNull(read, "a stored record this service consumes must survive a newer producer");
   }
 }

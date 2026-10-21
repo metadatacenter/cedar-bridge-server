@@ -12,9 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.metadatacenter.bridge.CedarDataServices;
-import org.metadatacenter.cedar.bridge.GenerateMetadataInstanceTests;
-import org.metadatacenter.cedar.bridge.resource.datacite.Cedar;
-import org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance;
+import org.metadatacenter.cedar.bridge.DataCiteFixtures;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.config.DataCiteConfig;
 import org.metadatacenter.config.ServerConfig;
@@ -82,15 +80,14 @@ class DataCiteDoiRoutesTest {
   private static final String OPENVIEW_BASE = "https://openview.metadatacenter.orgx/";
   private static final String USER_ID = "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44";
   private static final String TEMPLATE_ID =
-      "https://repo.metadatacenter.org/templates/5b6e0952-8a56-4f97-a35d-7ce784773b57";
+      "https://repo.metadatacenter.org/templates/f2c2d19d-d94c-420e-80bd-77a9d65e5dc7";
   private static final String SOURCE_UUID = "8bc64ab5-df6b-48c8-8c61-6c016245918e";
   private static final String SOURCE_ID = "https://repo.metadatacenter.org/template-instances/" + SOURCE_UUID;
   private static final String OPENVIEW_URL = OPENVIEW_BASE + "template-instances/" + SOURCE_UUID;
   private static final String DRAFT_DOI = PREFIX + "/draft-0001";
   private static final String NEW_DOI = PREFIX + "/new-0001";
 
-  private static final ObjectNode DATACITE_TEMPLATE = JsonMapper.STRICT_MAPPER.createObjectNode()
-      .put("@id", TEMPLATE_ID).put("schema:name", "DataCite Template");
+  private static final ObjectNode DATACITE_TEMPLATE = DataCiteFixtures.templateDocument();
   private static final ObjectNode SOURCE_ARTIFACT = JsonMapper.STRICT_MAPPER.createObjectNode()
       .put("@id", SOURCE_ID).put("schema:name", "Source instance");
 
@@ -104,6 +101,7 @@ class DataCiteDoiRoutesTest {
   private final List<SentToDataCite> sentToDataCite = new CopyOnWriteArrayList<>();
   private final List<String> sentToResource = new CopyOnWriteArrayList<>();
   private String validationReply = "{\"validates\":\"true\"}";
+  private String templateReply = DATACITE_TEMPLATE.toString();
 
   private HttpServer resourceServer;
   private CedarRequestContext context;
@@ -115,6 +113,10 @@ class DataCiteDoiRoutesTest {
   void setUp() throws Exception {
     resourceServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
     resourceServer.createContext("/", exchange -> {
+      // Read the whole request before answering. A validation request carries the DataCite template,
+      // and a reply sent while the client is still writing it closes the connection under the client,
+      // which fails as a broken pipe wherever the socket buffers are smaller than the template.
+      exchange.getRequestBody().readAllBytes();
       String path = exchange.getRequestURI().getPath();
       String reply;
       int status = 200;
@@ -123,7 +125,7 @@ class DataCiteDoiRoutesTest {
         reply = validationReply;
       } else if (path.equals("/templates/" + TEMPLATE_ID)) {
         sentToResource.add("read template");
-        reply = DATACITE_TEMPLATE.toString();
+        reply = templateReply;
       } else if (path.equals("/template-instances/" + SOURCE_ID)) {
         sentToResource.add("read source");
         reply = SOURCE_ARTIFACT.toString();
@@ -467,15 +469,19 @@ class DataCiteDoiRoutesTest {
     assertEquals(200, response.getStatus());
     Map<String, Object> entity = entity(response);
     assertEquals(TextNode.valueOf(DRAFT_DOI), entity.get("draftDoi"));
-    MetadataInstance resumed = assertInstanceOf(MetadataInstance.class, entity.get("existingDataCiteMetadata"));
-    assertEquals(PREFIX, resumed.prefix().value());
-    assertEquals(OPENVIEW_URL, resumed.url().id());
-    assertEquals("Doe, Jane", resumed.creator().creatorList().get(0).creatorName().value());
-    assertEquals("Doe", resumed.creator().creatorList().get(0).familyName().value());
-    assertEquals("A draft resumed from DataCite", resumed.title().titleList().get(0).title().value());
-    assertEquals(Year.now().getValue() + "-01-01", resumed.publicationYear().value());
-    assertEquals("Instance", resumed.resourceType().value());
-    assertEquals(USER_ID, resumed.pavCreatedBy());
+    JsonNode resumed = assertInstanceOf(JsonNode.class, entity.get("existingDataCiteMetadata"));
+    assertEquals(PREFIX, resumed.at("/prefix/@value").asText());
+    assertEquals(OPENVIEW_URL, resumed.at("/url/@id").asText());
+    assertEquals("Doe, Jane", resumed.at("/creator/0/creatorName/@value").asText());
+    assertEquals("Doe", resumed.at("/creator/0/familyName/@value").asText());
+    assertEquals("Personal", resumed.at("/creator/0/nameType/rdfs:label").asText());
+    assertEquals("A draft resumed from DataCite", resumed.at("/title/0/title/@value").asText());
+    assertEquals(Year.now().getValue() + "-01-01", resumed.at("/publicationYear/@value").asText());
+    assertEquals("Instance", resumed.at("/resourceType/@value").asText());
+    assertEquals(TEMPLATE_ID, resumed.path("schema:isBasedOn").asText());
+    assertEquals(USER_ID, resumed.path("pav:createdBy").asText());
+    // CEE posts the instance back, and the reader refuses an @id that is not an absolute IRI.
+    assertTrue(resumed.path("@id").isNull(), resumed.path("@id").toString());
     assertFormContext(entity);
 
     assertEquals(List.of(DataCiteCall.DRAFT_LOOKUP), calls());
@@ -492,20 +498,52 @@ class DataCiteDoiRoutesTest {
     Map<String, Object> entity = entity(response);
     assertTrue(entity.containsKey("draftDoi"));
     assertNull(entity.get("draftDoi"));
-    MetadataInstance prefilled = assertInstanceOf(MetadataInstance.class, entity.get("existingDataCiteMetadata"));
-    assertEquals(PREFIX, prefilled.prefix().value());
-    assertEquals(OPENVIEW_URL, prefilled.url().id());
-    assertEquals("CEDAR", prefilled.publisher().value());
-    assertEquals("Instance", prefilled.resourceType().value());
-    assertEquals(Year.now().getValue() + "-01-01", prefilled.publicationYear().value());
-    assertEquals(TEMPLATE_ID, prefilled.isBasedOn());
-    assertEquals(USER_ID, prefilled.pavCreatedBy());
-    assertNull(prefilled.creator().creatorList().get(0).creatorName().value());
-    assertNull(prefilled.title().titleList().get(0).title().value());
+    JsonNode prefilled = assertInstanceOf(JsonNode.class, entity.get("existingDataCiteMetadata"));
+    assertEquals(PREFIX, prefilled.at("/prefix/@value").asText());
+    assertEquals(OPENVIEW_URL, prefilled.at("/url/@id").asText());
+    assertEquals("CEDAR", prefilled.at("/publisher/@value").asText());
+    assertEquals("Instance", prefilled.at("/resourceType/@value").asText());
+    assertEquals(Year.now().getValue() + "-01-01", prefilled.at("/publicationYear/@value").asText());
+    assertEquals(TEMPLATE_ID, prefilled.path("schema:isBasedOn").asText());
+    assertEquals(USER_ID, prefilled.path("pav:createdBy").asText());
+    // The template asks for one creator and one title, and the form opens on one of each, empty.
+    assertEquals(1, prefilled.path("creator").size());
+    assertTrue(prefilled.at("/creator/0/creatorName/@value").isNull());
+    assertEquals(1, prefilled.path("title").size());
+    assertTrue(prefilled.at("/title/0/title/@value").isNull());
+    assertTrue(prefilled.path("subject").isArray() && prefilled.path("subject").isEmpty());
     assertFormContext(entity);
 
     assertEquals(List.of(DataCiteCall.DRAFT_LOOKUP), calls());
     assertDraftLookupIdentifiesTheArtifact(sentToDataCite.get(0));
+  }
+
+  /** A findable DOI cannot go back to draft, so one DataCite lists for the landing page is not resumed. */
+  @Test
+  void aFindableDoiForTheLandingPageIsNotTakenForADraft() throws Exception {
+    dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP,
+        new Reply(200, draftLookup().replace("\"state\": \"draft\"", "\"state\": \"findable\"")));
+
+    Response response = resource.createDOIStart(SOURCE_ID);
+
+    assertEquals(200, response.getStatus());
+    Map<String, Object> entity = entity(response);
+    assertNull(entity.get("draftDoi"));
+    JsonNode prefilled = assertInstanceOf(JsonNode.class, entity.get("existingDataCiteMetadata"));
+    assertEquals("Default DataCite Instance", prefilled.path("schema:name").asText());
+  }
+
+  /** The form is built from the template, so a template the model cannot read opens no form. */
+  @Test
+  void refusesToOpenTheFormOnATemplateTheModelCannotRead() throws Exception {
+    templateReply = "{\"@id\": \"" + TEMPLATE_ID + "\", \"schema:name\": \"Not a template\"}";
+
+    Response response = resource.createDOIStart(SOURCE_ID);
+
+    assertEquals(500, response.getStatus());
+    CedarError error = assertInstanceOf(CedarError.class, response.getEntity());
+    assertTrue(error.message.startsWith("The DataCite metadata template cannot be read"), error.message);
+    assertEquals(List.of(), calls(), "nothing is asked of DataCite");
   }
 
   private void assertFormContext(Map<String, Object> entity) {
@@ -516,24 +554,24 @@ class DataCiteDoiRoutesTest {
     verifyNoInteractions(annotationWriter);
   }
 
-  /** CEDAR keeps no record of a draft, so the lookup asks DataCite for one by publisher and landing page. */
+  /**
+   * CEDAR keeps no record of a draft, so the lookup asks DataCite for one by publisher and landing
+   * page. DataCite lists a draft only to a request that names the repository and asks for drafts.
+   */
   private static void assertDraftLookupIdentifiesTheArtifact(SentToDataCite lookup) {
     String query = lookup.uri().getRawQuery();
     assertTrue(lookup.uri().toString().startsWith(ENDPOINT + "?"), lookup.uri().toString());
+    assertTrue(query.contains("client-id=cedar.test"), query);
+    assertTrue(query.contains("state=draft"), query);
     assertTrue(query.contains("query=publisher:CEDAR"), query);
     assertTrue(query.contains("url:%22" + URLEncoder.encode(OPENVIEW_URL, StandardCharsets.UTF_8) + "%22"), query);
   }
 
   // Fixtures
 
-  /**
-   * Returns the shared required-only fixture under this test's prefix. The fixture otherwise takes its
-   * prefix from the environment, which this test does not control.
-   */
+  /** Returns the shared required-only fixture under this test's prefix. */
   private static ObjectNode dataCiteInstance() {
-    ObjectNode instance = JsonMapper.STRICT_MAPPER.valueToTree(GenerateMetadataInstanceTests.getInstanceRequiredOnly());
-    ((ObjectNode) instance.get(Cedar.FieldNames.prefix)).put("@value", PREFIX);
-    return instance;
+    return DataCiteFixtures.instance("required-only", PREFIX);
   }
 
   /** Returns DataCite's answer to a registration, an update or a read of one DOI. */

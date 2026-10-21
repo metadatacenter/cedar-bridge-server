@@ -17,6 +17,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -26,7 +27,10 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.metadatacenter.util.http.CedarError;
 import org.metadatacenter.util.artifact.InstanceArtifactDocument;
 import org.metadatacenter.bridge.CedarDataServices;
-import org.metadatacenter.cedar.bridge.resource.datacite.Cedar.MetadataInstance;
+import org.metadatacenter.artifacts.model.core.TemplateInstanceArtifact;
+import org.metadatacenter.artifacts.model.core.TemplateSchemaArtifact;
+import org.metadatacenter.artifacts.model.reader.ArtifactParseException;
+import org.metadatacenter.artifacts.model.reader.JsonArtifactReader;
 import org.metadatacenter.cedar.bridge.resource.datacite.*;
 import org.metadatacenter.cedar.bridge.resource.datacite.form.Attributes;
 import org.metadatacenter.cedar.bridge.resource.datacite.form.DataCiteSchema;
@@ -83,6 +87,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
   private static final Logger log = LoggerFactory.getLogger(DataCiteResource.class);
 
   private final String endpointUrl;
+  private final String repositoryId;
   private final String templateId;
   private final boolean dataciteEnabled;
   private final String basicAuth;
@@ -105,7 +110,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
     super(cedarConfig);
     this.dataServices = dataServices;
     var dataCiteConfig = cedarConfig.getBridgeConfig().getDataCite();
-    String repositoryId = dataCiteConfig.getRepositoryId();
+    this.repositoryId = dataCiteConfig.getRepositoryId();
     String password = dataCiteConfig.getPassword();
     this.endpointUrl = dataCiteConfig.getEndpointUrl();
     this.templateId = dataCiteConfig.getTemplateId();
@@ -262,6 +267,18 @@ public class DataCiteResource extends CedarMicroserviceResource {
     String dataCiteTemplateIdS = cedarConfig.getBridgeConfig().getDataCite().getTemplateId();
     CedarTemplateId dataCiteTemplateId = CedarTemplateId.build(dataCiteTemplateIdS);
     JsonNode dataCiteTemplateProxyJson = artifactClient.read(CedarResourceType.TEMPLATE, dataCiteTemplateId, c);
+    TemplateSchemaArtifact dataCiteTemplate;
+    try {
+      if (!(dataCiteTemplateProxyJson instanceof ObjectNode templateDocument)) {
+        throw new ArtifactParseException("The template is not a JSON object", "", "");
+      }
+      dataCiteTemplate = new JsonArtifactReader().readTemplateSchemaArtifact(templateDocument);
+    } catch (ArtifactParseException e) {
+      return CedarResponse.internalServerError()
+          .message("The DataCite metadata template cannot be read: " + e.getMessage())
+          .exception(e)
+          .build();
+    }
 
     sourceArtifactId = linkedDataUtil.resolveResourceId(sourceArtifactId);
     CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
@@ -302,12 +319,14 @@ public class DataCiteResource extends CedarMicroserviceResource {
             JsonMapper.TOLERANT_MAPPER.treeToValue(attributesNode, Attributes.class);
 
         // Pass the value from dataCiteResponse to cedarDataCiteInstance
-        MetadataInstance cedarExistingDoiMetadata = DataCiteMetadataParser.parseDataCiteSchema(existingDoiMetadata, userID, cedarConfig);
+        ObjectNode cedarExistingDoiMetadata =
+            DataCiteMetadataParser.parseDataCiteSchema(existingDoiMetadata, userID, dataCiteTemplate, cedarConfig);
         response.put(DataciteConstants.EXISTING_DATACITE_METADATA, cedarExistingDoiMetadata);
         response.put(DataciteConstants.DRAFT_DOI, draftDoi);
       } else {
         // if draft DOI is not available, set the url and resourceType fields
-        MetadataInstance defaultInstance = GenerateMetadataInstance.getDefaultInstance(sourceArtifactId, userID, templateId, cedarConfig);
+        ObjectNode defaultInstance =
+            DataCiteMetadataParser.getDefaultInstance(sourceArtifactId, userID, dataCiteTemplate, cedarConfig);
         response.put(DataciteConstants.EXISTING_DATACITE_METADATA, defaultInstance);
         response.put(DataciteConstants.DRAFT_DOI, null);
       }
@@ -740,11 +759,12 @@ public class DataCiteResource extends CedarMicroserviceResource {
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
     DataCiteSchema dataCiteSchema = new DataCiteSchema();
     try {
-      // Deserialize JSON-LD to MetadataInstance Class. A stored CEDAR instance is a record this
-      // service consumes rather than owns, so the read takes the tolerant policy.
-      String metadataString = metadata.toString();
-      MetadataInstance cedarInstance =
-          JsonMapper.TOLERANT_MAPPER.readValue(metadataString, MetadataInstance.class);
+      // Read the instance into the model. It has been validated against the DataCite template, and a
+      // child the mapping does not name is read and left alone.
+      if (!(metadata instanceof ObjectNode instanceDocument)) {
+        throw new IllegalArgumentException("The DataCite metadata must be a JSON object");
+      }
+      TemplateInstanceArtifact cedarInstance = new JsonArtifactReader().readTemplateInstanceArtifact(instanceDocument);
 
       // Pass the value from dataCiteInstance to dataCiteRequest
       CedarInstanceParser.parseCedarInstance(cedarInstance, dataCiteSchema, sourceArtifactId, state, cedarConfig);
@@ -804,7 +824,12 @@ public class DataCiteResource extends CedarMicroserviceResource {
     Map<String, Object> response = new HashMap<>();
     String openViewUrl = GenerateOpenViewUrl.getOpenViewUrl(sourceArtifactId, cedarConfig);
     String encodedOpenViewUrl = URLEncoder.encode(openViewUrl, StandardCharsets.UTF_8);
-    String queryUrl = endpointUrl + DataciteConstants.QUERY_AFFILIATION + DataciteConstants.QUERY_DETAIL + DataciteConstants.QUERY_PUBLISHER + "%20AND%20url:%22" + encodedOpenViewUrl + "%22";
+    // DataCite lists a draft only to a request that names the repository holding it and asks for
+    // drafts. Without both it lists findable DOIs alone, and every save of the form minted another.
+    String queryUrl = endpointUrl + DataciteConstants.QUERY_AFFILIATION + DataciteConstants.QUERY_DETAIL
+        + DataciteConstants.QUERY_CLIENT_ID + URLEncoder.encode(repositoryId.toLowerCase(Locale.ROOT), StandardCharsets.UTF_8)
+        + DataciteConstants.QUERY_STATE_DRAFT
+        + DataciteConstants.QUERY_PUBLISHER + "%20AND%20url:%22" + encodedOpenViewUrl + "%22";
     URI uri = URI.create(queryUrl);
     HttpRequest.Builder httpRequest = HttpRequest.newBuilder(uri)
         .header(HttpConstants.HTTP_HEADER_AUTHORIZATION, DataciteConstants.BASIC + basicAuth)
@@ -815,18 +840,27 @@ public class DataCiteResource extends CedarMicroserviceResource {
     }
     String jsonResponse = httpResponse.body();
     JsonNode jsonResource = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
-    JsonNode dataNode = jsonResource.get("data");
-    boolean hasDraftDoi = hasDraftDoi(dataNode);
+    JsonNode dataNode = drafts(jsonResource.get("data"));
+    boolean hasDraftDoi = !dataNode.isEmpty();
     response.put(DataciteConstants.DRAFT_METADATA, dataNode);
     response.put(DataciteConstants.HAS_DRAFT_DOI, hasDraftDoi);
     return CedarResponse.ok().entity(response).build();
   }
 
   /**
-   * This function check if there is a draft DOI exists
+   * The draft DOIs among those DataCite listed. The form updates a draft in place, and a DOI in any
+   * other state is not one it can update: a findable DOI cannot go back to draft.
    */
-  private Boolean hasDraftDoi(JsonNode dataNode) {
-    return dataNode != null && !dataNode.isEmpty();
+  private static ArrayNode drafts(JsonNode listed) {
+    ArrayNode drafts = JsonMapper.STRICT_MAPPER.createArrayNode();
+    if (listed != null && listed.isArray()) {
+      for (JsonNode doi : listed) {
+        if (DataciteConstants.DRAFT.equals(doi.path(DataciteConstants.ATTRIBUTES).path("state").asText())) {
+          drafts.add(doi);
+        }
+      }
+    }
+    return drafts;
   }
 
   private String getFindableDoi(JsonNode sourceArtifactProxyJson) {

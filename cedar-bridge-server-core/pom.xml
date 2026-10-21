@@ -6,13 +6,18 @@
   <parent>
     <groupId>org.metadatacenter</groupId>
     <artifactId>cedar-bridge-server</artifactId>
-    <version>2.9.26</version>
+    <version>2.9.27</version>
   </parent>
 
   <groupId>org.metadatacenter</groupId>
   <artifactId>cedar-bridge-server-core</artifactId>
   <packaging>jar</packaging>
   <name>CEDAR Bridge Server Core</name>
+
+  <properties>
+    <!-- Line coverage measured in CI on 2026-10-19: 4.5%. The build fails below this floor. -->
+    <cedar.coverage.line.minimum>0.02</cedar.coverage.line.minimum>
+  </properties>
 
   <dependencies>
 
@@ -22,18 +27,24 @@
     </dependency>
 
     <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.metadatacenter</groupId>
       <artifactId>cedar-model-library</artifactId>
+    </dependency>
+
+    <!-- Reads and builds DataCite template instances, and reads the template they are based on. -->
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-artifact-library</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.metadatacenter</groupId>
       <artifactId>cedar-core-library</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
     </dependency>
 
     <dependency>
