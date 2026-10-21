@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.exception.CedarProcessingException;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -75,9 +77,11 @@ public class DoiAuthority implements ExternalAuthority {
   }
 
   private String pageUrl(String q, int page, int size) {
-    // Titles only, so a search for a name does not match an abstract.
-    return String.format("%s?query=titles.title:%s&page[number]=%d&page[size]=%d",
-        dataciteApiPrefix, q, page, size);
+    // Titles only, so a search for a name does not match an abstract. The query is encoded, so what
+    // was typed is one value. Unencoded, a space could not be sent, and an ampersand set DataCite's
+    // other parameters.
+    return String.format("%s?query=%s&page[number]=%d&page[size]=%d",
+        dataciteApiPrefix, URLEncoder.encode("titles.title:" + q, StandardCharsets.UTF_8), page, size);
   }
 
   private Map<String, Object> terms(JsonNode root) {

@@ -84,6 +84,9 @@ public class ExternalAuthorityContractTest {
     environment.put("CEDAR_BRIDGE_HTTP_PORT", "0");
     environment.put("CEDAR_BRIDGE_ADMIN_PORT", "0");
     environment.put("CEDAR_BRIDGE_STOP_PORT", "0");
+    // The server loads its CompTox registry as it starts. Point it at a port nothing listens on, so
+    // it never reaches EPA's API, which CI configures.
+    environment.put("CEDAR_COMP_TOX_API_PREFIX", "http://127.0.0.1:1/");
     environment.put("CEDAR_ROR_API_PREFIX", "http://127.0.0.1:1/");
     CedarEnvironmentSource.setOverride(environment);
   }

@@ -182,6 +182,10 @@ public class RridAuthority implements ExternalAuthority {
 
     int xrefCount = itemNode.path("alternateIdentifiers").size();
 
-    return String.format("%s is a %s. Alternate identifiers exist in %d database(s).", name, type, xrefCount);
+    // SciCrunch's types are common nouns such as "antibody" and "cell line", whose article follows
+    // their first letter.
+    boolean vowel = !type.isEmpty() && "aeiou".indexOf(Character.toLowerCase(type.charAt(0))) >= 0;
+    String article = vowel ? "an" : "a";
+    return String.format("%s is %s %s. Alternate identifiers exist in %d database(s).", name, article, type, xrefCount);
   }
 }

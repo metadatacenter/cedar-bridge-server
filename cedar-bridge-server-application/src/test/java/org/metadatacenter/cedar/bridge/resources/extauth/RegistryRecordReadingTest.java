@@ -1,6 +1,7 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterAll;
@@ -11,7 +12,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.metadatacenter.cedar.bridge.resources.SubstanceRegistry;
+import org.metadatacenter.cedar.bridge.resources.SubstanceRegistryLoader;
 import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.util.json.JsonMapper;
 
 import java.io.IOException;
@@ -21,8 +24,10 @@ import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -31,6 +36,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -46,6 +52,10 @@ import static org.mockito.Mockito.when;
  * under the wrong name, drops a match, counts one twice, or looks up an identifier other than the one
  * typed. Each case answers an authority with records in its registry's shape, served from a registry
  * on a local port, and asserts the terms the authority makes of them.
+ *
+ * <p>An authority that asks the wrong question misleads the user in the same way, so some cases
+ * assert what the registry was asked instead. What was typed must reach it as one value, and a
+ * request this server could not send must not be counted against the registry.
  */
 @Tag("integration")
 public class RegistryRecordReadingTest {
@@ -53,8 +63,8 @@ public class RegistryRecordReadingTest {
   private static final HttpServer REGISTRY = startRegistry();
   private static final String BASE = "http://127.0.0.1:" + REGISTRY.getAddress().getPort();
 
-  /** One request the registry received, with its query decoded. */
-  private record Received(String method, String path, String query, String body) {}
+  /** One request the registry received, with its query decoded, and as it was sent. */
+  private record Received(String method, String path, String query, String body, String rawQuery) {}
 
   /** A registry's answer: a status and a body. */
   private record Reply(int status, String body) {
@@ -88,9 +98,10 @@ public class RegistryRecordReadingTest {
   }
 
   /**
-   * A researcher is named by the credit name they chose, then by given and family names, then by the
-   * first of their other names. A result without an identifier or a name is no term. The IRI carries
-   * the prefix ORCID itself shows, which differs between the sandbox and production.
+   * A researcher is named by the credit name they chose, then by given and family names, then by
+   * whichever of the two they have, then by the first of their other names. A result without an
+   * identifier or a name is no term. The IRI carries the prefix ORCID itself shows, which differs
+   * between the sandbox and production.
    */
   @Test
   public void orcidNamesEachResearcherAsTheyChoseUnderThePrefixOrcidShows() throws Exception {
@@ -120,7 +131,7 @@ public class RegistryRecordReadingTest {
         sandbox + "0000-0002-0000-0003", sandbox + "0000-0002-0000-0005"), iris(answer));
     assertEquals("Ada King", term(answer, sandbox + "0000-0002-0000-0001", "name"));
     assertEquals("Grace Hopper", term(answer, sandbox + "0000-0002-0000-0002", "name"));
-    assertEquals("H. Lamarr", term(answer, sandbox + "0000-0002-0000-0003", "name"));
+    assertEquals("Hedy", term(answer, sandbox + "0000-0002-0000-0003", "name"));
     assertEquals("Alan Turing", term(answer, sandbox + "0000-0002-0000-0005", "name"));
     assertEquals("University of London, Royal Society", term(answer, sandbox + "0000-0002-0000-0001", "details"));
     assertEquals("", term(answer, sandbox + "0000-0002-0000-0005", "details"));
@@ -141,9 +152,12 @@ public class RegistryRecordReadingTest {
             + "\"given-names\": {\"value\": \"Ada\"}, \"family-name\": {\"value\": \"Lovelace\"}"),
         "0000-0001-0000-0002", orcidRecord("0000-0001-0000-0002", "\"credit-name\": null, "
             + "\"given-names\": {\"value\": \"Grace\"}, \"family-name\": {\"value\": \"Hopper\"}"),
-        "0000-0001-0000-0003", orcidRecord("0000-0001-0000-0003", "\"given-names\": {\"value\": \"Hedy\"}"));
+        "0000-0001-0000-0003", orcidRecord("0000-0001-0000-0003", "\"given-names\": {\"value\": \"Hedy\"}"),
+        // ORCID sends a name the researcher has not given as null rather than leaving it out.
+        "0000-0001-0000-0004", orcidRecord("0000-0001-0000-0004", "\"credit-name\": null, "
+            + "\"given-names\": {\"value\": \"Marie\"}, \"family-name\": null"));
     Map<String, String> names = Map.of("0000-0001-0000-0001", "A. A. Lovelace", "0000-0001-0000-0002", "Grace Hopper",
-        "0000-0001-0000-0003", "Hedy");
+        "0000-0001-0000-0003", "Hedy", "0000-0001-0000-0004", "Marie");
     registry = request -> request.path().equals("/orcid/oauth/token") ? Reply.ok(ORCID_TOKEN)
         : Reply.ok(records.get(request.path().split("/")[4]));
 
@@ -159,6 +173,56 @@ public class RegistryRecordReadingTest {
       assertEquals(1, received("/orcid/api/v3.0/" + id + "/record").size(), id);
     }
     assertEquals(1, received("/orcid/oauth/token").size(), "the token is bought once and reused");
+  }
+
+  /**
+   * A search names a researcher as a lookup of their record does. ORCID sends a credit name the
+   * researcher has not chosen as null, and a search dropped everyone it did; it also dropped a
+   * researcher with only a given or only a family name, whom a lookup names. A lookup of a record
+   * whose family name is null failed outright, and a record with only other names went unnamed.
+   */
+  @Test
+  public void orcidSearchNamesEachResearcherAsALookupOfTheirRecordDoes() throws Exception {
+    // The name fields as a search returns them, the record's person as it holds them, and the name.
+    record Named(String id, String searched, String person, String name) {}
+    List<Named> researchers = List.of(
+        new Named("0000-0003-0000-0001", "\"credit-name\": null, \"given-names\": \"Grace\", \"family-names\": \"Hopper\"",
+            "\"name\": {\"credit-name\": null, \"given-names\": {\"value\": \"Grace\"}, \"family-name\": {\"value\": \"Hopper\"}}",
+            "Grace Hopper"),
+        new Named("0000-0003-0000-0002", "\"credit-name\": null, \"given-names\": \"Hedy\", \"other-name\": [\"H. Lamarr\"]",
+            "\"name\": {\"credit-name\": null, \"given-names\": {\"value\": \"Hedy\"}, \"family-name\": null}, "
+                + "\"other-names\": {\"other-name\": [{\"content\": \"H. Lamarr\"}]}",
+            "Hedy"),
+        new Named("0000-0003-0000-0003", "\"family-names\": \"Curie\"",
+            "\"name\": {\"given-names\": null, \"family-name\": {\"value\": \"Curie\"}}", "Curie"),
+        new Named("0000-0003-0000-0004", "\"other-name\": [\"H. Kiesler\", \"H. Lamarr\"]",
+            "\"name\": null, \"other-names\": {\"other-name\": [{\"content\": \"H. Kiesler\"}, {\"content\": \"H. Lamarr\"}]}",
+            "H. Kiesler"));
+    StringJoiner results = new StringJoiner(", ", "{\"num-found\": 4, \"expanded-result\": [", "]}");
+    researchers.forEach(researcher -> results.add("{\"orcid-id\": \"" + researcher.id() + "\", " + researcher.searched() + "}"));
+    registry = request -> switch (request.path()) {
+      case "/orcid/oauth/token" -> Reply.ok(ORCID_TOKEN);
+      case "/orcid/api/v3.0/search/" -> Reply.ok("""
+          {"result": [{"orcid-identifier": {"uri": "https://orcid.org/0000-0001-0000-0000",
+                                            "path": "0000-0001-0000-0000"}}]}
+          """);
+      case "/orcid/api/v3.0/expanded-search/" -> Reply.ok(results.toString());
+      default -> {
+        Named researcher = researchers.stream().filter(named -> request.path().contains(named.id())).findFirst().orElseThrow();
+        yield Reply.ok("{\"orcid-identifier\": {\"uri\": \"https://orcid.org/" + researcher.id() + "\", \"path\": \""
+            + researcher.id() + "\"}, \"person\": {" + researcher.person() + "}}");
+      }
+    };
+
+    OrcidAuthority orcid = orcid();
+    AuthoritySearchAnswer searched = orcid.search("anyone", 0, 10);
+
+    assertEquals(researchers.stream().map(researcher -> "https://orcid.org/" + researcher.id()).toList(), iris(searched));
+    for (Named researcher : researchers) {
+      String iri = "https://orcid.org/" + researcher.id();
+      assertEquals(researcher.name(), term(searched, iri, "name"), researcher.id());
+      assertEquals(researcher.name(), orcid.details(iri).body().get("name"), researcher.id());
+    }
   }
 
   private static String orcidRecord(String id, String name) {
@@ -207,6 +271,57 @@ public class RegistryRecordReadingTest {
     assertTrue(RECEIVED.get(1).query().contains("&id=777&"), RECEIVED.get(1).query());
   }
 
+  /**
+   * Only a PubMed identifier is looked up. Other text was stripped to its digits, so a DOI asked for
+   * PMID 101234 and reported whatever paper that is as the one the caller asked for.
+   */
+  @Test
+  public void pubMedLooksUpNothingThatIsNotAPubMedIdentifier() throws Exception {
+    registry = request -> Reply.ok("""
+        {"result": {"uids": ["101234", "5678", "1234"],
+          "101234": {"title": "An unrelated paper"}, "5678": {"title": "Another"}, "1234": {"title": "A third"}}}
+        """);
+    PubMedAuthority pubMed = new PubMedAuthority(BASE + "/eutils/", "key");
+
+    for (String notAPubMedId : List.of("10.1234/abc", "https://doi.org/10.1234/5678", "PMID:12a34", "1234 and more")) {
+      assertFalse(pubMed.details(notAPubMedId).found(), notAPubMedId);
+    }
+    assertEquals(List.of(), RECEIVED, "NCBI is asked about none of them");
+  }
+
+  /**
+   * A lookup identifies a publication by the IRI a search offers for it, so the value an instance
+   * stores is the same whichever way the publication was chosen.
+   */
+  @Test
+  public void aPubMedLookupIdentifiesAPublicationByTheIriASearchOffers() throws Exception {
+    registry = pubMed("{\"result\": {\"uids\": [\"123\"], \"123\": {\"title\": \"A paper\"}}}",
+        "{\"esearchresult\": {\"count\": \"1\", \"idlist\": [\"123\"]}}");
+    PubMedAuthority pubMed = new PubMedAuthority(BASE + "/eutils/", "key");
+
+    AuthoritySearchAnswer searched = pubMed.search("A paper", 0, 10);
+    AuthorityDetailsAnswer lookedUp = pubMed.details("123");
+
+    assertEquals(List.of("https://pubmed.ncbi.nlm.nih.gov/123/"), iris(searched));
+    assertEquals("https://pubmed.ncbi.nlm.nih.gov/123/", lookedUp.body().get("id"));
+  }
+
+  /** A publication is described in a sentence giving its title, its journal, its date and its identifier. */
+  @Test
+  public void pubMedDescribesAPublicationInASentence() throws Exception {
+    registry = pubMed("""
+        {"result": {"uids": ["1", "2"],
+          "1": {"title": "A paper", "fulljournalname": "Annals of Oncology", "pubdate": "2020 Jan"},
+          "2": {"title": "Another paper"}}}
+        """, "{\"esearchresult\": {\"count\": \"2\", \"idlist\": [\"1\", \"2\"]}}");
+
+    AuthoritySearchAnswer answer = new PubMedAuthority(BASE + "/eutils/", "key").search("paper", 0, 10);
+
+    assertEquals("A paper is an article in Annals of Oncology (2020 Jan); PMID 1",
+        term(answer, "https://pubmed.ncbi.nlm.nih.gov/1/", "details"));
+    assertEquals("Another paper is a journal article; PMID 2", term(answer, "https://pubmed.ncbi.nlm.nih.gov/2/", "details"));
+  }
+
   private static Function<Received, Reply> pubMed(String summaries, String search) {
     return request -> Reply.ok(request.path().endsWith("esearch.fcgi") ? search : summaries);
   }
@@ -248,6 +363,33 @@ public class RegistryRecordReadingTest {
     assertEquals("/ctx/chemical/list/chemicals/search/by-listname/PFASSTRUCTV5", RECEIVED.get(0).path());
     assertEquals(List.of(1000, 1), RECEIVED.stream().filter(request -> request.method().equals("POST"))
         .map(request -> list(request.body()).size()).toList());
+  }
+
+  /**
+   * The registry is loaded only when its substances arrived. With every batch refused it held none
+   * and still counted as loaded, so a PFAS search found nothing where it should have answered 503,
+   * and the loader, which retries only a load that failed, never asked again.
+   */
+  @Test
+  public void compToxIsNotLoadedWhenItsSubstancesDoNotArrive() throws Exception {
+    registry = request -> request.method().equals("GET") ? Reply.ok("[\"DTXSID1\", \"DTXSID2\"]") : new Reply(503, "{}");
+
+    SubstanceRegistry substances = compTox();
+    assertThrows(Exception.class, substances::loadSubstances);
+    assertFalse(substances.isLoaded());
+    assertThrows(AuthorityNotReadyException.class, () -> new PfasAuthority(substances).search("fluoro", 0, 10));
+
+    SubstanceRegistryLoader loader = new SubstanceRegistryLoader(substances);
+    loader.start();
+    try {
+      long deadline = System.currentTimeMillis() + 10_000;
+      while (substances.getLoadStatus().nextAttemptAtMs() == 0 && System.currentTimeMillis() < deadline) {
+        Thread.sleep(20);
+      }
+      assertTrue(substances.getLoadStatus().nextAttemptAtMs() > 0, "the loader schedules another attempt");
+    } finally {
+      loader.stop();
+    }
   }
 
   /**
@@ -329,6 +471,31 @@ public class RegistryRecordReadingTest {
     assertEquals(List.of("query=stan*", "query=stan*"), RECEIVED.stream().map(Received::query).toList());
   }
 
+  /**
+   * An organisation is described by its types, the country of its first location and its website, read
+   * from the version 2 record the configured API returns. The description read the version 1 shape,
+   * a top-level country and links as plain strings, so it gave only the types.
+   */
+  @Test
+  public void rorDescribesAnOrganisationFromItsVersionTwoRecord() throws Exception {
+    registry = request -> Reply.ok("""
+        {"number_of_results": 1, "items": [
+          {"id": "https://ror.org/00f54p054", "types": ["education", "funder"],
+           "names": [{"value": "Stanford University", "types": ["ror_display", "label"]}],
+           "locations": [{"geonames_id": 5398563, "geonames_details": {"country_code": "US",
+                          "country_name": "United States", "name": "Stanford"}}],
+           "links": [{"type": "wikipedia", "value": "http://en.wikipedia.org/wiki/Stanford_University"},
+                     {"type": "website", "value": "https://www.stanford.edu"}]}]}
+        """);
+    CedarConfig config = mock(CedarConfig.class, RETURNS_DEEP_STUBS);
+    when(config.getExternalAuthorities().getRor().getApiPrefix()).thenReturn(BASE + "/ror/");
+
+    AuthoritySearchAnswer answer = new RorAuthority(config).search("stanford", 0, 10);
+
+    assertEquals("Resource is of type education, funder, located in United States, with URL https://www.stanford.edu",
+        term(answer, "https://ror.org/00f54p054", "details"));
+  }
+
   // ---- NIH RePORTER ---------------------------------------------------------------------------
 
   /**
@@ -361,6 +528,96 @@ public class RegistryRecordReadingTest {
         JsonMapper.STRICT_MAPPER.readTree(RECEIVED.get(0).body()));
   }
 
+  /**
+   * What was typed reaches RePORTER as the title to match, quotation marks and all, and RePORTER is
+   * never asked for more than the 500 records it documents as the most one request returns. The body
+   * was formatted as a string, so a quotation mark ended the title and the request was not JSON.
+   */
+  @Test
+  public void nihAsksRePorterForWhatWasTypedAndNoMoreThanItReturns() throws Exception {
+    registry = request -> Reply.ok("{\"results\": []}");
+    NihGrantAuthority nih = new NihGrantAuthority(BASE + "/nih");
+
+    nih.search("the \"p53\" pathway", 0, 10);
+    nih.search("cancer", 0, 101);
+
+    JsonNode quoted = JsonMapper.STRICT_MAPPER.readTree(RECEIVED.get(0).body());
+    assertEquals("the \"p53\" pathway", quoted.path("criteria").path("project_title").asText());
+    assertEquals(50, quoted.path("limit").asInt());
+    assertEquals(500, JsonMapper.STRICT_MAPPER.readTree(RECEIVED.get(1).body()).path("limit").asInt());
+  }
+
+  // ---- DataCite -------------------------------------------------------------------------------
+
+  /**
+   * What was typed is one value of the query DataCite is asked. A space could not be sent at all, and
+   * the search failed as though DataCite were down; an ampersand ended the query, and the text after
+   * it set DataCite's other parameters.
+   */
+  @Test
+  public void aDoiSearchSendsWhatWasTypedAsOneQueryValue() throws Exception {
+    DoiAuthority doi = new DoiAuthority(BASE + "/dois");
+
+    doi.search("climate change", 0, 10);
+    doi.search("a&page[size]=1000", 0, 10);
+
+    assertEquals(List.of(
+            Map.of("query", List.of("titles.title:climate change"), "page[number]", List.of("1"),
+                "page[size]", List.of("10")),
+            Map.of("query", List.of("titles.title:a&page[size]=1000"), "page[number]", List.of("1"),
+                "page[size]", List.of("10"))),
+        RECEIVED.stream().map(RegistryRecordReadingTest::parameters).toList());
+  }
+
+  /**
+   * A request this server cannot build is no evidence that the registry has stopped answering. Five
+   * searches containing a space opened DataCite's breaker, after which every DOI search answered 503.
+   * A lookup can still build a request that cannot be sent, from an identifier with a space; that
+   * fails as this server's error, a 500, and leaves the breaker closed.
+   */
+  @Test
+  public void aRequestThisServerCannotBuildDoesNotOpenTheBreaker() throws Exception {
+    DoiAuthority doi = new DoiAuthority(BASE + "/dois");
+    AuthorityCircuitBreaker breaker = new AuthorityCircuitBreaker(DoiAuthority.PATH_SEGMENT);
+
+    for (int i = 0; i < AuthorityCircuitBreaker.FAILURES_BEFORE_OPENING; i++) {
+      breaker.call(() -> doi.search("climate change", 0, 10));
+    }
+    for (int i = 0; i < AuthorityCircuitBreaker.FAILURES_BEFORE_OPENING; i++) {
+      CedarException failure = assertThrows(CedarException.class, () -> breaker.call(() -> doi.details("10.1234/a b")));
+      assertEquals(500, failure.getErrorPack().getStatusCode(), failure.getMessage());
+    }
+
+    assertFalse(breaker.isOpen());
+    breaker.call(() -> doi.search("climate", 0, 10));
+    assertEquals(AuthorityCircuitBreaker.FAILURES_BEFORE_OPENING + 1, received("/dois").size());
+  }
+
+  // ---- SciCrunch ------------------------------------------------------------------------------
+
+  /** A resource is described by its type, with the article its type takes. */
+  @Test
+  public void rridDescribesAResourceByItsType() throws Exception {
+    registry = request -> Reply.ok("""
+        {"hits": {"total": 3, "hits": [
+          {"_source": {"item": {"identifier": "AB_1", "name": "Anti-GFAP", "types": [{"name": "antibody"}],
+                                "alternateIdentifiers": [{}, {}]}}},
+          {"_source": {"item": {"identifier": "CVCL_1", "name": "HeLa", "types": [{"name": "cell line"}]}}},
+          {"_source": {"item": {"identifier": "SCR_1", "name": "A tool"}}}]}}
+        """);
+
+    AuthoritySearchAnswer answer = new RridAuthority(BASE + "/rrid/search", BASE + "/rrid/resolver/", "key")
+        .search("a", 0, 10);
+
+    String rrid = "https://identifiers.org/RRID:";
+    assertEquals("Anti-GFAP is an antibody. Alternate identifiers exist in 2 database(s).",
+        term(answer, rrid + "AB_1", "details"));
+    assertEquals("HeLa is a cell line. Alternate identifiers exist in 0 database(s).",
+        term(answer, rrid + "CVCL_1", "details"));
+    assertEquals("A tool is a resource. Alternate identifiers exist in 0 database(s).",
+        term(answer, rrid + "SCR_1", "details"));
+  }
+
   // ---- The identifier a lookup asks for -------------------------------------------------------
 
   /** A record each registry holds for the identifier asked for. */
@@ -378,6 +635,8 @@ public class RegistryRecordReadingTest {
         arguments("doi", " 10.1234/abc ", "/dois/10.1234/abc?"),
         arguments("pmid", "PMID:123", "&id=123&"),
         arguments("pmid", "pubmed:123", "&id=123&"),
+        arguments("pmid", "PMID: 123", "&id=123&"),
+        arguments("pmid", "https://www.ncbi.nlm.nih.gov/pubmed/123", "&id=123&"),
         // The IRI a PubMed search offers ends in a slash.
         arguments("pmid", "https://pubmed.ncbi.nlm.nih.gov/123/", "&id=123&"),
         arguments("rrid", "AB_123", "/rrid/resolver/RRID:AB_123.json?"),
@@ -425,6 +684,17 @@ public class RegistryRecordReadingTest {
     return RECEIVED.stream().filter(request -> request.path().equals(path)).toList();
   }
 
+  /** The parameters a request's query carried, each with its values in the order sent. */
+  private static Map<String, List<String>> parameters(Received request) {
+    Map<String, List<String>> parameters = new LinkedHashMap<>();
+    for (String pair : request.rawQuery().split("&")) {
+      int equals = pair.indexOf('=');
+      parameters.computeIfAbsent(URLDecoder.decode(pair.substring(0, equals), StandardCharsets.UTF_8),
+          name -> new ArrayList<>()).add(URLDecoder.decode(pair.substring(equals + 1), StandardCharsets.UTF_8));
+    }
+    return parameters;
+  }
+
   private static String json(Object value) {
     try {
       return JsonMapper.STRICT_MAPPER.writeValueAsString(value);
@@ -458,7 +728,7 @@ public class RegistryRecordReadingTest {
     String rawQuery = exchange.getRequestURI().getRawQuery();
     Received request = new Received(exchange.getRequestMethod(), exchange.getRequestURI().getPath(),
         rawQuery == null ? null : URLDecoder.decode(rawQuery, StandardCharsets.UTF_8),
-        new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+        new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8), rawQuery);
     RECEIVED.add(request);
     Reply reply = registry.apply(request);
     byte[] payload = reply.body().getBytes(StandardCharsets.UTF_8);

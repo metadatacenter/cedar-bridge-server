@@ -1,9 +1,11 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.ws.rs.core.MediaType;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.exception.CedarProcessingException;
+import org.metadatacenter.util.json.JsonMapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +30,12 @@ public class NihGrantAuthority implements ExternalAuthority {
    * always worked — approximate, and the alternative is showing matches that do not match.
    */
   private static final int OVER_FETCH = 5;
+
+  /**
+   * The most records one request may ask for, as RePORTER documents its {@code limit}: "Maximum
+   * allowed value is 500" (https://api.reporter.nih.gov/). Five times a page larger than 100 is more.
+   */
+  private static final int REPORTER_MAX_LIMIT = 500;
 
   private final String reporterApi;
 
@@ -56,8 +64,12 @@ public class NihGrantAuthority implements ExternalAuthority {
       return AuthoritySearchAnswer.nothing();
     }
 
-    String body = String.format("{\"criteria\":{\"project_title\":\"%s\"},\"offset\":%d,\"limit\":%d}",
-        query, offset, limit * OVER_FETCH);
+    // Built as JSON rather than formatted as a string, which a quotation mark in the query ended.
+    ObjectNode request = JsonMapper.STRICT_MAPPER.createObjectNode();
+    request.putObject("criteria").put("project_title", query);
+    request.put("offset", offset);
+    request.put("limit", Math.min(limit * OVER_FETCH, REPORTER_MAX_LIMIT));
+    String body = request.toString();
 
     RegistryReply reply = RegistryReply.post(reporterApi, defaultHeaders(), body);
     if (!reply.ok()) {
