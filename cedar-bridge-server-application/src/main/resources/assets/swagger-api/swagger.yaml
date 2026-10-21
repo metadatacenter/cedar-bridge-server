@@ -21,7 +21,7 @@ info:
     limiting its requests answers 502, as does an upstream answer that is neither a success nor a
     refusal. The external-authority routes, which take no credentials, therefore never answer 401.
   title: CEDAR Bridge Server API
-  version: 2.9.27-SNAPSHOT
+  version: 2.9.27
 paths:
   /:
     get:
