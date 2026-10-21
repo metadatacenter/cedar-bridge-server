@@ -143,4 +143,31 @@ class DataCiteMetadataParserTest {
     assertEquals("Other", instance.at("/relatedItem/0/numberType/rdfs:label").asText());
     new JsonArtifactReader().readTemplateInstanceArtifact(instance);
   }
+
+  /**
+   * DataCite holds a link as whatever text it was given. A draft whose link is not an IRI still opens
+   * the form, without that one value and with everything beside it, so the user can resume the draft
+   * and correct it.
+   */
+  @Test
+  void aResumedDraftsLinkThatIsNotAnIriIsLeftOutRatherThanRefusingTheForm() throws Exception {
+    Attributes held = JsonMapper.TOLERANT_MAPPER.readValue("""
+        {"titles": [{"title": "A draft"}], "publicationYear": 2026,
+         "rightsList": [{"rights": "CC BY 4.0", "rightsUri": "Creative Commons Attribution 4.0",
+                         "schemeUri": "https://spdx.org/licenses/"}],
+         "fundingReferences": [{"funderName": "NIH", "awardUri": "see the award letter"}]}
+        """, Attributes.class);
+
+    ObjectNode instance = DataCiteMetadataParser.parseDataCiteSchema(held, USER, TEMPLATE,
+        CedarInstanceParserTest.config(CedarInstanceParserTest.PREFIX));
+
+    assertEquals("CC BY 4.0", instance.at("/rights/0/rights/@value").asText());
+    assertEquals(MAPPER.createObjectNode(), instance.at("/rights/0/rightsURI"));
+    assertEquals("https://spdx.org/licenses/", instance.at("/rights/0/schemeURI/@id").asText());
+    assertEquals("NIH", instance.at("/fundingReference/0/funderName/@value").asText());
+    assertEquals(MAPPER.createObjectNode(), instance.at("/fundingReference/0/awardURI"));
+    ValidationReport report =
+        new CedarValidator().validateTemplateInstance(instance, DataCiteFixtures.templateDocument());
+    assertTrue(report.getErrors().isEmpty(), () -> report.getErrors() + "\n" + instance.toPrettyString());
+  }
 }
