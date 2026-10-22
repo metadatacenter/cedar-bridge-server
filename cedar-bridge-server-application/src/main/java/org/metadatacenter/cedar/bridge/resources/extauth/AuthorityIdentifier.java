@@ -1,5 +1,7 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -58,6 +60,60 @@ final class AuthorityIdentifier {
       }
     }
     return path.toString();
+  }
+
+  /**
+   * {@code id} with each percent-escape decoded once, as UTF-8. That is the identifier an IRI holding
+   * {@code id} names.
+   *
+   * <p>An identifier holding an escape that is not a percent sign and two ASCII hexadecimal digits, or
+   * escapes whose octets are not UTF-8, spells no other identifier, and is returned as written.
+   */
+  static String decoded(String id) {
+    if (id.indexOf('%') < 0) {
+      return id;
+    }
+    StringBuilder decoded = new StringBuilder();
+    ByteBuffer octets = ByteBuffer.allocate(id.length());
+    for (int i = 0; i < id.length(); i++) {
+      char c = id.charAt(i);
+      if (c == '%') {
+        int high = i + 2 < id.length() ? hexDigit(id.charAt(i + 1)) : -1;
+        int low = high >= 0 ? hexDigit(id.charAt(i + 2)) : -1;
+        if (low < 0) {
+          return id;
+        }
+        octets.put((byte) (high << 4 | low));
+        i += 2;
+        continue;
+      }
+      if (octets.position() > 0 && !appendUtf8(octets, decoded)) {
+        return id;
+      }
+      decoded.append(c);
+    }
+    return octets.position() == 0 || appendUtf8(octets, decoded) ? decoded.toString() : id;
+  }
+
+  /** The value of an ASCII hexadecimal digit, or -1 for any other character. */
+  private static int hexDigit(char c) {
+    return c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1;
+  }
+
+  /**
+   * Appends the run of escaped octets as the characters they encode, and empties the run. Answers false,
+   * and appends nothing, when the octets are not UTF-8.
+   */
+  private static boolean appendUtf8(ByteBuffer octets, StringBuilder decoded) {
+    octets.flip();
+    try {
+      decoded.append(StandardCharsets.UTF_8.newDecoder().decode(octets));
+      return true;
+    } catch (CharacterCodingException notUtf8) {
+      return false;
+    } finally {
+      octets.clear();
+    }
   }
 
   static Optional<String> extract(String authority, String iri) {

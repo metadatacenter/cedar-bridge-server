@@ -54,8 +54,9 @@ public interface ExternalAuthority {
    * accepts. By default the registry decides, so every identifier could be.
    *
    * <p>One that could not, such as a DOI holding a space, is answered as an identifier the registry
-   * does not hold, without asking the registry and without calling through the authority's circuit
-   * breaker. No request is made for it, so it is no evidence about whether the registry is answering.
+   * does not hold, by the lookup route and by verification alike, without asking the registry and
+   * without calling through the authority's circuit breaker. No request is made for it, so it is no
+   * evidence about whether the registry is answering.
    */
   default boolean couldIdentify(String id) {
     return true;

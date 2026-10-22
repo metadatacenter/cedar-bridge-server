@@ -197,6 +197,32 @@ public class RegistryAnswerMatrixTest {
     assertFalse(JsonMapper.STRICT_MAPPER.readTree(details.body()).path("found").asBoolean());
   }
 
+  /**
+   * A DOI IRI holding percent-escapes is verified as the DOI it names. DataCite is asked for that DOI,
+   * encoded as a path requires, and the DOI it answers with is compared with it. Taken as written, the
+   * escapes were encoded a second time, DataCite was asked for another DOI, and its answer never
+   * matched.
+   */
+  @Test
+  void aDoiIriHoldingEscapesIsVerifiedAsTheDoiItNames() throws Exception {
+    ASKED.clear();
+    FAULT.set(new Fault("doi", "details", Answer.OK,
+        "{\"data\":{\"attributes\":{\"doi\":\"10.1234/café\",\"titles\":[{\"title\":\"Un café\"}]}}}"));
+    String iri = "https://doi.org/10.1234/caf%C3%A9";
+    String body = JsonMapper.STRICT_MAPPER.createObjectNode().put("iri", iri).toString();
+
+    HttpResponse<String> response = CLIENT.send(HttpRequest.newBuilder()
+        .uri(URI.create("http://localhost:" + SERVER.getLocalPort() + "/ext-auth/doi/verify"))
+        .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build(),
+        HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(200, response.statusCode(), response.body());
+    JsonNode result = JsonMapper.STRICT_MAPPER.readTree(response.body());
+    assertEquals("passed", result.path("status").asText(), response.body());
+    assertEquals(iri, result.path("iri").asText());
+    assertEquals(List.of("/dois/10.1234/caf%C3%A9 "), ASKED);
+  }
+
   static {
     redirectEnvironment();
   }
@@ -360,6 +386,10 @@ public class RegistryAnswerMatrixTest {
         Arguments.of("doi", "https%3A%2F%2Fdoi.org%2F10.1234%2Fa%20b"),
         Arguments.of("doi", "10.1234%2Fa%C2%A0b"),
         Arguments.of("doi", "doi%3A"),
+        Arguments.of("doi", "10.1234%2Fa%2F.."),
+        Arguments.of("doi", "10.1234%2Fa%2F."),
+        Arguments.of("doi", "https%3A%2F%2Fdoi.org%2F10.1234%2Fa%2F.."),
+        Arguments.of("doi", "doi%3A10.1234%2Fa%2F."),
         Arguments.of("rrid", "AB%201"),
         Arguments.of("rrid", "https%3A%2F%2Fidentifiers.org%2FRRID%3AAB%201"),
         Arguments.of("rrid", "RRID%3AAB_1%E2%80%8B"));
@@ -369,6 +399,9 @@ public class RegistryAnswerMatrixTest {
    * A DOI or RRID holding a space, or another character that cannot be part of one, is not one the
    * registry holds, and is answered so without asking it. The request it made could not be sent, and
    * the lookup answered 500.
+   *
+   * <p>Nor is a DOI ending in a {@code .} or {@code ..} segment. Its path would end in that segment, and
+   * a server that resolves the segment looks up another DOI.
    */
   @ParameterizedTest(name = "{0} {1}")
   @MethodSource("identifiersNoRegistryHolds")
