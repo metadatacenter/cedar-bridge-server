@@ -16,7 +16,9 @@ import org.metadatacenter.cedar.bridge.DataCiteFixtures;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.config.DataCiteConfig;
 import org.metadatacenter.config.ServerConfig;
+import org.metadatacenter.constant.LinkedData;
 import org.metadatacenter.error.CedarErrorKey;
+import org.metadatacenter.model.ModelNodeNames;
 import org.metadatacenter.model.folderserver.basic.FolderServerArtifact;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.FolderServiceSession;
@@ -36,6 +38,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Year;
@@ -95,6 +98,9 @@ class DataCiteDoiRoutesTest {
 
   private record Reply(int status, String body) {}
 
+  /** DataCite accepting the connection and never answering. */
+  private static final Reply NO_ANSWER = new Reply(0, null);
+
   private record SentToDataCite(DataCiteCall call, URI uri, String contentType, String body) {}
 
   private final Map<DataCiteCall, Reply> dataCiteReplies = new EnumMap<>(DataCiteCall.class);
@@ -102,8 +108,12 @@ class DataCiteDoiRoutesTest {
   private final List<String> sentToResource = new CopyOnWriteArrayList<>();
   private String validationReply = "{\"validates\":\"true\"}";
   private String templateReply = DATACITE_TEMPLATE.toString();
+  private String sourceReply = SOURCE_ARTIFACT.toString();
 
   private HttpServer resourceServer;
+  private CedarConfig config;
+  private CedarDataServices dataServices;
+  private DataCiteHttpClient dataCiteClient;
   private CedarRequestContext context;
   private ResourcePermissionServiceSession permissionSession;
   private DataCiteResource.DoiAnnotationWriter annotationWriter;
@@ -128,7 +138,7 @@ class DataCiteDoiRoutesTest {
         reply = templateReply;
       } else if (path.equals("/template-instances/" + SOURCE_ID)) {
         sentToResource.add("read source");
-        reply = SOURCE_ARTIFACT.toString();
+        reply = sourceReply;
       } else {
         sentToResource.add("unexpected " + path);
         status = 404;
@@ -147,7 +157,7 @@ class DataCiteDoiRoutesTest {
     ServerConfig resourceConfig = mock(ServerConfig.class);
     when(resourceConfig.getBase()).thenReturn("http://127.0.0.1:" + resourceServer.getAddress().getPort() + "/");
     ResourceMicroserviceUrlProvider resourceUrls = new ResourceMicroserviceUrlProvider(resourceConfig);
-    CedarConfig config = mock(CedarConfig.class, RETURNS_DEEP_STUBS);
+    config = mock(CedarConfig.class, RETURNS_DEEP_STUBS);
     when(config.getMicroserviceUrlUtil().getResource()).thenReturn(resourceUrls);
     when(config.getLinkedDataUtil().resolveResourceId(anyString())).thenAnswer(call -> call.getArgument(0));
     when(config.getServers().getOpenview().getUriBase()).thenReturn(OPENVIEW_BASE);
@@ -164,7 +174,7 @@ class DataCiteDoiRoutesTest {
     when(context.getGlobalRequestIdHeader()).thenReturn("doi-request-identity");
     when(context.getCedarUser().getId()).thenReturn(USER_ID);
 
-    CedarDataServices dataServices = mock(CedarDataServices.class);
+    dataServices = mock(CedarDataServices.class);
     permissionSession = mock(ResourcePermissionServiceSession.class);
     FolderServiceSession folderSession = mock(FolderServiceSession.class);
     FolderServerArtifact folderArtifact = mock(FolderServerArtifact.class);
@@ -174,13 +184,18 @@ class DataCiteDoiRoutesTest {
     when(folderSession.findArtifactById(any())).thenReturn(folderArtifact);
     when(folderArtifact.isOpen()).thenReturn(true);
 
-    DataCiteHttpClient dataCiteClient = mock(DataCiteHttpClient.class);
+    dataCiteClient = mock(DataCiteHttpClient.class);
     when(dataCiteClient.send(any())).thenAnswer(call -> answerAsDataCite(call.getArgument(0)));
 
     annotationWriter = mock(DataCiteResource.DoiAnnotationWriter.class);
     when(annotationWriter.post(anyString(), any(), anyString())).thenReturn(new BasicClassicHttpResponse(200));
 
-    resource = new DataCiteResource(config, dataServices, dataCiteClient, annotationWriter) {
+    resource = newResource();
+  }
+
+  /** The resource over the scripted collaborators, reading the configuration as it stands. */
+  private DataCiteResource newResource() {
+    return new DataCiteResource(config, dataServices, dataCiteClient, annotationWriter) {
       @Override
       protected CedarRequestContext buildRequestContext() {
         return context;
@@ -386,6 +401,77 @@ class DataCiteDoiRoutesTest {
     verifyNoInteractions(annotationWriter);
   }
 
+  /**
+   * An artifact that records a findable DOI gets no second one, since a DOI is permanent. Neither
+   * route sends DataCite anything, and the refusal names the DOI the artifact has.
+   */
+  @Test
+  void refusesASecondDoiForAnArtifactThatAlreadyHasOne() throws Exception {
+    String held = "https://doi.org/" + PREFIX + "/held-0001";
+    ObjectNode annotated = SOURCE_ARTIFACT.deepCopy();
+    annotated.putObject(ModelNodeNames.ANNOTATIONS).putObject(ModelNodeNames.DATACITE_DOI_URI).put(LinkedData.ID, held);
+    sourceReply = annotated.toString();
+
+    List<Response> responses =
+        List.of(resource.createDOIStart(SOURCE_ID), resource.createDOI(SOURCE_ID, "publish", dataCiteInstance()));
+
+    for (Response response : responses) {
+      assertEquals(409, response.getStatus());
+      CedarError error = assertInstanceOf(CedarError.class, response.getEntity());
+      assertEquals(CedarErrorKey.DOI_ALREADY_EXISTS.getValue(), error.errorKey);
+      assertEquals(held, error.parameters.get("doi"));
+    }
+    assertTrue(sentToDataCite.isEmpty(), "an artifact with a DOI must not reach DataCite: " + sentToDataCite);
+    assertEquals(List.of("read template", "read source", "read source"), sentToResource,
+        "the metadata of a refused registration is not validated");
+    verifyNoInteractions(annotationWriter);
+  }
+
+  /**
+   * DataCite not answering is a bad gateway. A registration it did not answer may still have been
+   * made, so the message says the publication state is unknown, and nothing is recorded on the
+   * artifact.
+   */
+  @Test
+  void aDataCiteThatDoesNotAnswerLeavesARegistrationsStateUnknown() throws Exception {
+    dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP, new Reply(200, "{\"data\": []}"));
+    dataCiteReplies.put(DataCiteCall.CREATE, NO_ANSWER);
+    dataCiteReplies.put(DataCiteCall.METADATA_READ, NO_ANSWER);
+
+    Response registration = resource.createDOI(SOURCE_ID, "publish", dataCiteInstance());
+    Response read = resource.getDOIMetadata("https://doi.org/" + NEW_DOI);
+
+    assertEquals(502, registration.getStatus());
+    assertEquals("The DataCite DOI request failed; publication state is unknown",
+        assertInstanceOf(CedarError.class, registration.getEntity()).message);
+    assertEquals(502, read.getStatus());
+    assertEquals("The DataCite metadata request failed", assertInstanceOf(CedarError.class, read.getEntity()).message);
+    assertEquals(List.of(DataCiteCall.DRAFT_LOOKUP, DataCiteCall.CREATE, DataCiteCall.METADATA_READ), calls());
+    verifyNoInteractions(annotationWriter);
+  }
+
+  /**
+   * With DataCite switched off, every DOI route refuses the request and asks nothing of DataCite or
+   * the resource server.
+   */
+  @Test
+  void everyRouteRefusesWhileDataCiteIsSwitchedOff() throws Exception {
+    when(config.getBridgeConfig().getDataCite().isEnabled()).thenReturn(false);
+    DataCiteResource switchedOff = newResource();
+
+    List<Response> responses = List.of(switchedOff.getDOIMetadata("https://doi.org/" + NEW_DOI),
+        switchedOff.createDOIStart(SOURCE_ID), switchedOff.createDOI(SOURCE_ID, "publish", dataCiteInstance()));
+
+    for (Response response : responses) {
+      assertEquals(400, response.getStatus());
+      CedarError error = assertInstanceOf(CedarError.class, response.getEntity());
+      assertEquals(CedarErrorKey.DATACITE_DOI_DISABLED.getValue(), error.errorKey);
+    }
+    assertTrue(sentToDataCite.isEmpty(), sentToDataCite.toString());
+    assertTrue(sentToResource.isEmpty(), sentToResource.toString());
+    verifyNoInteractions(annotationWriter);
+  }
+
   // Reading a DOI's metadata
 
   @Test
@@ -399,6 +485,26 @@ class DataCiteDoiRoutesTest {
     assertEquals(JsonMapper.STRICT_MAPPER.readTree(held), response.getEntity());
     assertEquals(List.of(DataCiteCall.METADATA_READ), calls());
     assertEquals(URI.create(ENDPOINT + "/" + NEW_DOI + "?affiliation=true"), sentToDataCite.get(0).uri());
+  }
+
+  /**
+   * What DataCite holds for a DOI fills the DOI form, so an answer the DataCite model cannot map, such as
+   * one holding a field the model knows in a shape it does not, is a bad gateway rather than metadata
+   * relayed into a form that cannot read it.
+   */
+  @Test
+  void refusesADataCiteAnswerTheModelCannotMapAsABadGateway() throws Exception {
+    dataCiteReplies.put(DataCiteCall.METADATA_READ, new Reply(200, """
+        {"data": {"id": "%1$s", "type": "dois", "attributes": {"doi": "%1$s", "publicationYear": "not a year"}}}
+        """.formatted(NEW_DOI)));
+
+    Response response = resource.getDOIMetadata("https://doi.org/" + NEW_DOI);
+
+    assertEquals(502, response.getStatus());
+    CedarError error = assertInstanceOf(CedarError.class, response.getEntity());
+    assertEquals(502, error.statusCode);
+    assertEquals("The DataCite metadata request failed", error.message);
+    assertEquals(List.of(DataCiteCall.METADATA_READ), calls());
   }
 
   /**
@@ -601,7 +707,7 @@ class DataCiteDoiRoutesTest {
 
   // The DataCite stub
 
-  private HttpResponse<String> answerAsDataCite(HttpRequest.Builder builder) {
+  private HttpResponse<String> answerAsDataCite(HttpRequest.Builder builder) throws HttpTimeoutException {
     HttpRequest request = builder.build();
     DataCiteCall call = switch (request.method()) {
       case "POST" -> DataCiteCall.CREATE;
@@ -616,6 +722,9 @@ class DataCiteDoiRoutesTest {
     Reply reply = dataCiteReplies.get(call);
     if (reply == null) {
       throw new AssertionError("DataCite received an unscripted " + call + " " + request.uri());
+    }
+    if (reply == NO_ANSWER) {
+      throw new HttpTimeoutException("request timed out");
     }
     return new ScriptedResponse(reply.status(), reply.body(), request);
   }

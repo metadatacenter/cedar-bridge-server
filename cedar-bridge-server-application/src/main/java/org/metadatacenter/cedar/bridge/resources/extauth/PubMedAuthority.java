@@ -62,8 +62,13 @@ public class PubMedAuthority implements ExternalAuthority {
   }
 
   @Override
+  public boolean couldMatch(String query) {
+    return query != null && !query.isBlank();
+  }
+
+  @Override
   public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarProcessingException {
-    if (query == null || query.isBlank()) {
+    if (!couldMatch(query)) {
       return AuthoritySearchAnswer.nothing();
     }
 
@@ -130,6 +135,11 @@ public class PubMedAuthority implements ExternalAuthority {
   }
 
   @Override
+  public boolean couldIdentify(String id) {
+    return extractPmid(id) != null;
+  }
+
+  @Override
   public AuthorityDetailsAnswer details(String id) throws CedarProcessingException {
     final String pmid = extractPmid(id);
     if (pmid == null) {
@@ -157,7 +167,9 @@ public class PubMedAuthority implements ExternalAuthority {
 
     Map<String, Object> body = new HashMap<>();
     body.put("name", title);
-    body.put("id", PUBMED_NCBI_IRI_PREFIX + pmid);
+    // The IRI a search has offered for the same publication since PubMed was added, so an instance
+    // stores one value for it whether it was chosen from a search or looked up.
+    body.put("id", PUBMED_NCBI_IRI_PREFIX + pmid + "/");
     return AuthorityDetailsAnswer.found(body);
   }
 
@@ -229,24 +241,28 @@ public class PubMedAuthority implements ExternalAuthority {
   }
 
   private static String buildDetails(String title, String journal, String pubdate, String pmid) {
+    // The journal follows "an article in" rather than sitting inside "a … article". Which article a
+    // journal's name takes cannot be told from its spelling, as "a European …" and "an Annals …" show.
     String describedJournal =
-        (journal == null || journal.isBlank()) ? "journal article" : ("a " + journal + " article");
+        (journal == null || journal.isBlank()) ? "a journal article" : ("an article in " + journal);
     String year = (pubdate == null) ? "" : " (" + pubdate + ")";
-    return String.format("%s Is %s%s; PMID %s", title, describedJournal, year, pmid);
+    return String.format("%s is %s%s; PMID %s", title, describedJournal, year, pmid);
   }
 
+  /**
+   * The PubMed ID an identifier names, or null when it names none. A PubMed ID is digits, bare or
+   * after a {@code PMID:} or {@code pubmed:} prefix, or in a PubMed URL. Anything else was stripped to
+   * its digits, so a DOI was looked up as whatever publication its digits happened to name.
+   */
   private static String extractPmid(String any) {
     if (any == null || any.isBlank()) {
       return null;
     }
     String s = any.trim();
 
-    // A URL names the publication in its last segment.
+    // A URL names a publication only on PubMed's own site, as the verify route reads it.
     if (s.startsWith("http://") || s.startsWith("https://")) {
-      int lastSlash = s.lastIndexOf('/');
-      if (lastSlash >= 0 && lastSlash + 1 < s.length()) {
-        s = s.substring(lastSlash + 1);
-      }
+      return AuthorityIdentifier.extract(PATH_SEGMENT, s).orElse(null);
     }
 
     if (s.toLowerCase(Locale.ROOT).startsWith("pubmed:")) {
@@ -256,9 +272,9 @@ public class PubMedAuthority implements ExternalAuthority {
       s = s.substring("PMID:".length());
     }
 
-    // A PubMed ID is digits.
-    s = s.replaceAll("[^0-9]", "");
-    return s.isEmpty() ? null : s;
+    // A PubMed ID is digits, and nothing else is one.
+    s = s.trim();
+    return s.matches("[0-9]+") ? s : null;
   }
 
   /** NCBI takes no key in a header; it goes on the query string. */

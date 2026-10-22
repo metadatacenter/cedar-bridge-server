@@ -48,4 +48,28 @@ public interface ExternalAuthority {
 
   /** Everything this authority knows about one identifier. */
   AuthorityDetailsAnswer details(String id) throws CedarException;
+
+  /**
+   * Whether {@code id} could be one of this registry's identifiers, in any spelling {@link #details}
+   * accepts. By default the registry decides, so every identifier could be.
+   *
+   * <p>One that could not, such as a DOI holding a space, is answered as an identifier the registry
+   * does not hold, without asking the registry and without calling through the authority's circuit
+   * breaker. No request is made for it, so it is no evidence about whether the registry is answering.
+   */
+  default boolean couldIdentify(String id) {
+    return true;
+  }
+
+  /**
+   * Whether a search for {@code query} could match anything this registry holds. By default the
+   * registry decides, so every search could.
+   *
+   * <p>For a search that could not, the route calls {@link #search} without the authority's circuit
+   * breaker. No request is made for it, so it is no evidence about whether the registry is answering.
+   * An authority that overrides this must therefore answer such a search without asking its registry.
+   */
+  default boolean couldMatch(String query) {
+    return true;
+  }
 }

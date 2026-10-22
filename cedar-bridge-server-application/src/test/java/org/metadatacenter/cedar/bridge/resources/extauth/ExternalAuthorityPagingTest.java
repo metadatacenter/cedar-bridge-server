@@ -69,6 +69,9 @@ public class ExternalAuthorityPagingTest {
     environment.put("CEDAR_BRIDGE_HTTP_PORT", "0");
     environment.put("CEDAR_BRIDGE_ADMIN_PORT", "0");
     environment.put("CEDAR_BRIDGE_STOP_PORT", "0");
+    // The server loads its CompTox registry as it starts. Point it at a port nothing listens on, so
+    // it never reaches EPA's API, which CI configures.
+    environment.put("CEDAR_COMP_TOX_API_PREFIX", "http://127.0.0.1:1/");
     environment.put("CEDAR_ROR_API_PREFIX", REGISTRY_BASE + "/ror/");
     CedarEnvironmentSource.setOverride(environment);
   }
@@ -209,6 +212,29 @@ public class ExternalAuthorityPagingTest {
     assertTrue(one.body().contains("pageSize must be > 1"), one.body());
     assertEquals(400, negative.statusCode());
     assertTrue(negative.body().contains("page must be >= 0"), negative.body());
+  }
+
+  /**
+   * A page starts at its number times its size. A product beyond the largest offset an int holds
+   * overflowed to a negative offset, which reached the authority. DataCite was asked for a page
+   * numbered below one, and ROR and PFAS failed with 500. It is refused before any authority runs.
+   */
+  @Test
+  public void aPageStartingBeyondTheLargestOffsetIsRefusedBeforeAnAuthorityIsAsked() throws Exception {
+    for (String authority : List.of("scripted", "doi")) {
+      for (String paging : List.of("page=21474837&pageSize=100", "page=1073741824&pageSize=2", "page=2147483647")) {
+        HttpResponse<String> response = send("/ext-auth/" + authority + "/search-by-name?q=x&" + paging);
+
+        JsonNode error = SharedErrorBody.of(response, 400);
+        assertEquals("Invalid pagination parameters: page times pageSize must be at most 2147483647",
+            error.get("message").asText(), authority + " " + paging);
+      }
+    }
+    assertEquals(-1, SCRIPTED.lastOffset, "the authority was asked anyway");
+    assertEquals(List.of(), dataciteRequests, "DataCite was asked anyway");
+
+    get("/ext-auth/scripted/search-by-name?q=x&page=1073741823&pageSize=2");
+    assertEquals(2147483646, SCRIPTED.lastOffset, "the furthest page that can be asked for");
   }
 
   @Test

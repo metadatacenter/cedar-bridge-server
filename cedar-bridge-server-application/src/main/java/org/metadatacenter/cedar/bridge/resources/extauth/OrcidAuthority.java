@@ -92,8 +92,13 @@ public class OrcidAuthority implements ExternalAuthority {
   }
 
   @Override
+  public boolean couldMatch(String query) {
+    return query != null && !query.trim().isEmpty();
+  }
+
+  @Override
   public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarException {
-    if (query == null || query.trim().isEmpty()) {
+    if (!couldMatch(query)) {
       return AuthoritySearchAnswer.nothing();
     }
 
@@ -168,32 +173,37 @@ public class OrcidAuthority implements ExternalAuthority {
     return idToInfo;
   }
 
-  /**
-   * What to call a researcher a search returned.
-   *
-   * <p>Their credit name if they have chosen one, then given and family names together, then the
-   * first of any other names they list — a record without a credit name is still named rather than
-   * dropped.
-   */
+  /** What to call a researcher a search returned, by {@link #researcherName}. */
   private static String searchResultName(JsonNode item) {
-    JsonNode creditNameNode = item.get("credit-name");
-    if (creditNameNode != null && !creditNameNode.asText().trim().isEmpty()) {
-      return creditNameNode.textValue();
-    }
+    return researcherName(text(item.path("credit-name")), text(item.path("given-names")),
+        text(item.path("family-names")), text(item.path("other-name").path(0)));
+  }
 
-    JsonNode givenNamesNode = item.get("given-names");
-    JsonNode familyNamesNode = item.get("family-names");
-    String given = (givenNamesNode == null) ? null : givenNamesNode.textValue();
-    String family = (familyNamesNode == null) ? null : familyNamesNode.textValue();
+  /**
+   * What to call a researcher, whether a search returned them or their record was looked up.
+   *
+   * <p>Their credit name if they have chosen one, then given and family names together, then
+   * whichever of the two they have, then the first of any other names they list. ORCID sends a name
+   * the researcher has not given as null, which is no name. Search and lookup named a researcher
+   * each in its own way: a search dropped anyone whose credit name was null and anyone with only a
+   * given or only a family name, and a lookup failed on a family name that was null.
+   */
+  private static String researcherName(String credit, String given, String family, String other) {
+    if (credit != null) {
+      return credit;
+    }
     if (given != null && family != null) {
       return given + " " + family;
     }
-
-    JsonNode otherNamesNode = item.get("other-name");
-    if (otherNamesNode != null && otherNamesNode.isArray() && !otherNamesNode.isEmpty()) {
-      return otherNamesNode.get(0).textValue();
+    if (given != null) {
+      return given;
     }
-    return null;
+    return (family != null) ? family : other;
+  }
+
+  /** A name's text, or null when it is absent, null or blank. */
+  private static String text(JsonNode name) {
+    return name.isTextual() && !name.textValue().isBlank() ? name.textValue() : null;
   }
 
   private static String institutions(JsonNode item) {
@@ -212,32 +222,11 @@ public class OrcidAuthority implements ExternalAuthority {
 
   /** The same question as {@link #searchResultName}, of a full record, whose shape differs. */
   private static String bestName(JsonNode root) {
-    JsonNode personNode = root.get("person");
-    if (personNode == null) {
-      return null;
-    }
-    JsonNode nameNode = personNode.get("name");
-    if (nameNode == null) {
-      return null;
-    }
-
-    JsonNode givenNamesNode = nameNode.get("given-names");
-    JsonNode familyNameNode = nameNode.get("family-name");
-    JsonNode creditNameNode = nameNode.get("credit-name");
-
-    if (creditNameNode != null && !creditNameNode.isNull()) {
-      return creditNameNode.get("value").asText();
-    }
-    if (givenNamesNode != null && familyNameNode != null) {
-      return givenNamesNode.get("value").asText() + " " + familyNameNode.get("value").asText();
-    }
-    if (givenNamesNode != null) {
-      return givenNamesNode.get("value").asText();
-    }
-    if (familyNameNode != null) {
-      return familyNameNode.get("value").asText();
-    }
-    return null;
+    JsonNode person = root.path("person");
+    JsonNode name = person.path("name");
+    return researcherName(text(name.path("credit-name").path("value")), text(name.path("given-names").path("value")),
+        text(name.path("family-name").path("value")),
+        text(person.path("other-names").path("other-name").path(0).path("content")));
   }
 
   private static String recordId(JsonNode root) {

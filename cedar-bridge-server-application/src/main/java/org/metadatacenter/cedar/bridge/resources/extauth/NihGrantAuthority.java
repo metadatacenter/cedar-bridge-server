@@ -1,9 +1,13 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.ws.rs.core.MediaType;
 import org.metadatacenter.constant.HttpConstants;
+import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.exception.CedarProcessingException;
+import org.metadatacenter.rest.exception.CedarAssertionException;
+import org.metadatacenter.util.json.JsonMapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,6 +33,18 @@ public class NihGrantAuthority implements ExternalAuthority {
    */
   private static final int OVER_FETCH = 5;
 
+  /**
+   * The most records one request may ask for, as RePORTER documents its {@code limit}: "Maximum
+   * allowed value is 500" (https://api.reporter.nih.gov/). Five times a page larger than 100 is more.
+   */
+  private static final int REPORTER_MAX_LIMIT = 500;
+
+  /**
+   * The furthest RePORTER pages, as it documents its {@code offset}: "Maximum allowed value is 14,999"
+   * (https://api.reporter.nih.gov/). It refuses a deeper offset with a 400 of its own.
+   */
+  private static final int REPORTER_MAX_OFFSET = 14_999;
+
   private final String reporterApi;
 
   public NihGrantAuthority() {
@@ -51,13 +67,27 @@ public class NihGrantAuthority implements ExternalAuthority {
   }
 
   @Override
-  public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarProcessingException {
-    if (query == null || query.isBlank()) {
+  public boolean couldMatch(String query) {
+    return query != null && !query.isBlank();
+  }
+
+  @Override
+  public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarException {
+    if (offset > REPORTER_MAX_OFFSET) {
+      // Refused here rather than relayed, so the caller learns why in words it can show.
+      throw new CedarAssertionException("NIH RePORTER cannot page beyond an offset of 14,999. "
+          + "Narrow the search to reach later matches.").parameter("offset", offset).badRequest();
+    }
+    if (!couldMatch(query)) {
       return AuthoritySearchAnswer.nothing();
     }
 
-    String body = String.format("{\"criteria\":{\"project_title\":\"%s\"},\"offset\":%d,\"limit\":%d}",
-        query, offset, limit * OVER_FETCH);
+    // Built as JSON rather than formatted as a string, which a quotation mark in the query ended.
+    ObjectNode request = JsonMapper.STRICT_MAPPER.createObjectNode();
+    request.putObject("criteria").put("project_title", query);
+    request.put("offset", offset);
+    request.put("limit", Math.min(limit * OVER_FETCH, REPORTER_MAX_LIMIT));
+    String body = request.toString();
 
     RegistryReply reply = RegistryReply.post(reporterApi, defaultHeaders(), body);
     if (!reply.ok()) {
@@ -84,8 +114,13 @@ public class NihGrantAuthority implements ExternalAuthority {
   }
 
   @Override
+  public boolean couldIdentify(String id) {
+    return id != null && !id.isBlank();
+  }
+
+  @Override
   public AuthorityDetailsAnswer details(String id) throws CedarProcessingException {
-    if (id == null || id.isBlank()) {
+    if (!couldIdentify(id)) {
       return AuthorityDetailsAnswer.notFound(new HashMap<>());
     }
 

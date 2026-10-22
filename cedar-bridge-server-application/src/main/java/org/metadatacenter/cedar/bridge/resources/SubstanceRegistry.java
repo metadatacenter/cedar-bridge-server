@@ -47,10 +47,6 @@ public class SubstanceRegistry {
   private static final String DTXSID_BATCH_LOOKUP_URL_SUFFIX =
       "chemical/detail/search/by-dtxsid/";
 
-  @SuppressWarnings("unused")
-  private static final String DASHBOARD_DETAILS_BASE =
-      "https://comptox.epa.gov/dashboard/chemical/details/";
-
   private static final int BATCH_SIZE = 1000;
 
   private final String apiKey;
@@ -186,17 +182,16 @@ public class SubstanceRegistry {
       ClassicHttpResponse detailResponse = ProxyUtil.proxyPost(dtxsidBatchLookupUrl, headers, payloadJson);
       int detailStatus = detailResponse.getCode();
 
+      // A batch that did not arrive fails the load, which the loader then retries. Skipping it
+      // counted a registry with none of its substances as loaded, and nothing asked again.
       if (detailStatus != HttpConstants.OK) {
-        log.warn("CompTox batch starting at {} failed: HTTP {}", i, detailStatus);
-        continue;
-      } else {
-        log.info("CompTox batch starting at {} loaded.", i);
+        throw new RuntimeException("CompTox batch starting at " + i + " failed: HTTP " + detailStatus);
       }
+      log.info("CompTox batch starting at {} loaded.", i);
 
       HttpEntity detailEntity = detailResponse.getEntity();
       if (detailEntity == null) {
-        log.warn("CompTox batch starting at {} returned empty response", i);
-        continue;
+        throw new RuntimeException("CompTox batch starting at " + i + " returned an empty response");
       }
 
       String detailJson = EntityUtils.toString(detailEntity, CharEncoding.UTF_8);

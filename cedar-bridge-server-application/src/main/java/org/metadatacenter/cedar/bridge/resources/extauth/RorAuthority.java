@@ -176,22 +176,24 @@ public class RorAuthority implements ExternalAuthority {
       }
     }
 
-    JsonNode countryNode = item.get("country");
-    if (countryNode != null && countryNode.get("country_name") != null) {
+    // The configured API answers in ROR's version 2 shape: the country belongs to a location, and a
+    // link carries its type beside its URL. This read version 1's top-level country and plain-string
+    // links, so it found neither.
+    JsonNode countryNameNode = item.path("locations").path(0).path("geonames_details").path("country_name");
+    if (countryNameNode.isTextual()) {
       if (sb.length() > 0) {
         sb.append(", ");
       }
-      sb.append("located in ").append(countryNode.get("country_name").textValue());
+      sb.append("located in ").append(countryNameNode.textValue());
     }
 
-    JsonNode linksNode = item.get("links");
-    if (linksNode != null && linksNode.isArray() && linksNode.size() > 0) {
-      JsonNode firstLink = linksNode.get(0);
-      if (firstLink != null && firstLink.isTextual()) {
+    for (JsonNode link : item.path("links")) {
+      if ("website".equals(link.path("type").textValue()) && link.path("value").isTextual()) {
         if (sb.length() > 0) {
           sb.append(", ");
         }
-        sb.append("with URL ").append(firstLink.textValue());
+        sb.append("with URL ").append(link.path("value").textValue());
+        break;
       }
     }
     return sb.length() > 0 ? sb.toString() : null;

@@ -11,6 +11,8 @@ import org.metadatacenter.util.http.ProxyUtil;
 import org.metadatacenter.util.json.JsonMapper;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
@@ -41,11 +43,28 @@ final class RegistryReply {
   }
 
   static RegistryReply get(String url, Map<String, String> headers) throws CedarProcessingException {
-    return of(ProxyUtil.proxyGet(url, headers));
+    return of(ProxyUtil.proxyGet(sendable(url), headers));
   }
 
   static RegistryReply post(String url, Map<String, String> headers, String content) throws CedarProcessingException {
-    return of(ProxyUtil.proxyPost(url, headers, content));
+    return of(ProxyUtil.proxyPost(sendable(url), headers, content));
+  }
+
+  /**
+   * The URL, when it can be sent.
+   *
+   * <p>The HTTP client accepts a URL it cannot parse and fails only when it comes to send it, in the
+   * way it fails when a registry cannot be reached, so the request was answered 503 and counted by
+   * the authority's circuit breaker against a registry it never reached. A request this server built
+   * wrongly is this server's failure, a 500, which the breaker does not count against the registry.
+   */
+  private static String sendable(String url) throws CedarProcessingException {
+    try {
+      new URI(url);
+      return url;
+    } catch (URISyntaxException e) {
+      throw new CedarProcessingException("The request to the registry could not be built", e);
+    }
   }
 
   private static RegistryReply of(ClassicHttpResponse response) throws CedarProcessingException {
@@ -94,8 +113,25 @@ final class RegistryReply {
 
   /** An answer that could not be read, which is a 502: the registry, not this server, failed. */
   static CedarProcessingException unreadable(Exception cause) {
-    CedarProcessingException failure = new CedarProcessingException("The registry's answer could not be read", cause);
+    CedarProcessingException failure = new UnreadableAnswer(cause);
     failure.getErrorPack().status(CedarResponseStatus.BAD_GATEWAY);
     return failure;
+  }
+
+  /** Whether a failure is, or was caused by, an answer the registry gave that could not be read. */
+  static boolean unreadableAnswer(Throwable failure) {
+    for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+      if (cause instanceof UnreadableAnswer) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** The failure {@link #unreadable} raises, told apart from one that happened before any answer. */
+  private static final class UnreadableAnswer extends CedarProcessingException {
+    UnreadableAnswer(Exception cause) {
+      super("The registry's answer could not be read", cause);
+    }
   }
 }

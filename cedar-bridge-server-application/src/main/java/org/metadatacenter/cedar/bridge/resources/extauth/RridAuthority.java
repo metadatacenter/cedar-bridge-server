@@ -82,8 +82,15 @@ public class RridAuthority implements ExternalAuthority {
   }
 
   @Override
+  public boolean couldIdentify(String id) {
+    String rrid = extractBaseRrid(id);
+    return AuthorityIdentifier.printable(rrid.substring(rrid.indexOf(':') + 1));
+  }
+
+  @Override
   public AuthorityDetailsAnswer details(String id) throws CedarProcessingException {
-    final String resolverUrl = resolverApi + extractBaseRrid(id) + ".json";
+    // SciCrunch reads the RRID from one path segment, colons and all.
+    final String resolverUrl = resolverApi + AuthorityIdentifier.requestPath(extractBaseRrid(id), false) + ".json";
 
     Map<String, String> headers = new HashMap<>();
     headers.put("apikey", rridApiKey);
@@ -182,6 +189,10 @@ public class RridAuthority implements ExternalAuthority {
 
     int xrefCount = itemNode.path("alternateIdentifiers").size();
 
-    return String.format("%s is a %s. Alternate identifiers exist in %d database(s).", name, type, xrefCount);
+    // SciCrunch's types are common nouns such as "antibody" and "cell line", whose article follows
+    // their first letter.
+    boolean vowel = !type.isEmpty() && "aeiou".indexOf(Character.toLowerCase(type.charAt(0))) >= 0;
+    String article = vowel ? "an" : "a";
+    return String.format("%s is %s %s. Alternate identifiers exist in %d database(s).", name, article, type, xrefCount);
   }
 }

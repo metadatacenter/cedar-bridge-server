@@ -6,11 +6,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.exception.CedarProcessingException;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.StringJoiner;
+import java.util.regex.Pattern;
 
 /** Publications and datasets, from DataCite. */
 public class DoiAuthority implements ExternalAuthority {
@@ -19,6 +24,19 @@ public class DoiAuthority implements ExternalAuthority {
 
   private static final String DATACITE_API_PREFIX = "https://api.datacite.org/dois";
   private static final String DOI_IRI_BASE = "https://doi.org/";
+
+  /**
+   * The characters DataCite's query syntax, Elasticsearch's query string, reads as operators. The
+   * slash is one of them, but DataCite escapes every slash in a query itself, and refuses a query
+   * whose slash was escaped already.
+   */
+  private static final String QUERY_OPERATOR_CHARACTERS = "+-=&|<>!(){}[]^\"~*?:\\";
+
+  /** The words the same syntax reads as operators when one stands alone. */
+  private static final Set<String> QUERY_OPERATOR_WORDS = Set.of("AND", "OR", "NOT");
+
+  /** What the query syntax separates words with. */
+  private static final Pattern QUERY_WHITESPACE = Pattern.compile("[ \\t\\n\\r\\u3000]+");
 
   private final String dataciteApiPrefix;
 
@@ -75,9 +93,33 @@ public class DoiAuthority implements ExternalAuthority {
   }
 
   private String pageUrl(String q, int page, int size) {
-    // Titles only, so a search for a name does not match an abstract.
-    return String.format("%s?query=titles.title:%s&page[number]=%d&page[size]=%d",
-        dataciteApiPrefix, q, page, size);
+    // Titles only, so a search for a name does not match an abstract. The query is encoded, so what
+    // was typed is one value. Unencoded, a space could not be sent, and an ampersand set DataCite's
+    // other parameters.
+    return String.format("%s?query=%s&page[number]=%d&page[size]=%d",
+        dataciteApiPrefix, URLEncoder.encode(titleQuery(q), StandardCharsets.UTF_8), page, size);
+  }
+
+  /**
+   * The query for titles holding every word typed, in any order.
+   *
+   * <p>The words are grouped, and DataCite requires every term of a group. Ungrouped, only the first
+   * word was a title term, and the rest matched any field DataCite searches. Each operator character
+   * is escaped, and so is each operator word, so what was typed stays text.
+   */
+  private static String titleQuery(String typed) {
+    StringJoiner query = new StringJoiner(" ", "titles.title:(", ")");
+    for (String word : QUERY_WHITESPACE.split(typed.trim())) {
+      StringBuilder escaped = new StringBuilder(QUERY_OPERATOR_WORDS.contains(word) ? "\\" : "");
+      for (char c : word.toCharArray()) {
+        if (QUERY_OPERATOR_CHARACTERS.indexOf(c) >= 0) {
+          escaped.append('\\');
+        }
+        escaped.append(c);
+      }
+      query.add(escaped);
+    }
+    return query.toString();
   }
 
   private Map<String, Object> terms(JsonNode root) {
@@ -100,8 +142,14 @@ public class DoiAuthority implements ExternalAuthority {
   }
 
   @Override
+  public boolean couldIdentify(String id) {
+    return AuthorityIdentifier.printable(extractBaseDoi(id));
+  }
+
+  @Override
   public AuthorityDetailsAnswer details(String id) throws CedarProcessingException {
-    RegistryReply upstream = RegistryReply.get(dataciteApiPrefix + "/" + extractBaseDoi(id), new HashMap<>());
+    RegistryReply upstream = RegistryReply.get(
+        dataciteApiPrefix + "/" + AuthorityIdentifier.requestPath(extractBaseDoi(id), true), new HashMap<>());
     if (upstream.status() == HttpConstants.NOT_FOUND) {
       return AuthorityDetailsAnswer.notFound(new HashMap<>());
     }

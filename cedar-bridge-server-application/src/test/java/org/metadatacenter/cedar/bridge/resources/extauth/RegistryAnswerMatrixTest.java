@@ -9,6 +9,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -23,6 +24,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -33,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -126,6 +129,9 @@ public class RegistryAnswerMatrixTest {
 
   private static final AtomicReference<Fault> FAULT = new AtomicReference<>();
 
+  /** Every request the registry received: its path, as it was sent, and its body. */
+  private static final List<String> ASKED = new CopyOnWriteArrayList<>();
+
   static Stream<Arguments> verificationCases() {
     Map<String, String> iris = Map.of("doi", "https://doi.org/10.1234/abc",
         "nih-grant", "https://reporter.nih.gov/project-details/1", "pmid", "https://pubmed.ncbi.nlm.nih.gov/123",
@@ -200,6 +206,9 @@ public class RegistryAnswerMatrixTest {
     environment.put("CEDAR_BRIDGE_HTTP_PORT", "0");
     environment.put("CEDAR_BRIDGE_ADMIN_PORT", "0");
     environment.put("CEDAR_BRIDGE_STOP_PORT", "0");
+    // The server loads its CompTox registry as it starts. Point it at a port nothing listens on, so
+    // it never reaches EPA's API, which CI configures.
+    environment.put("CEDAR_COMP_TOX_API_PREFIX", "http://127.0.0.1:1/");
     environment.put("CEDAR_ROR_API_PREFIX", REGISTRY_BASE + "/ror/");
     CedarEnvironmentSource.setOverride(environment);
   }
@@ -343,6 +352,101 @@ public class RegistryAnswerMatrixTest {
     }
   }
 
+  // ---- what is answered without asking ---------------------------------------------------------
+
+  static Stream<Arguments> identifiersNoRegistryHolds() {
+    return Stream.of(
+        Arguments.of("doi", "10.1234%2Fa%20b"),
+        Arguments.of("doi", "https%3A%2F%2Fdoi.org%2F10.1234%2Fa%20b"),
+        Arguments.of("doi", "10.1234%2Fa%C2%A0b"),
+        Arguments.of("doi", "doi%3A"),
+        Arguments.of("rrid", "AB%201"),
+        Arguments.of("rrid", "https%3A%2F%2Fidentifiers.org%2FRRID%3AAB%201"),
+        Arguments.of("rrid", "RRID%3AAB_1%E2%80%8B"));
+  }
+
+  /**
+   * A DOI or RRID holding a space, or another character that cannot be part of one, is not one the
+   * registry holds, and is answered so without asking it. The request it made could not be sent, and
+   * the lookup answered 500.
+   */
+  @ParameterizedTest(name = "{0} {1}")
+  @MethodSource("identifiersNoRegistryHolds")
+  void anIdentifierThatCannotBeOneIsNotFoundWithoutAsking(String authority, String id) throws Exception {
+    ASKED.clear();
+
+    HttpResponse<String> response = CLIENT.send(HttpRequest.newBuilder()
+            .uri(URI.create("http://localhost:" + SERVER.getLocalPort() + "/ext-auth/" + authority + "/" + id)).GET().build(),
+        HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(200, response.statusCode(), response.body());
+    assertEquals(JsonMapper.STRICT_MAPPER.createObjectNode().put("found", false)
+            .put("requestedId", URLDecoder.decode(id, StandardCharsets.UTF_8)),
+        JsonMapper.STRICT_MAPPER.readTree(response.body()));
+    assertEquals(List.of(), ASKED, "the registry is not asked");
+  }
+
+  static Stream<Arguments> identifiersAskedForWhole() {
+    return Stream.of(
+        Arguments.of("doi", "10.1234/a<b>", "/dois/10.1234/a%3Cb%3E"),
+        Arguments.of("doi", "10.1234/abc?x", "/dois/10.1234/abc%3Fx"),
+        Arguments.of("doi", "10.1234/abc#x", "/dois/10.1234/abc%23x"),
+        Arguments.of("rrid", "AB_1<2>", "/rrid/resolver/RRID:AB_1%3C2%3E.json"),
+        Arguments.of("rrid", "AB_1?x", "/rrid/resolver/RRID:AB_1%3Fx.json"));
+  }
+
+  /**
+   * A DOI or an RRID holding a character a URL cannot carry is asked for, percent-encoded. The request
+   * built from it could not be sent, and the lookup answered 500. One holding a question mark or a
+   * number sign is asked for whole, where the registry was asked for the part before it, and the
+   * record that part identifies was answered as the one asked for.
+   */
+  @ParameterizedTest(name = "{0} {1}")
+  @MethodSource("identifiersAskedForWhole")
+  void anIdentifierIsAskedForWholeWhateverItHolds(String authority, String id, String asked) throws Exception {
+    ASKED.clear();
+
+    HttpResponse<String> response = CLIENT.send(HttpRequest.newBuilder()
+            .uri(URI.create("http://localhost:" + SERVER.getLocalPort() + "/ext-auth/" + authority + "/"
+                + URLEncoder.encode(id, StandardCharsets.UTF_8))).GET().build(),
+        HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(200, response.statusCode(), response.body());
+    assertEquals(id, JsonMapper.STRICT_MAPPER.readTree(response.body()).path("requestedId").asText());
+    assertEquals(List.of(asked + " "), ASKED);
+  }
+
+  /**
+   * RePORTER pages no further than an offset of 14,999, and refuses a deeper one with an error the route
+   * did not pass on. Such an offset is refused before RePORTER is asked, in words a client can show,
+   * however the page was asked for.
+   */
+  @Test
+  void aRePorterOffsetBeyondItsMaximumIsRefusedWithoutAsking() throws Exception {
+    ASKED.clear();
+    for (String paging : List.of("offset=15000", "offset=15000&limit=10", "page=150&pageSize=100",
+        "offset=2147483647")) {
+      HttpResponse<String> response = CLIENT.send(HttpRequest.newBuilder()
+              .uri(URI.create("http://localhost:" + SERVER.getLocalPort() + "/ext-auth/nih-grant/search-by-name?q=cancer&"
+                  + paging)).GET().build(),
+          HttpResponse.BodyHandlers.ofString());
+
+      JsonNode error = SharedErrorBody.of(response, 400);
+      assertEquals("NIH RePORTER cannot page beyond an offset of 14,999. Narrow the search to reach later matches.",
+          error.get("message").asText(), paging);
+    }
+    assertEquals(List.of(), ASKED, "RePORTER is not asked");
+
+    HttpResponse<String> deepest = CLIENT.send(HttpRequest.newBuilder()
+            .uri(URI.create("http://localhost:" + SERVER.getLocalPort() + "/ext-auth/nih-grant/search-by-name?q=cancer&offset=14999"))
+            .GET().build(),
+        HttpResponse.BodyHandlers.ofString());
+    assertEquals(200, deepest.statusCode(), deepest.body());
+    assertEquals(1, ASKED.size(), ASKED.toString());
+    assertEquals(14999, JsonMapper.STRICT_MAPPER.readTree(ASKED.get(0).substring(ASKED.get(0).indexOf(' ') + 1))
+        .path("offset").asInt());
+  }
+
   /**
    * Whether a registry's status concerns the deployment or the registry rather than the request: a
    * refusal of the deployment's credentials or access, a limit on its requests, or a failure.
@@ -440,6 +544,7 @@ public class RegistryAnswerMatrixTest {
 
   private static void answer(HttpExchange exchange) throws IOException {
     String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+    ASKED.add(exchange.getRequestURI().getRawPath() + " " + body);
     String[] request = identify(exchange.getRequestURI().getPath(), body);
     Fault fault = FAULT.get();
     Answer answer = fault != null && fault.authority().equals(request[0]) && fault.registryRequest().equals(request[1])
