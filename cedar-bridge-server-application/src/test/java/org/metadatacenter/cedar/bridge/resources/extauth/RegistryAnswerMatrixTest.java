@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -128,7 +129,7 @@ public class RegistryAnswerMatrixTest {
 
   private static final AtomicReference<Fault> FAULT = new AtomicReference<>();
 
-  /** Every request the registry received: its path and its body. */
+  /** Every request the registry received: its path, as it was sent, and its body. */
   private static final List<String> ASKED = new CopyOnWriteArrayList<>();
 
   static Stream<Arguments> verificationCases() {
@@ -385,6 +386,36 @@ public class RegistryAnswerMatrixTest {
     assertEquals(List.of(), ASKED, "the registry is not asked");
   }
 
+  static Stream<Arguments> identifiersAskedForWhole() {
+    return Stream.of(
+        Arguments.of("doi", "10.1234/a<b>", "/dois/10.1234/a%3Cb%3E"),
+        Arguments.of("doi", "10.1234/abc?x", "/dois/10.1234/abc%3Fx"),
+        Arguments.of("doi", "10.1234/abc#x", "/dois/10.1234/abc%23x"),
+        Arguments.of("rrid", "AB_1<2>", "/rrid/resolver/RRID:AB_1%3C2%3E.json"),
+        Arguments.of("rrid", "AB_1?x", "/rrid/resolver/RRID:AB_1%3Fx.json"));
+  }
+
+  /**
+   * A DOI or an RRID holding a character a URL cannot carry is asked for, percent-encoded. The request
+   * built from it could not be sent, and the lookup answered 500. One holding a question mark or a
+   * number sign is asked for whole, where the registry was asked for the part before it, and the
+   * record that part identifies was answered as the one asked for.
+   */
+  @ParameterizedTest(name = "{0} {1}")
+  @MethodSource("identifiersAskedForWhole")
+  void anIdentifierIsAskedForWholeWhateverItHolds(String authority, String id, String asked) throws Exception {
+    ASKED.clear();
+
+    HttpResponse<String> response = CLIENT.send(HttpRequest.newBuilder()
+            .uri(URI.create("http://localhost:" + SERVER.getLocalPort() + "/ext-auth/" + authority + "/"
+                + URLEncoder.encode(id, StandardCharsets.UTF_8))).GET().build(),
+        HttpResponse.BodyHandlers.ofString());
+
+    assertEquals(200, response.statusCode(), response.body());
+    assertEquals(id, JsonMapper.STRICT_MAPPER.readTree(response.body()).path("requestedId").asText());
+    assertEquals(List.of(asked + " "), ASKED);
+  }
+
   /**
    * RePORTER pages no further than an offset of 14,999, and refuses a deeper one with an error the route
    * did not pass on. Such an offset is refused before RePORTER is asked, in words a client can show,
@@ -513,7 +544,7 @@ public class RegistryAnswerMatrixTest {
 
   private static void answer(HttpExchange exchange) throws IOException {
     String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-    ASKED.add(exchange.getRequestURI().getPath() + " " + body);
+    ASKED.add(exchange.getRequestURI().getRawPath() + " " + body);
     String[] request = identify(exchange.getRequestURI().getPath(), body);
     Fault fault = FAULT.get();
     Answer answer = fault != null && fault.authority().equals(request[0]) && fault.registryRequest().equals(request[1])

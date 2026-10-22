@@ -62,8 +62,13 @@ public class PubMedAuthority implements ExternalAuthority {
   }
 
   @Override
+  public boolean couldMatch(String query) {
+    return query != null && !query.isBlank();
+  }
+
+  @Override
   public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarProcessingException {
-    if (query == null || query.isBlank()) {
+    if (!couldMatch(query)) {
       return AuthoritySearchAnswer.nothing();
     }
 
@@ -127,6 +132,11 @@ public class PubMedAuthority implements ExternalAuthority {
     } catch (CedarProcessingException e) {
       throw new CompletionException(e);
     }
+  }
+
+  @Override
+  public boolean couldIdentify(String id) {
+    return extractPmid(id) != null;
   }
 
   @Override

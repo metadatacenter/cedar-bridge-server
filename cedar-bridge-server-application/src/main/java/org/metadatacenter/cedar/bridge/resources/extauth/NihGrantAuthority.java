@@ -67,13 +67,18 @@ public class NihGrantAuthority implements ExternalAuthority {
   }
 
   @Override
+  public boolean couldMatch(String query) {
+    return query != null && !query.isBlank();
+  }
+
+  @Override
   public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarException {
     if (offset > REPORTER_MAX_OFFSET) {
       // Refused here rather than relayed, so the caller learns why in words it can show.
       throw new CedarAssertionException("NIH RePORTER cannot page beyond an offset of 14,999. "
           + "Narrow the search to reach later matches.").parameter("offset", offset).badRequest();
     }
-    if (query == null || query.isBlank()) {
+    if (!couldMatch(query)) {
       return AuthoritySearchAnswer.nothing();
     }
 
@@ -109,8 +114,13 @@ public class NihGrantAuthority implements ExternalAuthority {
   }
 
   @Override
+  public boolean couldIdentify(String id) {
+    return id != null && !id.isBlank();
+  }
+
+  @Override
   public AuthorityDetailsAnswer details(String id) throws CedarProcessingException {
-    if (id == null || id.isBlank()) {
+    if (!couldIdentify(id)) {
       return AuthorityDetailsAnswer.notFound(new HashMap<>());
     }
 

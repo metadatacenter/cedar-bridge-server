@@ -1,5 +1,6 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,6 +19,45 @@ final class AuthorityIdentifier {
    */
   static boolean printable(String id) {
     return !id.isEmpty() && !UNPRINTABLE.matcher(id).find();
+  }
+
+  /**
+   * The ASCII characters a request path carries as themselves: RFC 3986's unreserved characters, its
+   * sub-delimiters but {@code +}, and {@code :} and {@code @}.
+   */
+  private static final String PATH_LITERALS = "-._~!$&'()*,;=:@";
+
+  /**
+   * {@code id} as it is put into a registry's request path, so the registry reads exactly the
+   * identifier asked for.
+   *
+   * <p>Each other character is percent-encoded, a non-ASCII one byte by byte as UTF-8. These are the
+   * DOI Handbook's rules for a DOI in a URL (https://www.doi.org/factsheets/DOIProxy.html): it requires
+   * {@code % " # ?} and the space to be encoded, and recommends encoding {@code < > { } ^ [ ] ` | \}
+   * and {@code +}. Unencoded, a character a URL cannot carry made a request that could not be sent,
+   * and a {@code ?} or {@code #} ended the path, so the registry was asked for the identifier's first
+   * part.
+   *
+   * @param slashes whether a slash in {@code id} stays one, as in a DOI, which DataCite reads from
+   *                the rest of the path. The slash after a {@code .} or {@code ..} segment is encoded
+   *                even so, as the Handbook recommends, so that no server resolves the segment and asks
+   *                for another identifier. When false, a slash is encoded like any other character.
+   */
+  static String requestPath(String id, boolean slashes) {
+    StringBuilder path = new StringBuilder();
+    String[] segments = slashes ? id.split("/", -1) : new String[]{id};
+    for (int i = 0; i < segments.length; i++) {
+      if (i > 0) {
+        path.append(segments[i - 1].equals(".") || segments[i - 1].equals("..") ? "%2F" : "/");
+      }
+      for (byte octet : segments[i].getBytes(StandardCharsets.UTF_8)) {
+        char c = (char) (octet & 0xFF);
+        boolean literal = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+            || PATH_LITERALS.indexOf(c) >= 0;
+        path.append(literal ? String.valueOf(c) : String.format("%%%02X", (int) c));
+      }
+    }
+    return path.toString();
   }
 
   static Optional<String> extract(String authority, String iri) {

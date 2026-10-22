@@ -1,11 +1,20 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 import org.junit.jupiter.api.Test;
+import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.exception.CedarProcessingException;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -13,6 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /** When a registry stops being asked, and what it takes to be asked again. */
 class AuthorityCircuitBreakerTest {
@@ -199,6 +211,131 @@ class AuthorityCircuitBreakerTest {
     assertThrows(CedarProcessingException.class, () -> breaker.call(this::answerless));
 
     assertFalse(breaker.isOpen(), "the answer ended the run of answerless calls");
+  }
+
+  // ---- answers given here, without asking -------------------------------------------------------
+
+  /** Nothing listens on port 1 here, so every request to a registry there goes unanswered. */
+  private static final String NOWHERE = "http://127.0.0.1:1/";
+
+  /** One request to the route. */
+  private interface RouteCall {
+    Response call() throws Exception;
+  }
+
+  /**
+   * One authority's requests: one its registry is asked, and those it answers here without asking,
+   * each of which finds nothing.
+   */
+  private record Requests(String authority, RouteCall asked, List<RouteCall> answeredHere) {
+    @Override
+    public String toString() {
+      return authority;
+    }
+  }
+
+  /** The route over PubMed, NIH RePORTER and ORCID, none of whose registries answers. */
+  private ExternalAuthorityResource route() {
+    UriInfo requestUri = mock(UriInfo.class);
+    when(requestUri.getRequestUriBuilder()).thenAnswer(call -> UriBuilder.fromUri("http://localhost/ext-auth"));
+    return new ExternalAuthorityResource(mock(CedarConfig.class, RETURNS_DEEP_STUBS),
+        List.of(new PubMedAuthority(NOWHERE + "eutils/", "key"), new NihGrantAuthority(NOWHERE + "nih"),
+            new OrcidAuthority(NOWHERE + "orcid/", NOWHERE + "orcid/api/", "id", "secret")), now::get) {
+      {
+        // A search page links to the pages beside it, which it builds from the request.
+        uriInfo = requestUri;
+      }
+    };
+  }
+
+  /**
+   * PubMed's answer for an identifier that is not a PubMed ID, NIH's for a blank identifier, and the
+   * three authorities' answers to a blank search.
+   */
+  private static List<Requests> requests(ExternalAuthorityResource route) {
+    return List.of(
+        new Requests("pmid", () -> route.details("pmid", "123"), List.of(
+            () -> route.details("pmid", "10.1234/abc"), () -> route.details("pmid", "PMID:12a34"),
+            () -> search(route, "pmid", " "), () -> search(route, "pmid", null))),
+        new Requests("nih-grant", () -> route.details("nih-grant", "R01GM000001"), List.of(
+            () -> route.details("nih-grant", " "),
+            () -> search(route, "nih-grant", ""), () -> search(route, "nih-grant", null))),
+        new Requests("orcid", () -> route.details("orcid", "0000-0001-2345-6789"), List.of(
+            () -> search(route, "orcid", " "), () -> search(route, "orcid", null))));
+  }
+
+  private static Response search(ExternalAuthorityResource route, String authority, String query) throws Exception {
+    return route.searchByName(authority, query, Optional.empty(), Optional.empty(), null, null);
+  }
+
+  /** Each request answered here, which finds nothing. */
+  private static void answeredHere(Requests requests) throws Exception {
+    for (RouteCall call : requests.answeredHere()) {
+      Response response = call.call();
+      assertEquals(200, response.getStatus(), requests.authority() + " answers without its registry");
+      Object found = response.getEntity() instanceof AuthoritySearchPage page ? page.isFound()
+          : ((Map<?, ?>) response.getEntity()).get("found");
+      assertEquals(false, found, requests.authority());
+    }
+  }
+
+  /** A request whose registry did not answer, which the breaker counts. */
+  private static void unanswered(Requests requests) {
+    CedarException failure = assertThrows(CedarException.class, () -> requests.asked().call(), requests.authority());
+    assertEquals(503, failure.getErrorPack().getStatusCode(), requests.authority());
+  }
+
+  /** A request an open breaker refused, without asking the registry, with when to ask again. */
+  private static void refused(Requests requests) throws Exception {
+    Response response;
+    try {
+      response = requests.asked().call();
+    } catch (CedarException asked) {
+      throw new AssertionError(requests.authority() + "'s registry was asked: " + asked.getMessage(), asked);
+    }
+    assertEquals(503, response.getStatus(), requests.authority());
+    assertTrue(response.getHeaderString(HttpHeaders.RETRY_AFTER) != null, requests.authority());
+  }
+
+  /**
+   * An answer given here asks no registry, so it is no evidence that the registry answers. Counted as
+   * one, an identifier that is not a PubMed ID, or a blank search, reset a run of answerless calls, so
+   * a registry that had stopped answering went on being asked. The answer is also given while the
+   * breaker is open, since giving it needs nothing of the registry.
+   */
+  @Test
+  void anAnswerGivenHereDoesNotResetTheCount() throws Exception {
+    for (Requests requests : requests(route())) {
+      for (int attempt = 0; attempt < AuthorityCircuitBreaker.FAILURES_BEFORE_OPENING - 1; attempt++) {
+        unanswered(requests);
+      }
+      answeredHere(requests);
+      unanswered(requests);
+
+      refused(requests);
+      answeredHere(requests);
+    }
+  }
+
+  /**
+   * An answer given here is not the probe of a half-open breaker. Taken for one, it closed the breaker
+   * on a registry nobody had asked, and the next five requests each waited out the registry again.
+   */
+  @Test
+  void anAnswerGivenHereNeitherClosesNorProbesAHalfOpenBreaker() throws Exception {
+    List<Requests> all = requests(route());
+    for (Requests requests : all) {
+      for (int attempt = 0; attempt < AuthorityCircuitBreaker.FAILURES_BEFORE_OPENING; attempt++) {
+        unanswered(requests);
+      }
+    }
+    now.set(now.get().plusSeconds(31));
+
+    for (Requests requests : all) {
+      answeredHere(requests);
+      unanswered(requests);
+      refused(requests);
+    }
   }
 
 }

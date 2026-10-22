@@ -92,8 +92,13 @@ public class OrcidAuthority implements ExternalAuthority {
   }
 
   @Override
+  public boolean couldMatch(String query) {
+    return query != null && !query.trim().isEmpty();
+  }
+
+  @Override
   public AuthoritySearchAnswer search(String query, int offset, int limit) throws CedarException {
-    if (query == null || query.trim().isEmpty()) {
+    if (!couldMatch(query)) {
       return AuthoritySearchAnswer.nothing();
     }
 

@@ -60,4 +60,16 @@ public interface ExternalAuthority {
   default boolean couldIdentify(String id) {
     return true;
   }
+
+  /**
+   * Whether a search for {@code query} could match anything this registry holds. By default the
+   * registry decides, so every search could.
+   *
+   * <p>For a search that could not, the route calls {@link #search} without the authority's circuit
+   * breaker. No request is made for it, so it is no evidence about whether the registry is answering.
+   * An authority that overrides this must therefore answer such a search without asking its registry.
+   */
+  default boolean couldMatch(String query) {
+    return true;
+  }
 }

@@ -30,6 +30,7 @@ import org.metadatacenter.http.CedarResponseStatus;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.PagedQuery;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
+import java.util.function.Supplier;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 
@@ -143,6 +145,11 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   private final Map<String, AuthorityCircuitBreaker> breakersBySegment = new LinkedHashMap<>();
 
   public ExternalAuthorityResource(CedarConfig cedarConfig, List<ExternalAuthority> authorities) {
+    this(cedarConfig, authorities, Instant::now);
+  }
+
+  /** A route whose breakers read another clock, so a test can let an open breaker's wait run out. */
+  ExternalAuthorityResource(CedarConfig cedarConfig, List<ExternalAuthority> authorities, Supplier<Instant> clock) {
     super(cedarConfig);
     for (ExternalAuthority authority : authorities) {
       ExternalAuthority clash = authoritiesBySegment.put(authority.pathSegment(), authority);
@@ -153,7 +160,8 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
             "two authorities are registered under \"" + authority.pathSegment() + "\": "
                 + clash.getClass().getSimpleName() + " and " + authority.getClass().getSimpleName());
       }
-      breakersBySegment.put(authority.pathSegment(), new AuthorityCircuitBreaker(authority.pathSegment()));
+      breakersBySegment.put(authority.pathSegment(),
+          new AuthorityCircuitBreaker(authority.pathSegment(), AuthorityCircuitBreaker.OPEN_FOR, clock));
     }
   }
 
@@ -171,8 +179,9 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
           + "for clients that still page by number, `found`, `page` and `pageSize`",
           content = @Content(schema = @Schema(ref = "#/components/schemas/AuthoritySearchResults"))),
       @ApiResponse(responseCode = "400", description = "The limit or offset is out of range, `page` is negative or "
-          + "`pageSize` is not greater than one, both kinds of paging were sent, or a paging parameter is not a "
-          + "number. The registry refusing the search with 400 is reported too (upstreamServerError).",
+          + "`pageSize` is not greater than one, `page` times `pageSize` is beyond 2147483647, both kinds of paging "
+          + "were sent, or a paging parameter is not a number. The registry refusing the search with 400 is "
+          + "reported too (upstreamServerError).",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "404", description = UNKNOWN_AUTHORITY + ", or the registry answered the "
           + "search with 404 (upstreamServerError)",
@@ -225,6 +234,13 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
         return CedarResponse.badRequest()
             .message("Invalid pagination parameters: pageSize must be at most " + MAX_PAGE_SIZE).build();
       }
+      if (pageVal > Integer.MAX_VALUE / pageSizeVal) {
+        // Such a page starts beyond the largest offset an int holds. Multiplied out, the offset
+        // overflowed to a negative one, which reached the authority.
+        return CedarResponse.badRequest()
+            .message("Invalid pagination parameters: page times pageSize must be at most " + Integer.MAX_VALUE)
+            .build();
+      }
       offsetVal = pageVal * pageSizeVal;
       limitVal = pageSizeVal;
     } else {
@@ -236,7 +252,10 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
 
     AuthoritySearchAnswer answer;
     try {
-      answer = ask(segment, () -> authority.search(query, offsetVal, limitVal));
+      // A search that could match nothing is answered by the authority without asking its registry,
+      // so it is no evidence about the registry, and its breaker neither counts it nor refuses it.
+      answer = authority.couldMatch(query) ? ask(segment, () -> authority.search(query, offsetVal, limitVal))
+          : authority.search(query, offsetVal, limitVal);
     } catch (AuthorityNotReadyException notReady) {
       return notReadyResponse(notReady);
     }
@@ -305,8 +324,8 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
 
     AuthorityDetailsAnswer answer;
     if (!authority.couldIdentify(id)) {
-      // No request is made for an identifier the registry cannot hold. One built from it could not be
-      // sent, and the lookup answered 500.
+      // No request is made for an identifier the registry cannot hold, so the answer is no evidence
+      // about the registry, and its breaker neither counts it nor refuses it.
       answer = AuthorityDetailsAnswer.notFound(new HashMap<>());
     } else {
       try {

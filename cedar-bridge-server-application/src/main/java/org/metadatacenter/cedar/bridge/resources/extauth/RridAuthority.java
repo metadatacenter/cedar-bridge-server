@@ -89,7 +89,8 @@ public class RridAuthority implements ExternalAuthority {
 
   @Override
   public AuthorityDetailsAnswer details(String id) throws CedarProcessingException {
-    final String resolverUrl = resolverApi + extractBaseRrid(id) + ".json";
+    // SciCrunch reads the RRID from one path segment, colons and all.
+    final String resolverUrl = resolverApi + AuthorityIdentifier.requestPath(extractBaseRrid(id), false) + ".json";
 
     Map<String, String> headers = new HashMap<>();
     headers.put("apikey", rridApiKey);

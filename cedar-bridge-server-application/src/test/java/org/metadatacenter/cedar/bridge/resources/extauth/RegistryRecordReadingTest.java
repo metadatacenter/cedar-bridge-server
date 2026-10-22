@@ -14,7 +14,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.metadatacenter.cedar.bridge.resources.SubstanceRegistry;
 import org.metadatacenter.cedar.bridge.resources.SubstanceRegistryLoader;
 import org.metadatacenter.config.CedarConfig;
-import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.util.json.JsonMapper;
 
 import java.io.IOException;
@@ -63,8 +62,8 @@ public class RegistryRecordReadingTest {
   private static final HttpServer REGISTRY = startRegistry();
   private static final String BASE = "http://127.0.0.1:" + REGISTRY.getAddress().getPort();
 
-  /** One request the registry received, with its query decoded, and as it was sent. */
-  private record Received(String method, String path, String query, String body, String rawQuery) {}
+  /** One request the registry received, with its path and query decoded, and as they were sent. */
+  private record Received(String method, String path, String query, String body, String rawQuery, String rawPath) {}
 
   /** A registry's answer: a status and a body. */
   private record Reply(int status, String body) {
@@ -582,8 +581,8 @@ public class RegistryRecordReadingTest {
   /**
    * A request this server cannot build is no evidence that the registry has stopped answering. Five
    * searches containing a space opened DataCite's breaker, after which every DOI search answered 503.
-   * A lookup can still build a request that cannot be sent, from a DOI holding a character a URL
-   * cannot carry; that fails as this server's error, a 500, and leaves the breaker closed.
+   * A lookup no longer builds such a request: the DOI is percent-encoded into the path, as
+   * {@link #anIdentifierIsAskedForInThePathExactlyAsTyped} pins.
    */
   @Test
   public void aRequestThisServerCannotBuildDoesNotOpenTheBreaker() throws Exception {
@@ -592,10 +591,6 @@ public class RegistryRecordReadingTest {
 
     for (int i = 0; i < AuthorityCircuitBreaker.FAILURES_BEFORE_OPENING; i++) {
       breaker.call(() -> doi.search("climate change", 0, 10));
-    }
-    for (int i = 0; i < AuthorityCircuitBreaker.FAILURES_BEFORE_OPENING; i++) {
-      CedarException failure = assertThrows(CedarException.class, () -> breaker.call(() -> doi.details("10.1234/a<b>")));
-      assertEquals(500, failure.getErrorPack().getStatusCode(), failure.getMessage());
     }
 
     assertFalse(breaker.isOpen());
@@ -677,6 +672,60 @@ public class RegistryRecordReadingTest {
     assertTrue(answer.found(), answer.toString());
   }
 
+  static Stream<Arguments> pathCharacters() {
+    return Stream.of(
+        // Letters, digits and the characters a path carries as themselves stay as typed.
+        arguments("doi", "10.1234/aZ09-._~!$&'()*,;=:@", "/dois/10.1234/aZ09-._~!$&'()*,;=:@"),
+        // DataCite reads the DOI from the rest of the path, slashes included.
+        arguments("doi", "10.5061/dryad.2343k/2", "/dois/10.5061/dryad.2343k/2"),
+        // Characters a URL cannot carry, which made the request one that could not be sent.
+        arguments("doi", "10.1234/<>\"{}|\\^`[]", "/dois/10.1234/%3C%3E%22%7B%7D%7C%5C%5E%60%5B%5D"),
+        // A percent sign is the DOI's own, even where it looks like an escape.
+        arguments("doi", "10.1234/50%", "/dois/10.1234/50%25"),
+        arguments("doi", "10.1234/a%20b", "/dois/10.1234/a%2520b"),
+        // A question mark began a query and a number sign a fragment, so another DOI was asked for.
+        arguments("doi", "10.1234/a?b=c", "/dois/10.1234/a%3Fb=c"),
+        arguments("doi", "10.1234/a#b", "/dois/10.1234/a%23b"),
+        // The DOI Handbook encodes a plus sign, which a server may read as a space.
+        arguments("doi", "10.1234/a+b", "/dois/10.1234/a%2Bb"),
+        arguments("doi", "10.1234/café", "/dois/10.1234/caf%C3%A9"),
+        // A server may resolve a dot segment, which asked for another DOI. The DOI Handbook encodes the
+        // slash after one.
+        arguments("doi", "10.1234/x/../../10.5555/real", "/dois/10.1234/x/..%2F..%2F10.5555/real"),
+        arguments("doi", "10.1234/./a", "/dois/10.1234/.%2Fa"),
+        // SciCrunch reads an RRID with its colons, and an RRID holds no slash.
+        arguments("rrid", "IMSR_JAX:000664", "/rrid/resolver/RRID:IMSR_JAX:000664.json"),
+        arguments("rrid", "AB_<1>", "/rrid/resolver/RRID:AB_%3C1%3E.json"),
+        arguments("rrid", "AB_1%", "/rrid/resolver/RRID:AB_1%25.json"),
+        arguments("rrid", "AB_1?x", "/rrid/resolver/RRID:AB_1%3Fx.json"),
+        arguments("rrid", "AB_1#x", "/rrid/resolver/RRID:AB_1%23x.json"),
+        arguments("rrid", "AB_1/../2", "/rrid/resolver/RRID:AB_1%2F..%2F2.json"),
+        arguments("rrid", "AB_é", "/rrid/resolver/RRID:AB_%C3%A9.json"));
+  }
+
+  /**
+   * A DOI or an RRID is asked for in the request's path, each character the path cannot carry as itself
+   * percent-encoded, so the registry is asked for exactly the identifier typed. The DOI Handbook's
+   * rules for a DOI in a URL decide which characters those are. A character a URL cannot carry made a
+   * request that could not be sent, and the lookup answered 500; a question mark or a number sign cut
+   * the identifier short, and another record was looked up in its place.
+   */
+  @ParameterizedTest(name = "{0} {1}")
+  @MethodSource("pathCharacters")
+  public void anIdentifierIsAskedForInThePathExactlyAsTyped(String authority, String id, String sent)
+      throws Exception {
+    ExternalAuthority lookup = authority.equals("doi") ? new DoiAuthority(BASE + "/dois")
+        : new RridAuthority(BASE + "/rrid/search", BASE + "/rrid/resolver/", "key");
+
+    lookup.details(id);
+
+    assertEquals(1, RECEIVED.size(), RECEIVED.toString());
+    assertEquals(sent, RECEIVED.get(0).rawPath());
+    assertNull(RECEIVED.get(0).rawQuery(), "nothing typed reaches the query");
+    assertEquals(authority.equals("doi") ? "/dois/" + id : "/rrid/resolver/RRID:" + id + ".json",
+        RECEIVED.get(0).path(), "the registry reads the identifier typed");
+  }
+
   // ---- helpers --------------------------------------------------------------------------------
 
   /** The IRIs a search offered, in the order it offered them. */
@@ -738,7 +787,8 @@ public class RegistryRecordReadingTest {
     String rawQuery = exchange.getRequestURI().getRawQuery();
     Received request = new Received(exchange.getRequestMethod(), exchange.getRequestURI().getPath(),
         rawQuery == null ? null : URLDecoder.decode(rawQuery, StandardCharsets.UTF_8),
-        new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8), rawQuery);
+        new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8), rawQuery,
+        exchange.getRequestURI().getRawPath());
     RECEIVED.add(request);
     Reply reply = registry.apply(request);
     byte[] payload = reply.body().getBytes(StandardCharsets.UTF_8);

@@ -148,7 +148,8 @@ public class DoiAuthority implements ExternalAuthority {
 
   @Override
   public AuthorityDetailsAnswer details(String id) throws CedarProcessingException {
-    RegistryReply upstream = RegistryReply.get(dataciteApiPrefix + "/" + extractBaseDoi(id), new HashMap<>());
+    RegistryReply upstream = RegistryReply.get(
+        dataciteApiPrefix + "/" + AuthorityIdentifier.requestPath(extractBaseDoi(id), true), new HashMap<>());
     if (upstream.status() == HttpConstants.NOT_FOUND) {
       return AuthorityDetailsAnswer.notFound(new HashMap<>());
     }

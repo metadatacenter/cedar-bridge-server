@@ -509,7 +509,7 @@
                 }
               }
             },
-            "description" : "The limit or offset is out of range, `page` is negative or `pageSize` is not greater than one, both kinds of paging were sent, or a paging parameter is not a number. The registry refusing the search with 400 is reported too (upstreamServerError)."
+            "description" : "The limit or offset is out of range, `page` is negative or `pageSize` is not greater than one, `page` times `pageSize` is beyond 2147483647, both kinds of paging were sent, or a paging parameter is not a number. The registry refusing the search with 400 is reported too (upstreamServerError)."
           },
           "404" : {
             "content" : {
