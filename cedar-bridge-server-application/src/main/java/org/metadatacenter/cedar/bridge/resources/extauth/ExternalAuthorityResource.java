@@ -300,7 +300,7 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
           + "authority's answer, with `found` false, `requestedId`, and the registry's own answer under "
           + "`rawResponse`. The other authorities answer 200 with `found` false for an identifier their "
           + "registry does not hold. `doi` and `rrid` answer so without asking for one that cannot be a DOI or "
-          + "an RRID, such as one holding a space.",
+          + "an RRID, such as one holding a space, or a DOI ending in a `.` or `..` segment.",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "406", description = NOT_ACCEPTABLE,
           content = @Content(schema = @Schema(implementation = CedarError.class))),
@@ -354,7 +354,10 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
       description = "Recognizes the authority-specific IRI, then resolves its exact identifier using "
           + "the configured authority and circuit breaker. Returns a passed, failed or unavailable "
           + "semantic fact, independently of save policy. No arbitrary submitted URL is fetched. "
-          + "DataCite absence is unavailable because DataCite does not register every DOI.")
+          + "DataCite absence is unavailable because DataCite does not register every DOI. The identifier's "
+          + "percent-escapes are decoded once, as UTF-8, so a DOI IRI is resolved and compared as the DOI it "
+          + "names. An identifier holding an escape that is not well-formed is resolved as written. An "
+          + "identifier the lookup route answers without asking its registry is not resolved here either.")
   @RequestBody(required = true, content = @Content(schema = @Schema(implementation = VerificationRequest.class)))
   @ApiResponse(responseCode = "200", description = "Semantic verification facts", content = @Content(schema = @Schema(implementation = AuthorityVerification.class)))
   @ApiResponse(responseCode = "400", description = "Malformed identifier or request shape", content = @Content(schema = @Schema(implementation = CedarError.class)))
@@ -374,12 +377,18 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
     } catch (java.net.URISyntaxException e) {
       return CedarResponse.badRequest().message("iri must be an absolute IRI.").build();
     }
-    Optional<String> identifier = AuthorityIdentifier.extract(segment, iri);
+    // The identifier is decoded to the one the IRI names, so a DOI IRI holding percent-escapes is looked
+    // up and compared as the DOI it names. The identifier an authority answers with is not decoded,
+    // since DoiAuthority builds its IRI from the DOI as DataCite writes it.
+    Optional<String> identifier = AuthorityIdentifier.extract(segment, iri).map(AuthorityIdentifier::decoded);
     if (identifier.isEmpty()) return verification("failed", "authorityIdentifier",
         "The identifier does not identify a record in this authority.", iri);
     try {
       String lookup = "nih-grant".equals(segment) ? "https://reporter.nih.gov/project-details/" + identifier.get() : identifier.get();
-      AuthorityDetailsAnswer answer = ask(segment, () -> authority.details(lookup));
+      // An identifier the lookup route answers without asking the registry is not looked up here either,
+      // so the breaker neither counts it nor refuses it.
+      AuthorityDetailsAnswer answer = authority.couldIdentify(lookup) ? ask(segment, () -> authority.details(lookup))
+          : AuthorityDetailsAnswer.notFound(new HashMap<>());
       if (!answer.definitive()) return verification("unavailable", "semanticUnavailable",
           "The authority returned an incomplete verification answer.", iri);
       if (answer.statusCode() == HttpConstants.OK && answer.found()) {

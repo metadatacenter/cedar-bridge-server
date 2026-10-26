@@ -3,7 +3,7 @@
   "info" : {
     "description" : "Better Metadata - Better Science\n\nFolders and artifacts use type-qualified selectors: `folders/<uuid>`, `templates/<uuid>`,\n`template-elements/<uuid>`, `template-fields/<uuid>`, or `template-instances/<uuid>`.\nTyped routes include the type once, for example `/templates/<uuid>`. Query parameters and\ncommand-body selectors retain the type, including folder parameters. Percent-encoded full\nIRIs remain accepted for compatibility. Stored document identities and references remain\nfull IRIs; legacy repository hosts must remain absolute until their data is migrated.\n\nThe bridge server is CEDAR's connection to registries outside it. It mints DOIs through DataCite\nso a CEDAR artifact can be cited, and it resolves and searches identifiers held by seven external\nauthorities: DOI, NIH grants, ORCID, CompTox, PubMed, ROR and RRID.\n\nAn upstream refusal is answered in the shared error body with the key `upstreamServerError`,\nrather than flattened into a 500. Its parameters name the upstream service and the status it\nanswered, and its objects carry what it answered. A refusal keeps the upstream status, except that\nDataCite or an external registry failing, refusing this deployment's credentials or access, or\nlimiting its requests answers 502, as does an upstream answer that is neither a success nor a\nrefusal. The external-authority routes, which take no credentials, therefore never answer 401.\n",
     "title" : "CEDAR Bridge Server API",
-    "version" : "2.9.28"
+    "version" : "2.9.29"
   },
   "paths" : {
     "/" : {
@@ -568,7 +568,7 @@
     },
     "/ext-auth/{authority}/verify" : {
       "post" : {
-        "description" : "Recognizes the authority-specific IRI, then resolves its exact identifier using the configured authority and circuit breaker. Returns a passed, failed or unavailable semantic fact, independently of save policy. No arbitrary submitted URL is fetched. DataCite absence is unavailable because DataCite does not register every DOI.",
+        "description" : "Recognizes the authority-specific IRI, then resolves its exact identifier using the configured authority and circuit breaker. Returns a passed, failed or unavailable semantic fact, independently of save policy. No arbitrary submitted URL is fetched. DataCite absence is unavailable because DataCite does not register every DOI. The identifier's percent-escapes are decoded once, as UTF-8, so a DOI IRI is resolved and compared as the DOI it names. An identifier holding an escape that is not well-formed is resolved as written. An identifier the lookup route answers without asking its registry is not resolved here either.",
         "operationId" : "verify",
         "parameters" : [ {
           "in" : "path",
@@ -674,7 +674,7 @@
                 }
               }
             },
-            "description" : "No authority is served under this path segment (no error key, and the message names the segments that are served), or ORCID or ROR holds no entry for the identifier (upstreamServerError). The body's objects.authorityAnswer then holds the authority's answer, with `found` false, `requestedId`, and the registry's own answer under `rawResponse`. The other authorities answer 200 with `found` false for an identifier their registry does not hold. `doi` and `rrid` answer so without asking for one that cannot be a DOI or an RRID, such as one holding a space."
+            "description" : "No authority is served under this path segment (no error key, and the message names the segments that are served), or ORCID or ROR holds no entry for the identifier (upstreamServerError). The body's objects.authorityAnswer then holds the authority's answer, with `found` false, `requestedId`, and the registry's own answer under `rawResponse`. The other authorities answer 200 with `found` false for an identifier their registry does not hold. `doi` and `rrid` answer so without asking for one that cannot be a DOI or an RRID, such as one holding a space, or a DOI ending in a `.` or `..` segment."
           },
           "406" : {
             "content" : {

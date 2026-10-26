@@ -141,9 +141,18 @@ public class DoiAuthority implements ExternalAuthority {
     return results;
   }
 
+  /**
+   * Whether {@code id} could be a DOI DataCite holds. One holding a character that cannot be part of a
+   * DOI could not. By this server's rule, neither could one whose last segment is {@code .} or
+   * {@code ..}, because the path it would be asked for ends in that segment, and a server that resolves
+   * the segment looks up another DOI. The slash after any other such segment is encoded, as
+   * {@link AuthorityIdentifier#requestPath} explains, but a last segment has no slash after it.
+   */
   @Override
   public boolean couldIdentify(String id) {
-    return AuthorityIdentifier.printable(extractBaseDoi(id));
+    String doi = extractBaseDoi(id);
+    String lastSegment = doi.substring(doi.lastIndexOf('/') + 1);
+    return AuthorityIdentifier.printable(doi) && !lastSegment.equals(".") && !lastSegment.equals("..");
   }
 
   @Override

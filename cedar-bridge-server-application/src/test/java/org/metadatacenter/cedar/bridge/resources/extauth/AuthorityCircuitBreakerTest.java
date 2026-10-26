@@ -234,13 +234,14 @@ class AuthorityCircuitBreakerTest {
     }
   }
 
-  /** The route over PubMed, NIH RePORTER and ORCID, none of whose registries answers. */
+  /** The route over PubMed, NIH RePORTER, ORCID and DataCite, none of whose registries answers. */
   private ExternalAuthorityResource route() {
     UriInfo requestUri = mock(UriInfo.class);
     when(requestUri.getRequestUriBuilder()).thenAnswer(call -> UriBuilder.fromUri("http://localhost/ext-auth"));
     return new ExternalAuthorityResource(mock(CedarConfig.class, RETURNS_DEEP_STUBS),
         List.of(new PubMedAuthority(NOWHERE + "eutils/", "key"), new NihGrantAuthority(NOWHERE + "nih"),
-            new OrcidAuthority(NOWHERE + "orcid/", NOWHERE + "orcid/api/", "id", "secret")), now::get) {
+            new OrcidAuthority(NOWHERE + "orcid/", NOWHERE + "orcid/api/", "id", "secret"),
+            new DoiAuthority(NOWHERE + "dois")), now::get) {
       {
         // A search page links to the pages beside it, which it builds from the request.
         uriInfo = requestUri;
@@ -249,8 +250,9 @@ class AuthorityCircuitBreakerTest {
   }
 
   /**
-   * PubMed's answer for an identifier that is not a PubMed ID, NIH's for a blank identifier, and the
-   * three authorities' answers to a blank search.
+   * PubMed's answer for an identifier that is not a PubMed ID, NIH's for a blank identifier, the first
+   * three authorities' answers to a blank search, and DataCite's for a DOI ending in a {@code .} or
+   * {@code ..} segment.
    */
   private static List<Requests> requests(ExternalAuthorityResource route) {
     return List.of(
@@ -261,7 +263,9 @@ class AuthorityCircuitBreakerTest {
             () -> route.details("nih-grant", " "),
             () -> search(route, "nih-grant", ""), () -> search(route, "nih-grant", null))),
         new Requests("orcid", () -> route.details("orcid", "0000-0001-2345-6789"), List.of(
-            () -> search(route, "orcid", " "), () -> search(route, "orcid", null))));
+            () -> search(route, "orcid", " "), () -> search(route, "orcid", null))),
+        new Requests("doi", () -> route.details("doi", "10.1234/abc"), List.of(
+            () -> route.details("doi", "10.1234/a/.."), () -> route.details("doi", "10.1234/a/."))));
   }
 
   private static Response search(ExternalAuthorityResource route, String authority, String query) throws Exception {
