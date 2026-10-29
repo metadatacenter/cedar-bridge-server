@@ -1,4 +1,4 @@
-package org.metadatacenter.cedar.bridge.resources;
+package org.metadatacenter.cedar.bridge.resources.doi;
 
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;

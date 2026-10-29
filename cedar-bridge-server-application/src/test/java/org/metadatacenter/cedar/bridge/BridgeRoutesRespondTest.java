@@ -35,11 +35,6 @@ import java.util.stream.Collectors;
  * probes, so the classification below is checked against what the booted application actually
  * registers rather than against what its author remembered. A new resource class fails
  * {@link #everyRegisteredResourceIsClassified()} until someone decides which bucket it belongs in.
- *
- * <p>Untagged on purpose. {@code DataCiteResourceTest} carries {@code @Tag("datacite")} and is
- * excluded by default because it calls the live DataCite sandbox; rejecting an unauthenticated
- * request needs no such call, so this runs in the default suite and keeps the server's authenticated
- * surface covered when the tagged tests are skipped.
  */
 @Tag("integration")
 public class BridgeRoutesRespondTest {

@@ -1,4 +1,4 @@
-package org.metadatacenter.cedar.bridge.resources;
+package org.metadatacenter.cedar.bridge.resources.doi;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.sun.net.httpserver.HttpServer;
@@ -8,8 +8,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.metadatacenter.bridge.CedarDataServices;
-import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.config.ServerConfig;
 import org.metadatacenter.constant.CedarHeaderParameters;
 import org.metadatacenter.exception.CedarDependencyUnavailableException;
@@ -173,30 +171,6 @@ class CedarArtifactClientTest {
     validationBody = "{\"validates\":\"true\"}";
     assertFailure(502, "The resource server answered HTTP 500 when asked for the validation of the DataCite "
         + "metadata.", () -> client.validate(TEMPLATE_ID, JsonNodeFactory.instance.objectNode(), context));
-  }
-
-  @Test
-  void bothDoiEntryPointsStopAtAResourceDenialBeforeEligibilityOrMinting() throws Exception {
-    CedarConfig config = mock(CedarConfig.class, RETURNS_DEEP_STUBS);
-    when(config.getMicroserviceUrlUtil().getResource()).thenReturn(urls);
-    when(config.getLinkedDataUtil().resolveResourceId(TEMPLATE_ID)).thenReturn(TEMPLATE_ID);
-    when(config.getBridgeConfig().getDataCite().isEnabled()).thenReturn(true);
-    when(config.getBridgeConfig().getDataCite().getTemplateId()).thenReturn(TEMPLATE_ID);
-    CedarDataServices services = mock(CedarDataServices.class);
-    DataCiteHttpClient datacite = mock(DataCiteHttpClient.class);
-    DataCiteResource.DoiAnnotationWriter writer = mock(DataCiteResource.DoiAnnotationWriter.class);
-    DataCiteResource resource = new DataCiteResource(config, services, datacite, writer) {
-      @Override
-      protected CedarRequestContext buildRequestContext() {
-        return context;
-      }
-    };
-    readStatus = 403;
-    readBody = "{\"error\":\"forbidden\"}";
-    String denied = "The resource server answered HTTP 403 when asked for the template " + TEMPLATE_ID + ".";
-    assertFailure(403, denied, () -> resource.createDOIStart(TEMPLATE_ID));
-    assertFailure(403, denied, () -> resource.createDOI(TEMPLATE_ID, "publish", JsonNodeFactory.instance.objectNode()));
-    verifyNoInteractions(services, datacite, writer);
   }
 
   /**

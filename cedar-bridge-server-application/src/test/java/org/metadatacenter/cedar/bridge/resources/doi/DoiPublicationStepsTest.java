@@ -1,4 +1,4 @@
-package org.metadatacenter.cedar.bridge.resources;
+package org.metadatacenter.cedar.bridge.resources.doi;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -26,11 +26,14 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-class DataCitePublicationWorkflowTest {
+/** The checks a registration passes before DataCite is asked, and the write that records a published DOI. */
+class DoiPublicationStepsTest {
 
   private static final String SOURCE_ID = "https://repo.metadatacenter.org/template-instances/source";
   private static final String DOI = "https://doi.org/10.1234/cedar.test";
+  private static final String COMMAND = "http://resource/command/annotations/doi";
 
   private CedarConfig cedarConfig;
   private CedarDataServices dataServices;
@@ -40,6 +43,7 @@ class DataCitePublicationWorkflowTest {
   @BeforeEach
   void setUp() {
     cedarConfig = mock(CedarConfig.class, RETURNS_DEEP_STUBS);
+    when(cedarConfig.getMicroserviceUrlUtil().getResource().getCommandDOIUpdate()).thenReturn(COMMAND);
     dataServices = mock(CedarDataServices.class);
     context = mock(CedarRequestContext.class);
     httpClient = new DataCiteHttpClient(mock(HttpClient.class), Duration.ofSeconds(1));
@@ -47,20 +51,17 @@ class DataCitePublicationWorkflowTest {
 
   @Test
   void acceptsOnlyExplicitDraftAndPublishStates() {
-    DataCiteResource resource = resource(successfulWriter());
-
-    assertNull(resource.validateDoiState("draft"));
-    assertNull(resource.validateDoiState("publish"));
-    assertEquals(400, resource.validateDoiState(null).getStatus());
-    assertEquals(400, resource.validateDoiState("published").getStatus());
+    assertNull(DoiMinting.refusalOfState("draft"));
+    assertNull(DoiMinting.refusalOfState("publish"));
+    assertEquals(400, DoiMinting.refusalOfState(null).getStatus());
+    assertEquals(400, DoiMinting.refusalOfState("published").getStatus());
   }
 
   @Test
   void stopsWhenCedarInstanceValidationFails() {
-    DataCiteResource resource = resource(successfulWriter());
     JsonNode report = JsonNodeFactory.instance.objectNode().put("validates", false);
 
-    Response response = resource.validationFailure(Pair.of(false, report));
+    Response response = DoiMinting.refusalOfMetadata(Pair.of(false, report));
 
     assertEquals(400, response.getStatus());
     assertSame(report, objects(response).get("validationResult"));
@@ -68,20 +69,18 @@ class DataCitePublicationWorkflowTest {
 
   @Test
   void continuesWhenCedarInstanceValidationSucceeds() {
-    DataCiteResource resource = resource(successfulWriter());
     JsonNode report = JsonNodeFactory.instance.objectNode().put("validates", true);
 
-    assertNull(resource.validationFailure(Pair.of(true, report)));
+    assertNull(DoiMinting.refusalOfMetadata(Pair.of(true, report)));
   }
 
   @Test
   void returnsReconciliationDetailsWhenAnnotationIsRejected() {
     BasicClassicHttpResponse rejected = new BasicClassicHttpResponse(500);
     rejected.setEntity(new StringEntity("write failed", ContentType.TEXT_PLAIN));
-    DataCiteResource resource = resource((url, requestContext, content) -> rejected);
+    DoiMinting minting = minting((url, requestContext, content) -> rejected);
 
-    Response response = resource.recordPublishedDoi("http://resource/command/annotations/doi",
-        context, SOURCE_ID, DOI);
+    Response response = minting.recordOnArtifact(context, SOURCE_ID, DOI);
 
     assertEquals(502, response.getStatus());
     assertReconciliationDetails(response);
@@ -90,12 +89,11 @@ class DataCitePublicationWorkflowTest {
 
   @Test
   void returnsReconciliationDetailsWhenAnnotationTransportFails() {
-    DataCiteResource resource = resource((url, requestContext, content) -> {
+    DoiMinting minting = minting((url, requestContext, content) -> {
       throw new CedarProcessingException("resource server unavailable");
     });
 
-    Response response = resource.recordPublishedDoi("http://resource/command/annotations/doi",
-        context, SOURCE_ID, DOI);
+    Response response = minting.recordOnArtifact(context, SOURCE_ID, DOI);
 
     assertEquals(502, response.getStatus());
     assertReconciliationDetails(response);
@@ -104,26 +102,25 @@ class DataCitePublicationWorkflowTest {
 
   @Test
   void recordsTheMintedDoiBeforeReportingSuccess() {
+    AtomicReference<String> postedUrl = new AtomicReference<>();
     AtomicReference<String> postedContent = new AtomicReference<>();
-    DataCiteResource resource = resource((url, requestContext, content) -> {
+    DoiMinting minting = minting((url, requestContext, content) -> {
+      postedUrl.set(url);
       postedContent.set(content);
       return new BasicClassicHttpResponse(200);
     });
 
-    Response response = resource.recordPublishedDoi("http://resource/command/annotations/doi",
-        context, SOURCE_ID, DOI);
+    Response response = minting.recordOnArtifact(context, SOURCE_ID, DOI);
 
     assertNull(response);
+    assertEquals(COMMAND, postedUrl.get());
     assertTrue(postedContent.get().contains(SOURCE_ID));
     assertTrue(postedContent.get().contains(DOI));
   }
 
-  private DataCiteResource resource(DataCiteResource.DoiAnnotationWriter writer) {
-    return new DataCiteResource(cedarConfig, dataServices, httpClient, writer);
-  }
-
-  private DataCiteResource.DoiAnnotationWriter successfulWriter() {
-    return (url, requestContext, content) -> new BasicClassicHttpResponse(200);
+  private DoiMinting minting(DoiAnnotationWriter writer) {
+    return new DoiMinting(cedarConfig, dataServices, httpClient, writer, new InMemoryDoiRegistrationStore(),
+        () -> "unused");
   }
 
   private void assertReconciliationDetails(Response response) {

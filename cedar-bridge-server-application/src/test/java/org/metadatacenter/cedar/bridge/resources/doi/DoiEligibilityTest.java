@@ -1,11 +1,10 @@
-package org.metadatacenter.cedar.bridge.resources;
+package org.metadatacenter.cedar.bridge.resources.doi;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.metadatacenter.bridge.CedarDataServices;
-import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.id.CedarTemplateId;
 import org.metadatacenter.model.BiboStatus;
 import org.metadatacenter.model.CedarResourceType;
@@ -21,12 +20,11 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-class DataCiteResourceAuthorizationTest {
+class DoiEligibilityTest {
 
   private final CedarRequestContext context = mock(CedarRequestContext.class);
   private final CedarDataServices dataServices = mock(CedarDataServices.class);
@@ -36,13 +34,12 @@ class DataCiteResourceAuthorizationTest {
   private final CedarTemplateId templateId = CedarTemplateId.build(
       "https://repo.metadatacenter.org/templates/" + UUID.randomUUID());
 
-  private DataCiteResource resource;
+  private DoiEligibility eligibility;
   private ObjectNode publishedTemplate;
 
   @BeforeEach
   void setUp() {
-    CedarConfig cedarConfig = mock(CedarConfig.class, RETURNS_DEEP_STUBS);
-    resource = new DataCiteResource(cedarConfig, dataServices);
+    eligibility = new DoiEligibility(dataServices);
     publishedTemplate = JsonNodeFactory.instance.objectNode()
         .put(ModelNodeNames.BIBO_STATUS, BiboStatus.PUBLISHED.getValue());
     when(dataServices.getResourcePermissionServiceSession(context)).thenReturn(permissionSession);
@@ -52,7 +49,7 @@ class DataCiteResourceAuthorizationTest {
   void rejectsAUserWithoutWriteAccessBeforeCheckingArtifactState() throws Exception {
     when(permissionSession.userHasCapability(templateId, ResourceCapability.UPDATE_RESOURCE)).thenReturn(false);
 
-    Response response = resource.validateSourceArtifactForDoi(
+    Response response = eligibility.refusal(
         context, CedarResourceType.TEMPLATE, templateId, publishedTemplate);
 
     assertEquals(Response.Status.UNAUTHORIZED.getStatusCode(), response.getStatus());
@@ -65,7 +62,7 @@ class DataCiteResourceAuthorizationTest {
     when(artifact.isOpen()).thenReturn(false);
     when(folderSession.isArtifactOpenImplicitly(templateId)).thenReturn(false);
 
-    Response response = resource.validateSourceArtifactForDoi(
+    Response response = eligibility.refusal(
         context, CedarResourceType.TEMPLATE, templateId, publishedTemplate);
 
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
@@ -78,7 +75,7 @@ class DataCiteResourceAuthorizationTest {
     ObjectNode draftTemplate = JsonNodeFactory.instance.objectNode()
         .put(ModelNodeNames.BIBO_STATUS, BiboStatus.DRAFT.getValue());
 
-    Response response = resource.validateSourceArtifactForDoi(
+    Response response = eligibility.refusal(
         context, CedarResourceType.TEMPLATE, templateId, draftTemplate);
 
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
@@ -89,7 +86,7 @@ class DataCiteResourceAuthorizationTest {
     allowWriteAndReturnArtifact();
     when(artifact.isOpen()).thenReturn(true);
 
-    Response response = resource.validateSourceArtifactForDoi(
+    Response response = eligibility.refusal(
         context, CedarResourceType.TEMPLATE, templateId, publishedTemplate);
 
     assertNull(response);

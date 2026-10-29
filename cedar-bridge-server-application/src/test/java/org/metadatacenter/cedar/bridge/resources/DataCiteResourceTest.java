@@ -1,909 +1,199 @@
 package org.metadatacenter.cedar.bridge.resources;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
+import com.fasterxml.jackson.databind.node.TextNode;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.metadatacenter.cedar.bridge.CompareValues;
-import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteInstanceValidationException;
-import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteMetadataParser;
-import org.metadatacenter.cedar.bridge.DataCiteFixtures;
-import org.metadatacenter.cedar.bridge.resource.datacite.form.DataCiteSchema;
-import org.metadatacenter.http.CedarResponseStatus;
+import org.metadatacenter.cedar.bridge.resources.doi.DoiRegistrationState;
+import org.metadatacenter.error.CedarErrorKey;
+import org.metadatacenter.util.http.CedarError;
+import org.metadatacenter.util.json.JsonMapper;
 
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import java.io.File;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
+import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Tag("datacite")
-public class DataCiteResourceTest extends AbstractBridgeServerResourceTest {
-  @RegisterExtension
-  public ObjectMapperExtension objectMapperExtension = new ObjectMapperExtension();
-  private ObjectMapper objectMapper;
+/**
+ * The whole mint and attach contract, offline. Each case registers a DOI through the routes against a
+ * DataCite fake that keeps what it registers, reads it back through the metadata route, and holds what
+ * DataCite received to the metadata the form posted. A published DOI must also be recorded on the
+ * artifact and in the artifact's DOI record.
+ *
+ * <p>This replaces a suite that called DataCite's test API and could not pass: its source artifacts
+ * were identifiers no resource server held, so every positive case stopped at the artifact read. The
+ * metadata cases are the same fixtures it used. The repository credential is checked here as DataCite
+ * checks it, on every request.
+ */
+class DataCiteResourceTest extends AbstractDoiWorkflowTest {
 
-  @BeforeAll
-  public static void oneTimeSetUp() {
+  @ParameterizedTest
+  @ValueSource(strings = {"rich-metadata", "required-only", "all-under-required-elements", "required-and-subject",
+      "required-and-contributor", "required-and-date", "required-and-lang", "required-and-alternate-identifier",
+      "required-and-related-identifier", "required-and-size-format-version", "required-and-rights",
+      "required-and-description", "required-and-funding-ref", "required-and-geo-location", "required-and-related-item",
+      "required-and-random-fields", "required-and-empty-string", "required-and-all-empty-fields"})
+  void publishesTheMetadataAndRecordsTheDoiOnTheArtifact(String fixture) throws Exception {
+    String source = newSource();
+    JsonNode given = metadata(fixture);
+
+    Response response = resource().createDOI(source, "publish", given);
+
+    assertEquals(201, response.getStatus(), () -> String.valueOf(response.getEntity()));
+    String doi = doiOf(response);
+    assertEquals("https://doi.org/" + doi, response.getLocation().toString());
+    assertEquals("https://doi.org/" + doi, entity(response).get("doiName"));
+    assertEquals(List.of(doi), dataCite.doisFor(landingPage(source)));
+    assertEquals("findable", dataCite.state(doi));
+    assertEquals("https://doi.org/" + doi, resourceServer.carriedDoi(source));
+    assertEquals(DoiRegistrationState.ATTACHED, recorded(source).state());
+    assertTrue(CompareValues.compareResponseWithGivenMetadata(given, readBack(doi), source, "publish", config));
   }
 
-  @BeforeEach
-  public void setUp() {
-    objectMapper = objectMapperExtension.getObjectMapper();
-    objectMapper.registerModule(new JavaTimeModule());
+  /** A draft is saved, changed, and saved again in place, and the artifact carries nothing until it is published. */
+  @ParameterizedTest
+  @CsvSource({
+      "required-only, rich-metadata",
+      "rich-metadata, rich-metadata-rich-update",
+      "rich-metadata, rich-metadata-add-new-instance",
+      "rich-metadata, rich-metadata-delete-instance",
+      "rich-metadata, rich-metadata-delete-and-add-instance",
+      "rich-metadata, required-and-alternate-identifier"})
+  void updatesADraftInPlaceAndThenPublishesIt(String first, String second) throws Exception {
+    String source = newSource();
+
+    Response saved = resource().createDOI(source, "draft", metadata(first));
+    assertEquals(201, saved.getStatus(), () -> String.valueOf(saved.getEntity()));
+    String doi = doiOf(saved);
+    assertTrue(CompareValues.compareResponseWithGivenMetadata(metadata(first), readBack(doi), source, "draft", config));
+    assertEquals("draft", dataCite.state(doi));
+
+    Response updated = resource().createDOI(source, "draft", metadata(second));
+    assertEquals(201, updated.getStatus());
+    assertEquals(doi, doiOf(updated), "the draft is updated, not duplicated");
+    assertTrue(CompareValues.compareResponseWithGivenMetadata(metadata(second), readBack(doi), source, "draft", config));
+    assertNull(resourceServer.carriedDoi(source), "a draft is not recorded on the artifact");
+    assertEquals(DoiRegistrationState.DRAFT, recorded(source).state());
+
+    Response published = resource().createDOI(source, "publish", metadata(second));
+    assertEquals(201, published.getStatus());
+    assertEquals(doi, doiOf(published));
+    assertEquals("findable", dataCite.state(doi));
+    assertEquals(List.of(doi), dataCite.doisFor(landingPage(source)));
+    assertEquals("https://doi.org/" + doi, resourceServer.carriedDoi(source));
+    assertEquals(DoiRegistrationState.ATTACHED, recorded(source).state());
   }
 
-  @AfterEach
-  public void tearDown() {
+  /** The form opens on the draft the artifact's record names, converted back from what DataCite holds. */
+  @Test
+  void theFormOpensOnTheSavedDraft() throws Exception {
+    String source = newSource();
+    String doi = doiOf(resource().createDOI(source, "draft", metadata("rich-metadata")));
+
+    Response start = resource().createDOIStart(source);
+
+    assertEquals(200, start.getStatus());
+    assertEquals(TextNode.valueOf(doi), entity(start).get("draftDoi"));
+    JsonNode resumed = assertInstanceOf(JsonNode.class, entity(start).get("existingDataCiteMetadata"));
+    assertTrue(CompareValues.compareResponseWithGivenMetadata(resumed, readBack(doi), source, "draft", config),
+        "the form opens on what DataCite holds");
+    assertEquals(1, dataCite.count(FakeDataCite.Call.LIST),
+        "only the first save looked for a draft begun before CEDAR kept records");
+  }
+
+  /** Metadata the conversion refuses reaches neither DataCite nor the record. */
+  @ParameterizedTest
+  @ValueSource(strings = {"missing-all-fields", "missing-prefix", "missing-publisher", "missing-publication-year",
+      "missing-multiple-required-fields", "missing-contributor-type", "missing-funder-name", "data-out-of-range"})
+  void refusesMetadataThatCannotBeRegistered(String fixture) throws Exception {
+    String source = newSource();
+
+    Response response = resource().createDOI(source, "publish", metadata(fixture));
+
+    assertEquals(400, response.getStatus());
+    assertEquals(CedarErrorKey.INVALID_INPUT.getValue(), assertInstanceOf(CedarError.class, response.getEntity()).errorKey);
+    assertTrue(dataCite.calls().isEmpty(), dataCite.calls().toString());
+    assertNull(recorded(source));
+    assertNull(resourceServer.carriedDoi(source));
   }
 
   @Test
-  public void dataCiteInstanceRichDataTest() throws IOException, DataCiteInstanceValidationException {
-    // Retrieve the given DataCite instance from the file
-    JsonNode givenMetadata = DataCiteFixtures.instance("rich-metadata");
+  void refusesADocumentThatIsNotAnInstance() throws Exception {
+    String source = newSource();
 
-    // Create a DOI using the given DataCite instance
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+    Response empty = resource().createDOI(source, "publish", metadata("missing-all-fields").removeAll());
+    Response garbage = resource().createDOI(source, "draft",
+        JsonMapper.STRICT_MAPPER.readTree("{\"menu\": {\"id\": \"file\", \"value\": \"File\"}}"));
 
-    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the given DataCite instance with the response metadata
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
+    assertEquals(400, empty.getStatus());
+    assertEquals(400, garbage.getStatus());
+    assertTrue(dataCite.calls().isEmpty(), dataCite.calls().toString());
+    assertNull(recorded(source));
   }
 
+  /** DataCite's own refusal of the metadata reaches the caller in full, and nothing is recorded on the artifact. */
   @Test
-  public void dataCiteInstanceSimplyDataTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-only");
+  void relaysDataCitesRefusalOfTheMetadata() throws Exception {
+    String source = newSource();
+    dataCite.refuse(FakeDataCite.Call.CREATE, 422);
 
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
+    Response response = resource().createDOI(source, "publish", metadata("required-only"));
 
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
+    assertEquals(400, response.getStatus());
+    CedarError error = assertInstanceOf(CedarError.class, response.getEntity());
+    assertEquals(CedarErrorKey.INVALID_INPUT.getValue(), error.errorKey);
+    assertEquals("Refused", error.message);
+    assertTrue(dataCite.dois().isEmpty());
+    assertNull(resourceServer.carriedDoi(source));
   }
 
+  /**
+   * Every request carries the repository credential the server is configured with. DataCite refusing
+   * it is a CEDAR configuration problem, which every route reports as a bad gateway, and it leaves
+   * nothing registered and nothing recorded.
+   */
   @Test
-  public void dataCiteInstanceAllRequiredDataTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("all-under-required-elements");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceRequiredPlusSubjectTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-and-subject");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceRequiredPlusContributorTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-and-contributor");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceRequiredPlusDateTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-and-date");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceRequiredPlusLangTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-and-lang");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceRequiredPlusAlternateIdentifierTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-and-alternate-identifier");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceRequiredPlusRelatedIdentifierTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-and-related-identifier");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceRequiredPlusSizeFormatVersionTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-and-size-format-version");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceRequiredPlusRightsTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-and-rights");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceRequiredPlusDescriptionTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-and-description");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceRequiredPlusFundingRefTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-and-funding-ref");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceRequiredPlusGeoLocTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-and-geo-location");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceRequiredPlusRelatedItemTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-and-related-item");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceRequiredPlusRandomTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-and-random-fields");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceRequiredPlusEmptyStringTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-and-empty-string");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceRequiredPlusAllElementExpandedTest() throws IOException, DataCiteInstanceValidationException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("required-and-all-empty-fields");
-
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), createDoiResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, createDoiResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    Response getDoiMetadataResponse = getDoiMetadata(createDoiResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    JsonNode responseMetadata = objectMapper.readTree(getDoiMetadataResponse.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, responseMetadata, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void dataCiteInstanceEmptyJsonTest() throws IOException {
-    JsonNode givenMetadata = getFileContentAsJson("FailEmptyJson");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceMissingAllFieldsTest() throws IOException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("missing-all-fields");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceMissingPrefixFieldTest() throws IOException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("missing-prefix");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceMissingPublisherFieldTest() throws IOException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("missing-publisher");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceMissingPublicationYearFieldTest() throws IOException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("missing-publication-year");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceMissingMultipleRequiredFieldsTest() throws IOException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("missing-multiple-required-fields");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceMissingContributorNameFieldTest() throws IOException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("missing-contributor-name");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceMissingContributorTypeFieldTest() throws IOException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("missing-contributor-type");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceMissingRelatedIdentifierTypeFieldTest() throws IOException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("missing-related-identifier-type");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceMissingRelationTypeFieldTest() throws IOException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("missing-relation-type");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceMissingFunderNameFieldTest() throws IOException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("missing-funder-name");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceMissingRelatedItemTypeFieldTest() throws IOException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("missing-related-item-type");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceMissingRelatedItemRelationTypeFieldTest() throws IOException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("missing-related-item-relation-type");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceIncorrectNameTypeInputTest() throws IOException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("wrong-name-type");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceGeoLocationBoxOutOfRangeValueTest() throws IOException {
-    JsonNode givenMetadata = DataCiteFixtures.instance("data-out-of-range");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void dataCiteInstanceUnsupportedMediaTypeTest() throws IOException {
-    Response createDoiResponse = client.target(baseUrlCreateDoi)
-        .request(MediaType.APPLICATION_XML)
-        .header("Authorization", authHeaderAdmin)
-        .post(Entity.text(""));
-    Assertions.assertEquals(CedarResponseStatus.UNSUPPORTED_MEDIA_TYPE.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void garbageDataCiteInstanceJsonTest() throws IOException {
-    JsonNode givenMetadata = getFileContentAsJson("FailGarbageJson");
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    Response createDoiResponse = createDoi(givenMetadata, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(CedarResponseStatus.BAD_REQUEST.getStatusCode(), createDoiResponse.getStatus());
-  }
-
-  @Test
-  public void draftDoiSaveAndUpdateSimpleMetadataTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = DataCiteFixtures.instance("required-only");
-
-    // Create a draft DOI using the given DataCite instance
-    Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
-    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the given DataCite instance with the response metadata
-    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT, cedarConfig));
-
-    // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = DataCiteFixtures.instance("rich-metadata");
-
-    // Update the draft DOI metadata
-    Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, DRAFT);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiAfterUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the updated metadata
-    Response getDoiMetadataAfterUpdate = getDoiMetadata(draftDoiAfterUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataAfterUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataAfterUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the updated DataCite instance with the response metadata
-    JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, DRAFT, cedarConfig));
-  }
-
-  @Test
-  public void draftDoiSaveAndUpdateRichMetadataTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = DataCiteFixtures.instance("rich-metadata");
-
-    // Create a draft DOI using the given DataCite instance
-    Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
-    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the given DataCite instance with the response metadata
-    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT, cedarConfig));
-
-    // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = DataCiteFixtures.instance("rich-metadata-rich-update");
-
-    // Update the draft DOI metadata
-    Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, DRAFT);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiAfterUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the updated metadata
-    Response getDoiMetadataAfterUpdate = getDoiMetadata(draftDoiAfterUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataAfterUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataAfterUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the updated DataCite instance with the response metadata
-    JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, DRAFT, cedarConfig));
-  }
-
-  @Test
-  public void draftDoiSaveAndPublishSimpleMetadataTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = DataCiteFixtures.instance("required-only");
-
-    // Create a draft DOI using the given DataCite instance
-    Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
-    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the given DataCite instance with the response metadata
-    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT, cedarConfig));
-
-    // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = DataCiteFixtures.instance("required-and-random-fields");
-    ;
-
-    // Publish the updated draft DOI metadata
-    Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiAfterUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the updated metadata
-    Response getDoiMetadataAfterUpdate = getDoiMetadata(draftDoiAfterUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataAfterUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataAfterUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the updated DataCite instance with the response metadata
-    JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-
-  @Test
-  public void draftDoiSaveAndPublishRichMetadataTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = DataCiteFixtures.instance("rich-metadata");
-
-    // Create a draft DOI using the given DataCite instance
-    Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
-    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the given DataCite instance with the response metadata
-    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT, cedarConfig));
-
-    // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = DataCiteFixtures.instance("rich-metadata-rich-update");
-
-    // Publish the updated draft DOI metadata
-    Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiAfterUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the updated metadata
-    Response getDoiMetadataAfterUpdate = getDoiMetadata(draftDoiAfterUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataAfterUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataAfterUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the updated DataCite instance with the response metadata
-    JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void draftDoiAddNewInstanceTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = DataCiteFixtures.instance("rich-metadata");
-
-    // Create a draft DOI using the given DataCite instance
-    Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
-    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the given DataCite instance with the response metadata
-    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT, cedarConfig));
-
-    // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = DataCiteFixtures.instance("rich-metadata-add-new-instance");
-
-    // Publish the updated draft DOI metadata
-    Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiAfterUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the updated metadata
-    Response getDoiMetadataAfterUpdate = getDoiMetadata(draftDoiAfterUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataAfterUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataAfterUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the updated DataCite instance with the response metadata
-    JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void draftDoiDeleteInstanceTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = DataCiteFixtures.instance("rich-metadata");
-
-    // Create a draft DOI using the given DataCite instance
-    Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
-    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the given DataCite instance with the response metadata
-    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT, cedarConfig));
-
-    // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = DataCiteFixtures.instance("rich-metadata-delete-instance");
-
-    // Publish the updated draft DOI metadata
-    Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiAfterUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the updated metadata
-    Response getDoiMetadataAfterUpdate = getDoiMetadata(draftDoiAfterUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataAfterUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataAfterUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the updated DataCite instance with the response metadata
-    JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void draftDoiDeleteAndAddNewInstanceTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = DataCiteFixtures.instance("rich-metadata");
-
-    // Create a draft DOI using the given DataCite instance
-    Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
-    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the given DataCite instance with the response metadata
-    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT, cedarConfig));
-
-    // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = DataCiteFixtures.instance("rich-metadata-delete-and-add-instance");
-
-    // Publish the updated draft DOI metadata
-    Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiAfterUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the updated metadata
-    Response getDoiMetadataAfterUpdate = getDoiMetadata(draftDoiAfterUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataAfterUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataAfterUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the updated DataCite instance with the response metadata
-    JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void draftDoiDeleteAllInstanceTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = DataCiteFixtures.instance("rich-metadata");
-
-    // Create a draft DOI using the given DataCite instance
-    Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
-    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the given DataCite instance with the response metadata
-    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT, cedarConfig));
-
-    // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = DataCiteFixtures.instance("required-and-alternate-identifier");
-
-    // Publish the updated draft DOI metadata
-    Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, PUBLISH);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiAfterUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the updated metadata
-    Response getDoiMetadataAfterUpdate = getDoiMetadata(draftDoiAfterUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataAfterUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataAfterUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the updated DataCite instance with the response metadata
-    JsonNode returnedMetadataAfterUpdate = objectMapper.readTree(getDoiMetadataAfterUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataAfterUpdate, returnedMetadataAfterUpdate, sourceArtifactId, PUBLISH, cedarConfig));
-  }
-
-  @Test
-  public void draftDoiSaveWithEmptyDataCiteInstanceTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = DataCiteFixtures.instance("missing-all-fields");
-
-    // Create a draft DOI using the given DataCite instance
-    Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
-    Assertions.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
-  }
-
-  @Test
-  public void draftDoiUpdateWithoutPrefixFieldTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    // Retrieve the given DataCite instance before update from the file
-    JsonNode givenMetadataBeforeUpdate = DataCiteFixtures.instance("required-only");
-
-    // Create a draft DOI using the given DataCite instance
-    Response draftDoiBeforeUpdateResponse = createDoi(givenMetadataBeforeUpdate, sourceArtifactId, DRAFT);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
-    Response getDoiMetadataBeforeUpdate = getDoiMetadata(draftDoiBeforeUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadataBeforeUpdate.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadataBeforeUpdate.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the given DataCite instance with the response metadata
-    JsonNode returnedMetadataBeforeUpdate = objectMapper.readTree(getDoiMetadataBeforeUpdate.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadataBeforeUpdate, returnedMetadataBeforeUpdate, sourceArtifactId, DRAFT, cedarConfig));
-
-    // Retrieve the given DataCite instance after update from the file
-    JsonNode givenMetadataAfterUpdate = DataCiteFixtures.instance("missing-prefix");
-    ;
-
-    // Update the draft DOI metadata
-    Response draftDoiAfterUpdateResponse = createDoi(givenMetadataAfterUpdate, sourceArtifactId, DRAFT);
-    Assertions.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), draftDoiAfterUpdateResponse.getStatus());
-  }
-
-  @Test
-  public void compareDraftDoiInstanceWithDataCiteResponseTest() throws IOException, DataCiteInstanceValidationException {
-    String sourceArtifactId = DUMMY_SOURCE_ARTIFACT_ID_PREFIX + UUID.randomUUID();
-    String userId = DUMMY_USER_ID_PREFIX + UUID.randomUUID();
-    // Retrieve the given DataCite instance from the file
-    JsonNode givenMetadata = DataCiteFixtures.instance("rich-metadata");
-
-    // Create a draft DOI using the given DataCite instance
-    Response draftDoiBeforeUpdateResponse = createDoi(givenMetadata, sourceArtifactId, DRAFT);
-    Assertions.assertEquals(Response.Status.CREATED.getStatusCode(), draftDoiBeforeUpdateResponse.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, draftDoiBeforeUpdateResponse.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Retrieve DOI from the response and using the DOI to retrieve the associated metadata
-    Response getDoiMetadata = getDoiMetadata(draftDoiBeforeUpdateResponse);
-    Assertions.assertEquals(Response.Status.OK.getStatusCode(), getDoiMetadata.getStatus());
-    Assertions.assertEquals(MediaType.APPLICATION_JSON, getDoiMetadata.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-    // Compare the given DataCite instance with the response metadata
-    JsonNode returnedMetadata = objectMapper.readTree(getDoiMetadata.readEntity(String.class));
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(givenMetadata, returnedMetadata, sourceArtifactId, DRAFT, cedarConfig));
-
-    // Convert the DataCite-format metadata to Cedar-format
-    DataCiteSchema dataCiteResponse = objectMapper.readValue(returnedMetadata.toString(), DataCiteSchema.class);
-    JsonNode convertedMetadata = DataCiteMetadataParser.parseDataCiteSchema(dataCiteResponse.getData().getAttributes(),
-        userId, DataCiteFixtures.template(), cedarConfig);
-
-    //Compare the converted Cedar-format metadata with the DataCite response metadata
-    Assertions.assertTrue(CompareValues.compareResponseWithGivenMetadata(convertedMetadata, returnedMetadata, sourceArtifactId, DRAFT, cedarConfig));
-  }
-
-  private Response createDoi(JsonNode givenMetadata, String sourceArtifactId, String state) throws IOException {
-    Entity<JsonNode> postContent = Entity.entity(givenMetadata, MediaType.APPLICATION_JSON);
-    Response createDoiResponse = client.target(baseUrlCreateDoi)
-        .queryParam("source_artifact_id", sourceArtifactId)
-        .queryParam("state", state)
-        .request()
-        .header("Authorization", authHeaderAdmin)
-        .post(postContent);
-    return createDoiResponse;
-  }
-
-  private Response getDoiMetadata(Response createDoiResponse) throws IOException {
-    JsonNode responseBody = objectMapper.readTree(createDoiResponse.readEntity(String.class));
-    String doiName = responseBody.get("doiName").asText();
-    String encodedDoiName = URLEncoder.encode(doiName, StandardCharsets.UTF_8);
-    String getDoiMetadataUrl = baseUrlGetDoiMetadata + encodedDoiName + DISPLAY_AFFILIATION;
-    Response getDoiMetadataResponse = client.target(getDoiMetadataUrl)
-        .request()
-        .header("Authorization", authHeaderAdmin)
-        .get();
-    return getDoiMetadataResponse;
-  }
-
-  protected JsonNode getFileContentAsJson(String jsonFileName) throws IOException {
-    if (jsonFileName != null) {
-      String filePath = FILE_BASE_PATH + jsonFileName + ".json";
-      try {
-        return objectMapper.readTree(new File(DataCiteResourceTest.class.getClassLoader().getResource(filePath).getFile()));
-      } catch (IOException e) {
-        log.error("Error reading input file:" + filePath);
-        throw e;
-      }
+  void everyRequestCarriesTheRepositoryCredentialAndARefusalIsABadGateway() throws Exception {
+    String source = newSource();
+    Response saved = resource().createDOI(source, "draft", metadata("required-only"));
+    assertEquals(201, saved.getStatus(), "the fake answers only a request carrying the configured credential");
+    String doi = doiOf(saved);
+
+    dataCite.refuseCredentials();
+    String other = newSource();
+    List<Response> responses = List.of(resource().createDOIStart(other),
+        resource().createDOI(other, "publish", metadata("required-only")),
+        resource().createDOI(source, "publish", metadata("required-only")),
+        resource().getDOIMetadata("https://doi.org/" + doi));
+
+    for (Response response : responses) {
+      assertEquals(502, response.getStatus());
+      CedarError error = assertInstanceOf(CedarError.class, response.getEntity());
+      assertEquals(401, error.parameters.get("upstreamStatusCode"), error.message);
+      assertEquals("DataCite", error.parameters.get("upstreamService"));
     }
-    return null;
+    assertTrue(assertInstanceOf(CedarError.class, responses.get(2).getEntity()).message
+        .startsWith("DataCite refused the repository credentials this server holds"));
+    assertEquals(List.of(doi), dataCite.dois());
+    assertEquals("draft", dataCite.state(doi));
+    assertNull(recorded(other));
+    assertNull(resourceServer.carriedDoi(source));
+  }
+
+  /** A DOI DataCite does not hold is a not found the caller can act on, with DataCite's errors. */
+  @Test
+  void aDoiDataCiteDoesNotHoldIsANotFound() throws Exception {
+    Response response = resource().getDOIMetadata("https://doi.org/" + PREFIX + "/zzzz-zz00");
+
+    assertEquals(404, response.getStatus());
+    CedarError error = assertInstanceOf(CedarError.class, response.getEntity());
+    assertEquals(CedarErrorKey.UPSTREAM_SERVER_ERROR.getValue(), error.errorKey);
+    assertInstanceOf(JsonNode.class, error.objects.get("dataCiteErrors"));
   }
 }

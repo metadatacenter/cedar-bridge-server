@@ -13,6 +13,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.bridge.DataCiteFixtures;
+import org.metadatacenter.cedar.bridge.resources.doi.DataCiteHttpClient;
+import org.metadatacenter.cedar.bridge.resources.doi.DoiAnnotationWriter;
+import org.metadatacenter.cedar.bridge.resources.doi.DoiRegistration;
+import org.metadatacenter.cedar.bridge.resources.doi.DoiRegistrationState;
+import org.metadatacenter.cedar.bridge.resources.doi.InMemoryDoiRegistrationStore;
+import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.config.DataCiteConfig;
 import org.metadatacenter.config.ServerConfig;
@@ -53,6 +59,7 @@ import java.util.concurrent.Flow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -66,10 +73,11 @@ import static org.mockito.Mockito.when;
 /**
  * Each case drives one of the three DOI routes in-process against scripted collaborators.
  *
- * <p>A stubbed client answers for DataCite, a local HTTP server answers for the resource server, and
- * mocked workspace sessions settle eligibility, so no case needs a network or a DataCite account.
- * DataCiteResourceTest exercises the same routes against DataCite itself. It is tagged
- * {@code datacite} and excluded from the default build.
+ * <p>A stubbed client answers for DataCite, a local HTTP server answers for the resource server, mocked
+ * workspace sessions settle eligibility, and the DOI records are kept in memory, so no case needs a
+ * network or a DataCite account. Each DataCite call is scripted with one answer, which pins the exact
+ * requests a route makes. DataCiteResourceTest and DoiMintingRecoveryTest drive the same routes against
+ * a DataCite fake that keeps what it registers, through sequences of requests.
  */
 @Tag("integration")
 class DataCiteDoiRoutesTest {
@@ -88,7 +96,8 @@ class DataCiteDoiRoutesTest {
   private static final String SOURCE_ID = "https://repo.metadatacenter.org/template-instances/" + SOURCE_UUID;
   private static final String OPENVIEW_URL = OPENVIEW_BASE + "template-instances/" + SOURCE_UUID;
   private static final String DRAFT_DOI = PREFIX + "/draft-0001";
-  private static final String NEW_DOI = PREFIX + "/new-0001";
+  private static final String NEW_SUFFIX = "new-0001";
+  private static final String NEW_DOI = PREFIX + "/" + NEW_SUFFIX;
 
   private static final ObjectNode DATACITE_TEMPLATE = DataCiteFixtures.templateDocument();
   private static final ObjectNode SOURCE_ARTIFACT = JsonMapper.STRICT_MAPPER.createObjectNode()
@@ -109,6 +118,7 @@ class DataCiteDoiRoutesTest {
   private String validationReply = "{\"validates\":\"true\"}";
   private String templateReply = DATACITE_TEMPLATE.toString();
   private String sourceReply = SOURCE_ARTIFACT.toString();
+  private int readStatus = 200;
 
   private HttpServer resourceServer;
   private CedarConfig config;
@@ -116,7 +126,8 @@ class DataCiteDoiRoutesTest {
   private DataCiteHttpClient dataCiteClient;
   private CedarRequestContext context;
   private ResourcePermissionServiceSession permissionSession;
-  private DataCiteResource.DoiAnnotationWriter annotationWriter;
+  private DoiAnnotationWriter annotationWriter;
+  private InMemoryDoiRegistrationStore registrations;
   private DataCiteResource resource;
 
   @BeforeEach
@@ -136,9 +147,11 @@ class DataCiteDoiRoutesTest {
       } else if (path.equals("/templates/" + TEMPLATE_ID)) {
         sentToResource.add("read template");
         reply = templateReply;
+        status = readStatus;
       } else if (path.equals("/template-instances/" + SOURCE_ID)) {
         sentToResource.add("read source");
         reply = sourceReply;
+        status = readStatus;
       } else {
         sentToResource.add("unexpected " + path);
         status = 404;
@@ -187,15 +200,17 @@ class DataCiteDoiRoutesTest {
     dataCiteClient = mock(DataCiteHttpClient.class);
     when(dataCiteClient.send(any())).thenAnswer(call -> answerAsDataCite(call.getArgument(0)));
 
-    annotationWriter = mock(DataCiteResource.DoiAnnotationWriter.class);
+    annotationWriter = mock(DoiAnnotationWriter.class);
     when(annotationWriter.post(anyString(), any(), anyString())).thenReturn(new BasicClassicHttpResponse(200));
+    registrations = new InMemoryDoiRegistrationStore();
 
     resource = newResource();
   }
 
   /** The resource over the scripted collaborators, reading the configuration as it stands. */
   private DataCiteResource newResource() {
-    return new DataCiteResource(config, dataServices, dataCiteClient, annotationWriter) {
+    return new DataCiteResource(config, dataServices, dataCiteClient, annotationWriter, registrations,
+        () -> NEW_SUFFIX) {
       @Override
       protected CedarRequestContext buildRequestContext() {
         return context;
@@ -231,6 +246,7 @@ class DataCiteDoiRoutesTest {
     assertEquals("application/vnd.api+json", post.contentType());
     JsonNode attributes = JsonMapper.STRICT_MAPPER.readTree(post.body()).path("data").path("attributes");
     assertEquals(PREFIX, attributes.path("prefix").asText());
+    assertEquals(NEW_DOI, attributes.path("doi").asText(), "CEDAR names the DOI it reserved");
     assertEquals("draft", attributes.path("event").asText());
     assertEquals(OPENVIEW_URL, attributes.path("url").asText());
     assertEquals("John Doe", attributes.path("creators").path(0).path("name").asText());
@@ -239,11 +255,12 @@ class DataCiteDoiRoutesTest {
     assertEquals(List.of("read source", "read template", "validate"), sentToResource);
     // Only a published DOI is recorded on the artifact, because a draft can still change.
     verifyNoInteractions(annotationWriter);
+    assertRecorded(NEW_DOI, DoiRegistrationState.DRAFT);
   }
 
   /**
-   * A second POST for an artifact that already has a draft would register a second DOI and orphan
-   * the first, so the draft lookup decides between updating the draft and creating a new DOI.
+   * A draft begun before CEDAR recorded its DOIs is found by the draft lookup, updated rather than
+   * duplicated, and recorded, so the artifact keeps it from then on.
    */
   @Test
   void updatesTheDraftDataCiteAlreadyHoldsAndRecordsThePublishedDoi() throws Exception {
@@ -276,6 +293,7 @@ class DataCiteDoiRoutesTest {
     JsonNode recorded = JsonMapper.STRICT_MAPPER.readTree(command.getValue());
     assertEquals("template-instances/" + SOURCE_UUID, recorded.path("@id").asText());
     assertEquals("https://doi.org/" + DRAFT_DOI, recorded.path("doi").asText());
+    assertRecorded(DRAFT_DOI, DoiRegistrationState.ATTACHED);
   }
 
   /**
@@ -285,6 +303,8 @@ class DataCiteDoiRoutesTest {
   @Test
   void relaysEveryErrorDataCiteGivesForARefusedPayload() throws Exception {
     dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP, new Reply(200, "{\"data\": []}"));
+    // Whether DataCite refused the metadata or the DOI, which it holds already, a read of the DOI settles.
+    dataCiteReplies.put(DataCiteCall.METADATA_READ, new Reply(404, "{\"errors\": [{\"status\": \"404\"}]}"));
     dataCiteReplies.put(DataCiteCall.CREATE, new Reply(422, """
         {"errors": [
           {"status": "422", "source": "titles", "title": "Title can't be blank"},
@@ -303,7 +323,10 @@ class DataCiteDoiRoutesTest {
         + "This DOI has already been taken", error.message);
     assertEquals(3, ((JsonNode) error.objects.get("dataCiteErrors")).size());
     assertEquals("titles", ((JsonNode) error.objects.get("dataCiteErrors")).path(0).path("source").asText());
+    assertEquals(List.of(DataCiteCall.DRAFT_LOOKUP, DataCiteCall.CREATE, DataCiteCall.METADATA_READ), calls());
+    assertEquals(URI.create(ENDPOINT + "/" + NEW_DOI + "?affiliation=true"), sentToDataCite.get(2).uri());
     verifyNoInteractions(annotationWriter);
+    assertRecorded(NEW_DOI, DoiRegistrationState.RESERVED);
   }
 
   /**
@@ -312,18 +335,39 @@ class DataCiteDoiRoutesTest {
    */
   @Test
   void relaysARefusedRegistrationInTheSharedErrorBody() throws Exception {
-    dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP, new Reply(200, draftLookup()));
-    String gone = """
-        {"errors": [{"status": "404", "title": "The resource you are looking for doesn't exist."}]}
+    dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP, new Reply(200, "{\"data\": []}"));
+    String conflict = """
+        {"errors": [{"status": "409", "title": "The request conflicts with the DOI's state."}]}
         """;
-    dataCiteReplies.put(DataCiteCall.UPDATE, new Reply(404, gone));
+    dataCiteReplies.put(DataCiteCall.CREATE, new Reply(409, conflict));
 
     Response response = resource.createDOI(SOURCE_ID, "publish", dataCiteInstance());
 
-    assertDataCiteRefusal(response, 404, 404, "DataCite refused the request with HTTP 404.\n"
-        + "The resource you are looking for doesn't exist.", gone);
-    assertEquals(List.of(DataCiteCall.DRAFT_LOOKUP, DataCiteCall.UPDATE), calls());
+    assertDataCiteRefusal(response, 409, 409, "DataCite refused the request with HTTP 409.\n"
+        + "The request conflicts with the DOI's state.", conflict);
+    assertEquals(List.of(DataCiteCall.DRAFT_LOOKUP, DataCiteCall.CREATE), calls());
     verifyNoInteractions(annotationWriter);
+  }
+
+  /**
+   * A draft DataCite no longer holds was never findable, so its DOI is free to register again. The
+   * artifact keeps the DOI its record holds rather than starting another.
+   */
+  @Test
+  void registersADraftDataCiteNoLongerHoldsUnderTheSameDoi() throws Exception {
+    registrations.put(new DoiRegistration(SOURCE_ID, DRAFT_DOI, DoiRegistrationState.DRAFT, null, List.of()));
+    dataCiteReplies.put(DataCiteCall.UPDATE, new Reply(404,
+        "{\"errors\": [{\"status\": \"404\", \"title\": \"The resource you are looking for doesn't exist.\"}]}"));
+    dataCiteReplies.put(DataCiteCall.CREATE, new Reply(201, registered(DRAFT_DOI, "draft")));
+
+    Response response = resource.createDOI(SOURCE_ID, "draft", dataCiteInstance());
+
+    assertEquals(201, response.getStatus());
+    assertEquals(DRAFT_DOI, entity(response).get("doiId"));
+    assertEquals(List.of(DataCiteCall.UPDATE, DataCiteCall.CREATE), calls(), "the record replaces the draft lookup");
+    assertEquals(DRAFT_DOI, JsonMapper.STRICT_MAPPER.readTree(sentToDataCite.get(1).body())
+        .at("/data/attributes/doi").asText());
+    assertRecorded(DRAFT_DOI, DoiRegistrationState.DRAFT);
   }
 
   /**
@@ -448,6 +492,129 @@ class DataCiteDoiRoutesTest {
     assertEquals("The DataCite metadata request failed", assertInstanceOf(CedarError.class, read.getEntity()).message);
     assertEquals(List.of(DataCiteCall.DRAFT_LOOKUP, DataCiteCall.CREATE, DataCiteCall.METADATA_READ), calls());
     verifyNoInteractions(annotationWriter);
+    assertRecorded(NEW_DOI, DoiRegistrationState.RESERVED);
+  }
+
+  /**
+   * The DOI is recorded before DataCite is asked, so a request repeated after a timeout reads it there.
+   * DataCite holding it published means the first attempt registered it, and the retry records that DOI
+   * on the artifact without asking DataCite to register anything.
+   */
+  @Test
+  void aRetryAfterATimeoutFindsThePublishedDoiAndRecordsIt() throws Exception {
+    dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP, new Reply(200, "{\"data\": []}"));
+    dataCiteReplies.put(DataCiteCall.CREATE, NO_ANSWER);
+    assertEquals(502, resource.createDOI(SOURCE_ID, "publish", dataCiteInstance()).getStatus());
+
+    String published = registered(NEW_DOI, "findable");
+    dataCiteReplies.put(DataCiteCall.METADATA_READ, new Reply(200, published));
+    Response retry = resource.createDOI(SOURCE_ID, "publish", dataCiteInstance());
+
+    assertEquals(201, retry.getStatus());
+    assertEquals(NEW_DOI, entity(retry).get("doiId"));
+    assertEquals(published, entity(retry).get("dataCiteResponse"));
+    assertEquals(List.of(DataCiteCall.DRAFT_LOOKUP, DataCiteCall.CREATE, DataCiteCall.METADATA_READ), calls(),
+        "the retry neither looks for a draft nor registers another DOI");
+    assertAnnotated("https://doi.org/" + NEW_DOI);
+    assertRecorded(NEW_DOI, DoiRegistrationState.ATTACHED);
+  }
+
+  /** DataCite not holding the reserved DOI means the first attempt never reached it, so the retry registers it. */
+  @Test
+  void aRetryAfterATimeoutRegistersTheReservedDoiDataCiteNeverReceived() throws Exception {
+    dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP, new Reply(200, "{\"data\": []}"));
+    dataCiteReplies.put(DataCiteCall.CREATE, NO_ANSWER);
+    assertEquals(502, resource.createDOI(SOURCE_ID, "draft", dataCiteInstance()).getStatus());
+
+    dataCiteReplies.put(DataCiteCall.METADATA_READ, new Reply(404, "{\"errors\": []}"));
+    dataCiteReplies.put(DataCiteCall.CREATE, new Reply(201, registered(NEW_DOI, "draft")));
+    Response retry = resource.createDOI(SOURCE_ID, "draft", dataCiteInstance());
+
+    assertEquals(201, retry.getStatus());
+    assertEquals(List.of(DataCiteCall.DRAFT_LOOKUP, DataCiteCall.CREATE, DataCiteCall.METADATA_READ,
+        DataCiteCall.CREATE), calls());
+    for (int create : List.of(1, 3)) {
+      assertEquals(NEW_DOI, JsonMapper.STRICT_MAPPER.readTree(sentToDataCite.get(create).body())
+          .at("/data/attributes/doi").asText(), "both attempts register the one reserved DOI");
+    }
+    assertRecorded(NEW_DOI, DoiRegistrationState.DRAFT);
+  }
+
+  /**
+   * A published DOI the resource server failed to record is recorded as published first, so the
+   * reconciliationRequired answer names it, and repeating the publish request records it. The retry
+   * validates nothing and asks DataCite nothing.
+   */
+  @Test
+  void aRetryAfterAFailedRecordingRecordsTheSameDoiWithoutDataCite() throws Exception {
+    dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP, new Reply(200, "{\"data\": []}"));
+    String published = registered(NEW_DOI, "findable");
+    dataCiteReplies.put(DataCiteCall.CREATE, new Reply(201, published));
+    when(annotationWriter.post(anyString(), any(), anyString()))
+        .thenReturn(new BasicClassicHttpResponse(500), new BasicClassicHttpResponse(200));
+
+    Response failed = resource.createDOI(SOURCE_ID, "publish", dataCiteInstance());
+
+    assertEquals(502, failed.getStatus());
+    CedarError error = assertInstanceOf(CedarError.class, failed.getEntity());
+    assertEquals(true, error.parameters.get("reconciliationRequired"));
+    assertEquals("https://doi.org/" + NEW_DOI, error.parameters.get("doi"));
+    assertEquals(500, error.parameters.get("annotationStatus"));
+    assertRecorded(NEW_DOI, DoiRegistrationState.PUBLISHED);
+
+    sentToResource.clear();
+    Response retry = resource.createDOI(SOURCE_ID, "publish", dataCiteInstance());
+
+    assertEquals(201, retry.getStatus());
+    assertEquals(NEW_DOI, entity(retry).get("doiId"));
+    assertEquals(published, entity(retry).get("dataCiteResponse"), "the answer DataCite gave the publication");
+    assertEquals(List.of(DataCiteCall.DRAFT_LOOKUP, DataCiteCall.CREATE), calls());
+    assertEquals(List.of("read source"), sentToResource);
+    assertRecorded(NEW_DOI, DoiRegistrationState.ATTACHED);
+  }
+
+  /**
+   * A draft request never writes the artifact. For a published DOI the artifact does not yet carry, it
+   * names the DOI and says that a publish request records it.
+   */
+  @Test
+  void aDraftRequestForAPublishedDoiRecordsNothing() throws Exception {
+    registrations.put(new DoiRegistration(SOURCE_ID, NEW_DOI, DoiRegistrationState.PUBLISHED, "{}", List.of()));
+
+    List<Response> responses = List.of(resource.createDOI(SOURCE_ID, "draft", dataCiteInstance()),
+        resource.createDOIStart(SOURCE_ID));
+
+    for (Response response : responses) {
+      assertEquals(409, response.getStatus());
+      CedarError error = assertInstanceOf(CedarError.class, response.getEntity());
+      assertEquals(CedarErrorKey.DOI_ALREADY_EXISTS.getValue(), error.errorKey);
+      assertEquals("https://doi.org/" + NEW_DOI, error.parameters.get("doi"));
+      assertEquals(true, error.parameters.get("reconciliationRequired"));
+    }
+    assertTrue(sentToDataCite.isEmpty(), sentToDataCite.toString());
+    verifyNoInteractions(annotationWriter);
+    assertRecorded(NEW_DOI, DoiRegistrationState.PUBLISHED);
+  }
+
+  /** A resource server that refuses a read stops both entry points before eligibility, the record or DataCite. */
+  @Test
+  void bothEntryPointsStopAtAResourceDenialBeforeEligibilityOrMinting() throws Exception {
+    readStatus = 403;
+    templateReply = "{\"error\":\"forbidden\"}";
+    sourceReply = "{\"error\":\"forbidden\"}";
+
+    CedarProcessingException start = assertThrows(CedarProcessingException.class,
+        () -> resource.createDOIStart(SOURCE_ID));
+    CedarProcessingException register = assertThrows(CedarProcessingException.class,
+        () -> resource.createDOI(SOURCE_ID, "publish", dataCiteInstance()));
+
+    assertEquals("The resource server answered HTTP 403 when asked for the template " + TEMPLATE_ID + ".",
+        CedarError.from(start.getErrorPack(), null).message);
+    assertEquals("The resource server answered HTTP 403 when asked for the instance " + SOURCE_ID + ".",
+        CedarError.from(register.getErrorPack(), null).message);
+    assertEquals(403, CedarError.from(register.getErrorPack(), null).statusCode);
+    verifyNoInteractions(dataServices, dataCiteClient, annotationWriter);
+    assertTrue(registrations.find(SOURCE_ID).isEmpty());
   }
 
   /**
@@ -624,6 +791,37 @@ class DataCiteDoiRoutesTest {
     assertDraftLookupIdentifiesTheArtifact(sentToDataCite.get(0));
   }
 
+  /** A recorded draft is read from DataCite by its identifier, which no search index delays. */
+  @Test
+  void opensTheFormOnTheRecordedDraftByItsIdentifier() throws Exception {
+    registrations.put(new DoiRegistration(SOURCE_ID, DRAFT_DOI, DoiRegistrationState.DRAFT, null, List.of()));
+    dataCiteReplies.put(DataCiteCall.METADATA_READ, new Reply(200, heldDraft()));
+
+    Response response = resource.createDOIStart(SOURCE_ID);
+
+    assertEquals(200, response.getStatus());
+    Map<String, Object> entity = entity(response);
+    assertEquals(TextNode.valueOf(DRAFT_DOI), entity.get("draftDoi"));
+    JsonNode resumed = assertInstanceOf(JsonNode.class, entity.get("existingDataCiteMetadata"));
+    assertEquals("A draft resumed from DataCite", resumed.at("/title/0/title/@value").asText());
+    assertFormContext(entity);
+    assertEquals(List.of(DataCiteCall.METADATA_READ), calls());
+    assertEquals(URI.create(ENDPOINT + "/" + DRAFT_DOI + "?affiliation=true"), sentToDataCite.get(0).uri());
+  }
+
+  /** A reservation DataCite does not hold yet is no draft, and the form opens on the pre-filled instance. */
+  @Test
+  void opensTheFormOnADefaultInstanceForAReservationDataCiteDoesNotHold() throws Exception {
+    registrations.put(new DoiRegistration(SOURCE_ID, NEW_DOI, DoiRegistrationState.RESERVED, null, List.of()));
+    dataCiteReplies.put(DataCiteCall.METADATA_READ, new Reply(404, "{\"errors\": []}"));
+
+    Response response = resource.createDOIStart(SOURCE_ID);
+
+    assertEquals(200, response.getStatus());
+    assertNull(entity(response).get("draftDoi"));
+    assertEquals(List.of(DataCiteCall.METADATA_READ), calls());
+  }
+
   /** A findable DOI cannot go back to draft, so one DataCite lists for the landing page is not resumed. */
   @Test
   void aFindableDoiForTheLandingPageIsNotTakenForADraft() throws Exception {
@@ -661,8 +859,9 @@ class DataCiteDoiRoutesTest {
   }
 
   /**
-   * CEDAR keeps no record of a draft, so the lookup asks DataCite for one by publisher and landing
-   * page. DataCite lists a draft only to a request that names the repository and asks for drafts.
+   * For an artifact with no record, the lookup asks DataCite for a draft by publisher and landing page,
+   * which finds a draft begun before CEDAR recorded its DOIs. DataCite lists a draft only to a request
+   * that names the repository and asks for drafts.
    */
   private static void assertDraftLookupIdentifiesTheArtifact(SentToDataCite lookup) {
     String query = lookup.uri().getRawQuery();
@@ -686,6 +885,26 @@ class DataCiteDoiRoutesTest {
         {"data": {"id": "%1$s", "type": "dois",
                   "attributes": {"doi": "%1$s", "prefix": "%2$s", "state": "%3$s", "url": "%4$s"}}}
         """.formatted(doi, PREFIX, state, OPENVIEW_URL);
+  }
+
+  /** Returns DataCite's answer to a read of the draft {@link #draftLookup()} lists. */
+  private static String heldDraft() throws Exception {
+    JsonNode draft = JsonMapper.STRICT_MAPPER.readTree(draftLookup()).path("data").path(0);
+    return JsonMapper.STRICT_MAPPER.createObjectNode().set("data", draft).toString();
+  }
+
+  /** Asserts what the artifact's DOI record holds. */
+  private void assertRecorded(String doi, DoiRegistrationState state) {
+    DoiRegistration recorded = registrations.find(SOURCE_ID).orElseThrow();
+    assertEquals(doi, recorded.doi());
+    assertEquals(state, recorded.state());
+  }
+
+  /** Asserts the DOI the last write-back recorded on the artifact. */
+  private void assertAnnotated(String doiName) throws Exception {
+    ArgumentCaptor<String> command = ArgumentCaptor.forClass(String.class);
+    verify(annotationWriter).post(anyString(), eq(context), command.capture());
+    assertEquals(doiName, JsonMapper.STRICT_MAPPER.readTree(command.getValue()).path("doi").asText());
   }
 
   /** Returns a draft lookup that finds one draft, in the shape DataCite returns. */

@@ -1,4 +1,4 @@
-package org.metadatacenter.cedar.bridge.resources;
+package org.metadatacenter.cedar.bridge.resources.doi;
 
 import org.metadatacenter.config.DataCiteConfig;
 
@@ -10,7 +10,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 /** Reusable HTTP client for the DataCite workflow, with bounded connection and request times. */
-final class DataCiteHttpClient {
+public class DataCiteHttpClient {
 
   private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 5000;
   private static final int DEFAULT_REQUEST_TIMEOUT_MILLIS = 20000;
@@ -18,20 +18,20 @@ final class DataCiteHttpClient {
   private final HttpClient client;
   private final Duration requestTimeout;
 
-  DataCiteHttpClient(DataCiteConfig config) {
+  public DataCiteHttpClient(DataCiteConfig config) {
     this(connectTimeout(config), requestTimeout(config));
   }
 
-  DataCiteHttpClient(Duration connectTimeout, Duration requestTimeout) {
+  public DataCiteHttpClient(Duration connectTimeout, Duration requestTimeout) {
     this(HttpClient.newBuilder().connectTimeout(connectTimeout).build(), requestTimeout);
   }
 
-  DataCiteHttpClient(HttpClient client, Duration requestTimeout) {
+  public DataCiteHttpClient(HttpClient client, Duration requestTimeout) {
     this.client = client;
     this.requestTimeout = requestTimeout;
   }
 
-  HttpResponse<String> send(HttpRequest.Builder requestBuilder) throws IOException, InterruptedException {
+  public HttpResponse<String> send(HttpRequest.Builder requestBuilder) throws IOException, InterruptedException {
     HttpRequest request = requestBuilder.timeout(requestTimeout).build();
     return client.send(request, HttpResponse.BodyHandlers.ofString());
   }

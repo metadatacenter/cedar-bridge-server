@@ -1,8 +1,7 @@
 package org.metadatacenter.cedar.bridge.resources;
 
-import java.util.Locale;
-
 import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.headers.Header;
@@ -13,113 +12,55 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.metadatacenter.util.http.CedarError;
-import org.metadatacenter.util.artifact.InstanceArtifactDocument;
 import org.metadatacenter.bridge.CedarDataServices;
-import org.metadatacenter.artifacts.model.core.TemplateInstanceArtifact;
-import org.metadatacenter.artifacts.model.core.TemplateSchemaArtifact;
-import org.metadatacenter.artifacts.model.reader.ArtifactParseException;
-import org.metadatacenter.artifacts.model.reader.JsonArtifactReader;
-import org.metadatacenter.cedar.bridge.resource.datacite.*;
-import org.metadatacenter.cedar.bridge.resource.datacite.form.Attributes;
-import org.metadatacenter.cedar.bridge.resource.datacite.form.DataCiteSchema;
+import org.metadatacenter.cedar.bridge.resources.doi.DataCiteHttpClient;
+import org.metadatacenter.cedar.bridge.resources.doi.DoiAnnotationWriter;
+import org.metadatacenter.cedar.bridge.resources.doi.DoiMinting;
+import org.metadatacenter.cedar.bridge.resources.doi.DoiRegistrationStore;
+import org.metadatacenter.cedar.bridge.resources.doi.DoiSuffixes;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
-import org.metadatacenter.constant.HttpConstants;
-import org.metadatacenter.constant.LinkedData;
-import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarException;
-import org.metadatacenter.exception.CedarProcessingException;
-import org.metadatacenter.http.CedarResponseStatus;
-import org.metadatacenter.id.CedarArtifactId;
-import org.metadatacenter.id.CedarFQResourceId;
-import org.metadatacenter.id.CedarTemplateId;
-import org.metadatacenter.model.BiboStatus;
-import org.metadatacenter.model.CedarResourceType;
-import org.metadatacenter.model.ModelNodeNames;
-import org.metadatacenter.model.folderserver.basic.FolderServerArtifact;
 import org.metadatacenter.rest.context.CedarRequestContext;
-import org.metadatacenter.server.FolderServiceSession;
-import org.metadatacenter.server.ResourcePermissionServiceSession;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
-import org.metadatacenter.server.security.model.permission.resource.ResourceCapability;
-import org.metadatacenter.util.http.CedarResponse;
+import org.metadatacenter.util.artifact.InstanceArtifactDocument;
+import org.metadatacenter.util.http.CedarError;
 import org.metadatacenter.util.http.ProxyUtil;
-import org.metadatacenter.util.json.JsonMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.function.Supplier;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 import static org.metadatacenter.constant.CedarQueryParameters.QP_SOURCE_ARTIFACT_ID;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
+/**
+ * The DOI routes. Each authenticates its caller and checks the route's own preconditions, and
+ * {@link DoiMinting} does the rest: it reads the artifact, asks DataCite, keeps the artifact's DOI record
+ * and records a published DOI on the artifact.
+ */
 @Path("/datacite")
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "DOIs")
 @SecurityRequirement(name = "api_key")
 public class DataCiteResource extends CedarMicroserviceResource {
 
-  private static final Logger log = LoggerFactory.getLogger(DataCiteResource.class);
+  private final DoiMinting minting;
 
-  private final String endpointUrl;
-  private final String repositoryId;
-  private final String templateId;
-  private final boolean dataciteEnabled;
-  private final String basicAuth;
-  private final DataCiteHttpClient httpClient;
-  private final DoiAnnotationWriter doiAnnotationWriter;
-  private final CedarArtifactClient artifactClient;
-  protected final org.metadatacenter.bridge.CedarDataServices dataServices;
-
-  public DataCiteResource(CedarConfig cedarConfig) {
-    this(cedarConfig, org.metadatacenter.bridge.CedarDataServices.getInstance());
+  public DataCiteResource(CedarConfig cedarConfig, DoiRegistrationStore registrations) {
+    this(cedarConfig, CedarDataServices.getInstance(),
+        new DataCiteHttpClient(cedarConfig.getBridgeConfig().getDataCite()), ProxyUtil::proxyPost, registrations,
+        new DoiSuffixes());
   }
 
-  public DataCiteResource(CedarConfig cedarConfig, org.metadatacenter.bridge.CedarDataServices dataServices) {
-    this(cedarConfig, dataServices, new DataCiteHttpClient(cedarConfig.getBridgeConfig().getDataCite()),
-        ProxyUtil::proxyPost);
-  }
-
-  DataCiteResource(CedarConfig cedarConfig, org.metadatacenter.bridge.CedarDataServices dataServices,
-                   DataCiteHttpClient httpClient, DoiAnnotationWriter doiAnnotationWriter) {
-    super(cedarConfig);
-    this.dataServices = dataServices;
-    var dataCiteConfig = cedarConfig.getBridgeConfig().getDataCite();
-    this.repositoryId = dataCiteConfig.getRepositoryId();
-    String password = dataCiteConfig.getPassword();
-    this.endpointUrl = dataCiteConfig.getEndpointUrl();
-    this.templateId = dataCiteConfig.getTemplateId();
-    this.dataciteEnabled = dataCiteConfig.isEnabled();
-    this.basicAuth = Base64.getEncoder().encodeToString(
-        (repositoryId + ":" + password).getBytes(StandardCharsets.UTF_8));
-    this.httpClient = httpClient;
-    this.artifactClient = new CedarArtifactClient(microserviceUrlUtil.getResource());
-    this.doiAnnotationWriter = doiAnnotationWriter;
+  /** The routes over the given collaborators, which a test replaces with ones it can script. */
+  public DataCiteResource(CedarConfig cedarConfig, CedarDataServices dataServices, DataCiteHttpClient httpClient,
+                          DoiAnnotationWriter annotationWriter, DoiRegistrationStore registrations,
+                          Supplier<String> doiSuffixes) {
+    super(cedarConfig, dataServices);
+    this.minting = new DoiMinting(cedarConfig, dataServices, httpClient, annotationWriter, registrations, doiSuffixes);
   }
 
   @GET
@@ -160,50 +101,11 @@ public class DataCiteResource extends CedarMicroserviceResource {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
-    if (!dataciteEnabled) {
-      return CedarResponse
-          .badRequest()
-          .errorKey(CedarErrorKey.DATACITE_DOI_DISABLED)
-          .message("DataCite DOI integration is disabled")
-          .build();
+    Response disabled = minting.refusalWhileDisabled();
+    if (disabled != null) {
+      return disabled;
     }
-
-    try {
-      //Get the doi from doiName
-      URI doiUrl = new URI(doiIdUrl);
-      String doi = doiUrl.getPath();
-
-      String endpointUrl = cedarConfig.getBridgeConfig().getDataCite().getEndpointUrl() + doi + DataciteConstants.QUERY_AFFILIATION;
-      URI uri = URI.create(endpointUrl);
-
-      HttpRequest.Builder httpRequest = HttpRequest.newBuilder(uri)
-          .header(HttpConstants.HTTP_HEADER_AUTHORIZATION, DataciteConstants.BASIC + basicAuth)
-          .GET();
-
-      // Send HTTP httpRequest and get response
-      HttpResponse<String> httpResponse = httpClient.send(httpRequest);
-      int statusCode = httpResponse.statusCode();
-      String jsonResponse = httpResponse.body();
-      if (Response.Status.Family.familyOf(statusCode) != Response.Status.Family.SUCCESSFUL) {
-        return dataCiteRefusal(statusCode, jsonResponse);
-      }
-      JsonNode jsonResource = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
-
-      // A deliberate shape check, whose result is not used. This answer fills the DOI form, so relaying
-      // one the DataCite model cannot map would put unreadable metadata into the form. Mapping it here
-      // fails instead, and the failure is answered as a 502. DataCite owns this payload and adds fields
-      // to it, so the read takes the tolerant policy, and only a shape the model cannot map fails it.
-      JsonMapper.TOLERANT_MAPPER.readValue(jsonResponse, DataCiteSchema.class);
-
-      return Response.status(statusCode).entity(jsonResource).build();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      return upstreamFailure("The DataCite metadata request was interrupted", e);
-    } catch (IOException e) {
-      return upstreamFailure("The DataCite metadata request failed", e);
-    } catch (Exception e) {
-      return CedarResponse.internalServerError().exception(e).build();
-    }
+    return minting.readMetadata(doiIdUrl);
   }
 
   @GET
@@ -233,7 +135,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
           content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "406", description = NOT_ACCEPTABLE,
           content = @Content(schema = @Schema(implementation = CedarError.class))),
-      @ApiResponse(responseCode = "409", description = "The artifact already has a findable DOI (doiAlreadyExists)",
+      @ApiResponse(responseCode = "409", description = ALREADY_HAS_DOI,
           content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "429", description = "The caller, or the reads the workflow makes of the resource "
           + "server, exceeded the deployment's request rate",
@@ -251,98 +153,14 @@ public class DataCiteResource extends CedarMicroserviceResource {
       @Parameter(description = "Identifier of the artifact the DOI is for.", required = true)
       @QueryParam(QP_SOURCE_ARTIFACT_ID) String sourceArtifactId) throws CedarException {
     CedarRequestContext c = buildRequestContext();
-    String userID = c.getCedarUser().getId();
     c.must(c.user()).be(LoggedIn);
 
-    if (!dataciteEnabled) {
-      return CedarResponse
-          .badRequest()
-          .errorKey(CedarErrorKey.DATACITE_DOI_DISABLED)
-          .message("DataCite DOI integration is disabled")
-          .build();
+    Response disabled = minting.refusalWhileDisabled();
+    if (disabled != null) {
+      return disabled;
     }
-
     c.must(c.user()).have(CedarPermission.TEMPLATE_READ);
-
-    Map<String, Object> response = new HashMap<>();
-
-    String dataCiteTemplateIdS = cedarConfig.getBridgeConfig().getDataCite().getTemplateId();
-    CedarTemplateId dataCiteTemplateId = CedarTemplateId.build(dataCiteTemplateIdS);
-    JsonNode dataCiteTemplateProxyJson = artifactClient.read(CedarResourceType.TEMPLATE, dataCiteTemplateId, c);
-    TemplateSchemaArtifact dataCiteTemplate;
-    try {
-      if (!(dataCiteTemplateProxyJson instanceof ObjectNode templateDocument)) {
-        throw new ArtifactParseException("The template is not a JSON object", "", "");
-      }
-      dataCiteTemplate = new JsonArtifactReader().readTemplateSchemaArtifact(templateDocument);
-    } catch (ArtifactParseException e) {
-      return CedarResponse.internalServerError()
-          .message("The DataCite metadata template cannot be read: " + e.getMessage())
-          .exception(e)
-          .build();
-    }
-
-    sourceArtifactId = linkedDataUtil.resolveResourceId(sourceArtifactId);
-    CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
-    CedarArtifactId sourceArtifactIdTyped = CedarArtifactId.build(sourceArtifactId, sourceArtifactResourceId.getType());
-    JsonNode sourceArtifactProxyJson = artifactClient.read(sourceArtifactResourceId.getType(), sourceArtifactIdTyped, c);
-
-    Response eligibilityError = validateSourceArtifactForDoi(c, sourceArtifactResourceId.getType(),
-        sourceArtifactIdTyped, sourceArtifactProxyJson);
-    if (eligibilityError != null) {
-      return eligibilityError;
-    }
-
-    //Check if the source artifact has a DOI
-    String doiName = getFindableDoi(sourceArtifactProxyJson);
-    if (doiName != null) {
-      String hasDoiError = String.format("The %s(%s) already has a DOI: %s", sourceArtifactResourceId.getType().getValue(), sourceArtifactId, doiName);
-      return CedarResponse
-          .conflict()
-          .message(hasDoiError)
-          .errorKey(CedarErrorKey.DOI_ALREADY_EXISTS)
-          .parameter("doi", doiName)
-          .build();
-    }
-
-    //Check if there is an already started DOI metadata instance. If yes, load it as well
-    //Use publisher and openView Url as parameters to send query to DataCite
-    try {
-      Response httpResponse = getDraftDoiMetadata(sourceArtifactId, cedarConfig);
-      HashMap<String, Object> entity = (HashMap<String, Object>) httpResponse.getEntity();
-      boolean hasDraftDoi = (boolean) entity.get(DataciteConstants.HAS_DRAFT_DOI);
-      JsonNode dataNode = (JsonNode) entity.get(DataciteConstants.DRAFT_METADATA);
-
-      if (hasDraftDoi) {
-        // if draft DOI is returned, convert the data from dataCite JSON to Cedar Instance JSON-LD, and put it into response
-        JsonNode attributesNode = dataNode.get(0).get(DataciteConstants.ATTRIBUTES);
-        JsonNode draftDoi = attributesNode.get(DataciteConstants.DOI);
-        Attributes existingDoiMetadata =
-            JsonMapper.TOLERANT_MAPPER.treeToValue(attributesNode, Attributes.class);
-
-        // Pass the value from dataCiteResponse to cedarDataCiteInstance
-        ObjectNode cedarExistingDoiMetadata =
-            DataCiteMetadataParser.parseDataCiteSchema(existingDoiMetadata, userID, dataCiteTemplate, cedarConfig);
-        response.put(DataciteConstants.EXISTING_DATACITE_METADATA, cedarExistingDoiMetadata);
-        response.put(DataciteConstants.DRAFT_DOI, draftDoi);
-      } else {
-        // if draft DOI is not available, set the url and resourceType fields
-        ObjectNode defaultInstance =
-            DataCiteMetadataParser.getDefaultInstance(sourceArtifactId, userID, dataCiteTemplate, cedarConfig);
-        response.put(DataciteConstants.EXISTING_DATACITE_METADATA, defaultInstance);
-        response.put(DataciteConstants.DRAFT_DOI, null);
-      }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      return upstreamFailure("The DataCite draft lookup was interrupted", e);
-    } catch (IOException e) {
-      return upstreamFailure("The DataCite draft lookup failed", e);
-    }
-    response.put(DataciteConstants.SOURCE_ARTIFACT_TYPE, sourceArtifactResourceId.getType().getValue());
-    response.put(DataciteConstants.SOURCE_ARTIFACT, sourceArtifactProxyJson);
-    response.put(DataciteConstants.DATACITE_TEMPLATE, dataCiteTemplateProxyJson);
-
-    return CedarResponse.ok().entity(response).build();
+    return minting.start(c, sourceArtifactId);
   }
 
   @POST
@@ -354,8 +172,11 @@ public class DataCiteResource extends CedarMicroserviceResource {
       description = "Register a DOI with DataCite from the metadata instance in the body, and record "
           + "it on the artifact. `state` chooses between a draft, which can still be changed, and a "
           + "published DOI, which is findable and permanent. The metadata is validated against the "
-          + "DataCite template first, and a failure is returned rather than half-registered. "
-          + "DataCite integration can be switched off by configuration, and every route here answers 400 when it is.")
+          + "DataCite template first, and a failure is returned rather than half-registered. CEDAR chooses "
+          + "the DOI and records it for the artifact before it asks DataCite to register it, so a request "
+          + "repeated after a timeout or a failed recording continues with the same DOI rather than "
+          + "registering another. DataCite integration can be switched off by configuration, and every "
+          + "route here answers 400 when it is.")
   @RequestBody(description = "The DataCite metadata to register, as an instance of the DataCite "
       + "metadata template. It is validated against that template before anything is sent to DataCite.",
       required = true,
@@ -379,15 +200,14 @@ public class DataCiteResource extends CedarMicroserviceResource {
       @ApiResponse(responseCode = "403", description = "The caller cannot read the source artifact or the DataCite "
           + "template (upstreamServerError), or lacks the template read permission",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
-      @ApiResponse(responseCode = "404", description = "The source artifact or DataCite template was not found, or "
-          + "DataCite no longer holds the draft it was asked to update (upstreamServerError, with DataCite's errors "
-          + "in objects.dataCiteErrors)",
+      @ApiResponse(responseCode = "404", description = "The source artifact or DataCite template was not found",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "406", description = NOT_ACCEPTABLE,
           content = @Content(schema = @Schema(implementation = CedarError.class))),
-      @ApiResponse(responseCode = "409", description = "The artifact already has a findable DOI (doiAlreadyExists), "
-          + "or DataCite refused the registration as a conflict (upstreamServerError, with DataCite's errors in "
-          + "objects.dataCiteErrors)",
+      @ApiResponse(responseCode = "409", description = ALREADY_HAS_DOI + " A draft request for such an artifact "
+          + "records nothing, and a publish request records the DOI on the artifact and answers 201. DataCite refusing "
+          + "the registration as a conflict is also a 409 (upstreamServerError, with DataCite's errors in "
+          + "objects.dataCiteErrors).",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "415", description = "The body is not declared as JSON",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
@@ -397,8 +217,9 @@ public class DataCiteResource extends CedarMicroserviceResource {
       @ApiResponse(responseCode = "500", description = INTERNAL_ERROR,
           content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "502", description = DATACITE_FAILED + " The resource server's answer could not "
-          + "be used (upstreamServerError), or the DOI was minted but could not be recorded in CEDAR, which "
-          + "parameters.reconciliationRequired reports.",
+          + "be used (upstreamServerError), or the DOI was published but could not be recorded on the artifact, "
+          + "which parameters.reconciliationRequired reports. Repeating the publish request records the DOI "
+          + "parameters.doi names and registers nothing at DataCite.",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "503", description = UNAVAILABLE,
           content = @Content(schema = @Schema(implementation = CedarError.class)))
@@ -412,291 +233,22 @@ public class DataCiteResource extends CedarMicroserviceResource {
       // Hidden from the scanner, not from the spec: the body is described by the @RequestBody above.
       // Left unannotated, the scanner resolves JsonNode into a component of its own, which the
       // explicit request body then never references, and the spec carries an empty JsonNode schema.
-      @Parameter(hidden = true) JsonNode dataCiteInstance) throws CedarException, IOException, InterruptedException {
+      @Parameter(hidden = true) JsonNode dataCiteInstance) throws CedarException {
     CedarRequestContext c = buildRequestContext();
-
     c.must(c.user()).be(LoggedIn);
 
-    if (!dataciteEnabled) {
-      return CedarResponse
-          .badRequest()
-          .errorKey(CedarErrorKey.DATACITE_DOI_DISABLED)
-          .message("DataCite DOI integration is disabled")
-          .build();
+    Response disabled = minting.refusalWhileDisabled();
+    if (disabled != null) {
+      return disabled;
     }
-
-    Response stateError = validateDoiState(state);
-    if (stateError != null) {
-      return stateError;
+    Response invalidState = DoiMinting.refusalOfState(state);
+    if (invalidState != null) {
+      return invalidState;
     }
-
     c.must(c.user()).have(CedarPermission.TEMPLATE_READ);
-
-    //Check if the source artifact has a DOI
-    sourceArtifactId = linkedDataUtil.resolveResourceId(sourceArtifactId);
-    CedarFQResourceId sourceArtifactResourceId = CedarFQResourceId.build(sourceArtifactId);
-    CedarResourceType sourceArtifactType = sourceArtifactResourceId.getType();
-    CedarArtifactId sourceArtifactIdTyped = CedarArtifactId.build(sourceArtifactId, sourceArtifactType);
-    JsonNode sourceArtifactProxyJson = artifactClient.read(sourceArtifactType, sourceArtifactIdTyped, c);
-    Response eligibilityError = validateSourceArtifactForDoi(c, sourceArtifactType, sourceArtifactIdTyped,
-        sourceArtifactProxyJson);
-    if (eligibilityError != null) {
-      return eligibilityError;
-    }
-    String findableDoiName = getFindableDoi(sourceArtifactProxyJson);
-    if (findableDoiName != null) {
-      String hasDoiError = String.format("The %s(%s) already has a DOI: %s", sourceArtifactResourceId.getType().getValue(), sourceArtifactId, findableDoiName);
-      return CedarResponse
-          .conflict()
-          .errorKey(CedarErrorKey.DOI_ALREADY_EXISTS)
-          .parameter("doi", findableDoiName)
-          .message(hasDoiError)
-          .build();
-    }
-
-    Map<String, Object> response = new HashMap<>();
-
-    Pair<Boolean, JsonNode> validationResultPair = artifactClient.validate(templateId, dataCiteInstance, c);
-    Response validationError = validationFailure(validationResultPair);
-    if (validationError != null) {
-      return validationError;
-    }
-
-    // Get DOI request json
-    String jsonData = "";
-    if (dataCiteInstance != null && !dataCiteInstance.isEmpty()) {
-      try {
-        jsonData = getRequestJson(dataCiteInstance, sourceArtifactId, state);
-      } catch (Exception e) {
-        return CedarResponse
-            .badRequest()
-            .exception(e)
-            .message(e.getMessage())
-            .errorKey(CedarErrorKey.INVALID_INPUT)
-            .build();
-      }
-    }
-
-    try {
-      //Send HTTP GET request to DataCite to recheck the draft DOI
-      Response getDraftDoiResponse = getDraftDoiMetadata(sourceArtifactId, cedarConfig);
-      //Send PUT request if draft DOI exists, otherwise send POST request
-      HashMap<String, Object> entity = (HashMap<String, Object>) getDraftDoiResponse.getEntity();
-      boolean hasDraftDoi = (boolean) entity.get(DataciteConstants.HAS_DRAFT_DOI);
-      JsonNode dataNode = (JsonNode) entity.get(DataciteConstants.DRAFT_METADATA);
-      HttpResponse<String> putOrPostResponse = null;
-      if (hasDraftDoi) {
-        //Send HTTP PUT request to DataCite and get response
-        JsonNode attributesNode = dataNode.get(0).get(DataciteConstants.ATTRIBUTES);
-        String draftDoi = attributesNode.get(DataciteConstants.DOI).toString();
-        putOrPostResponse = httpDataCitePutCall(draftDoi, basicAuth, jsonData);
-      } else {
-        //Send HTTP POST request to DataCite and get response
-        putOrPostResponse = httpDataCitePostCall(endpointUrl, basicAuth, jsonData);
-      }
-      int statusCode = putOrPostResponse.statusCode();
-      //If the Put or Post response status code is 200 or 201
-      String jsonResponse = putOrPostResponse.body();
-      try {
-        if (statusCode == HttpConstants.CREATED || statusCode == HttpConstants.OK) {
-          JsonNode jsonNode = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
-          String id = jsonNode.get("data").get("id").asText();
-          String doiName = DataciteConstants.DOI_PREFIX + id;
-          URI uri = URI.create(doiName);
-          response.put(DataciteConstants.DOI_ID, id);
-          response.put(DataciteConstants.DOI_NAME, doiName);
-          response.put(DataciteConstants.DATACITE_RESPONSE, jsonResponse);
-
-          //If a DOI is minted, add _annotation entry to sourceArtifactProxyJson and then put artifact
-          if (DataciteConstants.PUBLISH.equals(state)) {
-            // Add doi of _annotation
-            // Put the updated source artifact JSON
-            String urlResource = microserviceUrlUtil.getResource().getCommandDOIUpdate();
-            Response reconciliationError = recordPublishedDoi(urlResource, c, sourceArtifactId, doiName);
-            if (reconciliationError != null) {
-              return reconciliationError;
-            }
-          }
-          return CedarResponse
-              .created(uri)
-              .entity(response)
-              .build();
-        } //If the status code is 422, return what DataCite returns
-        else if (statusCode == CedarResponseStatus.UNPROCESSABLE_ENTITY.getStatusCode()) {
-          JsonNode jsonResource = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
-          JsonNode errorsNode = jsonResource.get("errors");
-          return CedarResponse
-              .badRequest()
-              .message(dataCiteErrorText(errorsNode))
-              .errorKey(CedarErrorKey.INVALID_INPUT)
-              .object(DATACITE_ERRORS, errorsNode)
-              .build();
-        } else {
-          // DataCite neither registered nor updated the DOI. The shared error body carries its errors.
-          return dataCiteRefusal(statusCode, jsonResponse);
-        }
-      } catch (Exception e) {
-        return CedarResponse
-            .internalServerError()
-            .message(e.getMessage())
-            .exception(e)
-            .build();
-      }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      return upstreamFailure("The DataCite DOI request was interrupted; publication state is unknown", e);
-    } catch (IOException e) {
-      return upstreamFailure("The DataCite DOI request failed; publication state is unknown", e);
-    }
+    return minting.register(c, sourceArtifactId, state, dataCiteInstance);
   }
 
-  Response validateDoiState(String state) {
-    if (DataciteConstants.DRAFT.equals(state) || DataciteConstants.PUBLISH.equals(state)) {
-      return null;
-    }
-    return CedarResponse.badRequest()
-        .errorKey(CedarErrorKey.INVALID_INPUT)
-        .message("The DOI state must be 'draft' or 'publish'")
-        .parameter("state", state)
-        .build();
-  }
-
-  Response validationFailure(Pair<Boolean, JsonNode> validationResult) {
-    if (Boolean.TRUE.equals(validationResult.getLeft())) {
-      return null;
-    }
-    return CedarResponse.badRequest()
-        .errorKey(CedarErrorKey.INVALID_INPUT)
-        .message("The DataCite metadata instance is invalid")
-        .object("validationResult", validationResult.getRight())
-        .build();
-  }
-
-  Response recordPublishedDoi(String annotationUrl, CedarRequestContext context, String sourceArtifactId,
-                              String doiName) {
-    ObjectNode commandContent = JsonMapper.STRICT_MAPPER.createObjectNode();
-    commandContent.put(LinkedData.ID, org.metadatacenter.id.CedarResourceAddress.selector(sourceArtifactId));
-    commandContent.put(DataciteConstants.DOI, doiName);
-
-    ClassicHttpResponse annotationResponse = null;
-    try {
-      annotationResponse = doiAnnotationWriter.post(annotationUrl, context, commandContent.toString());
-      int statusCode = annotationResponse.getCode();
-      if (Response.Status.Family.familyOf(statusCode) == Response.Status.Family.SUCCESSFUL) {
-        return null;
-      }
-      log.error("DOI {} was minted for {}, but CEDAR annotation write-back returned status {}",
-          doiName, sourceArtifactId, statusCode);
-      return reconciliationFailure(sourceArtifactId, doiName, statusCode, null);
-    } catch (CedarProcessingException e) {
-      return reconciliationFailure(sourceArtifactId, doiName, null, e);
-    } finally {
-      if (annotationResponse != null) {
-        EntityUtils.consumeQuietly(annotationResponse.getEntity());
-      }
-    }
-  }
-
-  private Response reconciliationFailure(String sourceArtifactId, String doiName, Integer annotationStatus,
-                                         Exception exception) {
-    CedarResponse.CedarResponseBuilder response = CedarResponse.badGateway()
-        .message("The DOI was minted at DataCite but could not be recorded in CEDAR; reconciliation is required")
-        .parameter("doi", doiName)
-        .parameter("sourceArtifactId", sourceArtifactId)
-        .parameter("reconciliationRequired", true);
-    if (annotationStatus != null) {
-      response.parameter("annotationStatus", annotationStatus);
-    }
-    if (exception != null) {
-      response.exception(exception);
-    }
-    return response.build();
-  }
-
-  private Response upstreamFailure(String message, Exception exception) {
-    CedarResponse.CedarResponseBuilder failure = CedarResponse.badGateway()
-        .message(message)
-        .exception(exception);
-    if (exception instanceof DataCiteLookupRefused refused) {
-      failure.parameter(UpstreamRefusal.STATUS_PARAMETER, refused.status)
-          .parameter(UpstreamRefusal.SERVICE_PARAMETER, DATACITE);
-      JsonNode errors = dataCiteErrors(refused.body);
-      if (errors != null) failure.object(DATACITE_ERRORS, errors);
-    }
-    return failure.build();
-  }
-
-  /**
-   * A refusal DataCite gave, in the shared error body.
-   *
-   * <p>DataCite explains a refusal in a list of errors of its own. The body carries that list in
-   * objects.dataCiteErrors, and the message repeats its titles. {@link UpstreamRefusal} decides the
-   * status, by the rule the external-authority routes follow too. A refusal of the request itself
-   * keeps DataCite's status, so the caller can act on it, whether DataCite holds no such DOI or
-   * refused what it was asked to register. A refused repository credential is a CEDAR configuration
-   * problem, a rate limit applies to the deployment's account rather than to the caller, and a 5xx is
-   * DataCite failing, so each of those answers 502, as does any status that is not a refusal at all.
-   */
-  static Response dataCiteRefusal(int upstreamStatus, String upstreamBody) {
-    UpstreamRefusal refusal = new UpstreamRefusal(DATACITE, upstreamStatus);
-    String explanation = switch (refusal.kind()) {
-      case ACCESS_REFUSED -> "DataCite refused the repository credentials this server holds (HTTP " + upstreamStatus
-          + "). This is a CEDAR configuration problem rather than one the caller can resolve.";
-      case RATE_LIMITED -> "DataCite is limiting the requests of this deployment's repository account (HTTP 429).";
-      case FAILED -> "DataCite failed with HTTP " + upstreamStatus + ".";
-      case UNUSABLE -> "DataCite answered HTTP " + upstreamStatus + ", which the DOI workflow cannot use.";
-      case REQUEST_REFUSED -> "DataCite refused the request with HTTP " + upstreamStatus + ".";
-    };
-    JsonNode errors = dataCiteErrors(upstreamBody);
-    CedarResponse.CedarResponseBuilder answer =
-        refusal.answer(explanation, errors == null ? "" : dataCiteErrorText(errors));
-    if (errors != null) answer.object(DATACITE_ERRORS, errors);
-    return answer.build();
-  }
-
-  /** The errors DataCite lists in a refusal, or null when its answer holds no such list. */
-  private static JsonNode dataCiteErrors(String body) {
-    if (body == null || body.isBlank()) return null;
-    try {
-      JsonNode errors = JsonMapper.TOLERANT_MAPPER.readTree(body).path("errors");
-      return errors.isArray() ? errors : null;
-    } catch (IOException e) {
-      return null;
-    }
-  }
-
-  /** DataCite's errors as one line each, the property at fault first when DataCite names one. */
-  private static String dataCiteErrorText(JsonNode errorsNode) {
-    StringBuilder errorMessageBuilder = new StringBuilder();
-    for (JsonNode errorNode : errorsNode) {
-      JsonNode sourceNode = errorNode.get("source");
-      if (sourceNode != null && sourceNode.isTextual()) {
-        String source = sourceNode.asText();
-        errorMessageBuilder.append(source).append(": ");
-      }
-      JsonNode titleNode = errorNode.get("title");
-      if (titleNode != null && titleNode.isTextual()) {
-        String title = titleNode.asText();
-        errorMessageBuilder.append(title).append("\n");
-      }
-    }
-    return errorMessageBuilder.toString().trim();
-  }
-
-  /** DataCite refused a draft lookup. The exception keeps DataCite's status and body for the caller's error. */
-  static final class DataCiteLookupRefused extends IOException {
-    private final int status;
-    private final String body;
-
-    DataCiteLookupRefused(int status, String body) {
-      super("DataCite DOI lookup returned HTTP " + status);
-      this.status = status;
-      this.body = body;
-    }
-  }
-
-  private static final String DATACITE = "DataCite";
-  private static final String DATACITE_ERRORS = "dataCiteErrors";
   private static final String UNAUTHORIZED = "The request carries no valid credentials";
   private static final String NOT_ACCEPTABLE = "The request does not accept a JSON response";
   private static final String RATE_LIMITED = "The deployment limits each user's request rate, and the caller "
@@ -707,179 +259,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
   private static final String DATACITE_FAILED = "DataCite could not be reached, failed, refused the repository "
       + "credentials this server holds, or limited this deployment's requests (upstreamServerError, with "
       + "DataCite's errors in objects.dataCiteErrors when it gave any).";
-
-  Response validateSourceArtifactForDoi(CedarRequestContext context, CedarResourceType sourceArtifactType,
-                                        CedarArtifactId sourceArtifactId, JsonNode sourceArtifactJson)
-      throws CedarException {
-    ResourcePermissionServiceSession permissionSession = dataServices.getResourcePermissionServiceSession(context);
-    if (!permissionSession.userHasCapability(sourceArtifactId, ResourceCapability.UPDATE_RESOURCE)) {
-      return CedarResponse
-          .unauthorized()
-          .errorKey(CedarErrorKey.NO_WRITE_ACCESS_TO_ARTIFACT)
-          .message("You do not have permission to edit the artifact")
-          .parameter(DataciteConstants.RESOURCE_ID, sourceArtifactId)
-          .build();
-    }
-
-    FolderServiceSession folderSession = dataServices.getFolderServiceSession(context);
-    FolderServerArtifact folderServerResource = folderSession.findArtifactById(sourceArtifactId);
-    if (folderServerResource == null) {
-      return CedarResponse
-          .notFound()
-          .message("The source artifact is not found")
-          .id(sourceArtifactId)
-          .build();
-    }
-    if (!(folderServerResource.isOpen() || folderSession.isArtifactOpenImplicitly(sourceArtifactId))) {
-      return CedarResponse
-          .badRequest()
-          .message("Please make the " + sourceArtifactType.getValue().toLowerCase(Locale.ROOT) + " open to create a DOI")
-          .build();
-    }
-
-    JsonNode publicationStatus = sourceArtifactJson.get(ModelNodeNames.BIBO_STATUS);
-    if (sourceArtifactType == CedarResourceType.TEMPLATE
-        && (publicationStatus == null
-        || !Objects.equals(publicationStatus.asText(), BiboStatus.PUBLISHED.getValue()))) {
-      return CedarResponse
-          .badRequest()
-          .message("Please publish the template to create a DOI")
-          .build();
-    }
-    return null;
-  }
-
-  /**
-   * This function transfer JSON-LD format to JSON scheme that used to call DataCite API
-   *
-   * @return DataCite requested JSON schema
-   */
-  private String getRequestJson(JsonNode metadata, String sourceArtifactId, String state) {
-    // The request written below keeps its own mapper: its indentation is what DataCite receives.
-    ObjectMapper mapper = new ObjectMapper();
-    mapper.registerModule(new JavaTimeModule());
-    mapper.enable(SerializationFeature.INDENT_OUTPUT);
-    DataCiteSchema dataCiteSchema = new DataCiteSchema();
-    try {
-      // Read the instance into the model. It has been validated against the DataCite template, and a
-      // child the mapping does not name is read and left alone.
-      if (!(metadata instanceof ObjectNode instanceDocument)) {
-        throw new IllegalArgumentException("The DataCite metadata must be a JSON object");
-      }
-      TemplateInstanceArtifact cedarInstance = new JsonArtifactReader().readTemplateInstanceArtifact(instanceDocument);
-
-      // Pass the value from dataCiteInstance to dataCiteRequest
-      CedarInstanceParser.parseCedarInstance(cedarInstance, dataCiteSchema, sourceArtifactId, state, cedarConfig);
-
-      //Serialize DataCiteRequest Class to json
-      String requestJsonString = mapper.writeValueAsString(dataCiteSchema);
-      return requestJsonString;
-
-    } catch (IOException | DataCiteInstanceValidationException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * This function send HTTP Post request to DataCite to create a DOI
-   *
-   * @param endPointUrl URL of API call
-   * @param basicAuth   Authentication at heater
-   * @param jsonData    DataCite metadata instance JSON
-   * @return Http POST Response from DataCite
-   */
-  private HttpResponse<String> httpDataCitePostCall(String endPointUrl, String basicAuth, String jsonData)
-      throws IOException, InterruptedException {
-    URI uri = URI.create(endPointUrl);
-    HttpRequest.Builder request = HttpRequest.newBuilder(uri)
-        .header(DataciteConstants.CONTENT_TYPE, DataciteConstants.APPLICATION_VND_API_JSON)
-        .header(HttpConstants.HTTP_HEADER_AUTHORIZATION, DataciteConstants.BASIC + basicAuth)
-        .POST(HttpRequest.BodyPublishers.ofString(String.valueOf(jsonData)));
-    return httpClient.send(request);
-  }
-
-  /**
-   * This function send HTTP Put request to DataCite to update DOI's metadata
-   *
-   * @param draftDoi  String of draft DOI
-   * @param basicAuth Authentication at heater
-   * @param jsonData  DataCite metadata instance JSON
-   * @return Http Put Response from DataCite
-   */
-  private HttpResponse<String> httpDataCitePutCall(String draftDoi, String basicAuth, String jsonData) throws IOException, InterruptedException {
-    String url = endpointUrl + "/" + draftDoi.replace("\"", "");
-    URI uri = URI.create(url);
-    HttpRequest.Builder request = HttpRequest.newBuilder(uri)
-        .header(DataciteConstants.CONTENT_TYPE, DataciteConstants.APPLICATION_VND_API_JSON)
-        .header(HttpConstants.HTTP_HEADER_AUTHORIZATION, DataciteConstants.BASIC + basicAuth)
-        .PUT(HttpRequest.BodyPublishers.ofString(String.valueOf(jsonData)));
-    return httpClient.send(request);
-  }
-
-  /**
-   * This function send HTTP Get request to DataCite to query the draft DOI
-   *
-   * @param sourceArtifactId ID of source template or instance for which you want to create the DOI
-   * @return CedarResponse which contains draft DOI's metadata and boolean value of if draft DOI exists
-   */
-  private Response getDraftDoiMetadata(String sourceArtifactId, CedarConfig cedarConfig) throws IOException, InterruptedException {
-    Map<String, Object> response = new HashMap<>();
-    String openViewUrl = GenerateOpenViewUrl.getOpenViewUrl(sourceArtifactId, cedarConfig);
-    String encodedOpenViewUrl = URLEncoder.encode(openViewUrl, StandardCharsets.UTF_8);
-    // DataCite lists a draft only to a request that names the repository holding it and asks for
-    // drafts. Without both it lists findable DOIs alone, and every save of the form minted another.
-    String queryUrl = endpointUrl + DataciteConstants.QUERY_AFFILIATION + DataciteConstants.QUERY_DETAIL
-        + DataciteConstants.QUERY_CLIENT_ID + URLEncoder.encode(repositoryId.toLowerCase(Locale.ROOT), StandardCharsets.UTF_8)
-        + DataciteConstants.QUERY_STATE_DRAFT
-        + DataciteConstants.QUERY_PUBLISHER + "%20AND%20url:%22" + encodedOpenViewUrl + "%22";
-    URI uri = URI.create(queryUrl);
-    HttpRequest.Builder httpRequest = HttpRequest.newBuilder(uri)
-        .header(HttpConstants.HTTP_HEADER_AUTHORIZATION, DataciteConstants.BASIC + basicAuth)
-        .GET();
-    HttpResponse<String> httpResponse = httpClient.send(httpRequest);
-    if (httpResponse.statusCode() != HttpConstants.OK) {
-      throw new DataCiteLookupRefused(httpResponse.statusCode(), httpResponse.body());
-    }
-    String jsonResponse = httpResponse.body();
-    JsonNode jsonResource = JsonMapper.STRICT_MAPPER.readTree(jsonResponse);
-    JsonNode dataNode = drafts(jsonResource.get("data"));
-    boolean hasDraftDoi = !dataNode.isEmpty();
-    response.put(DataciteConstants.DRAFT_METADATA, dataNode);
-    response.put(DataciteConstants.HAS_DRAFT_DOI, hasDraftDoi);
-    return CedarResponse.ok().entity(response).build();
-  }
-
-  /**
-   * The draft DOIs among those DataCite listed. The form updates a draft in place, and a DOI in any
-   * other state is not one it can update: a findable DOI cannot go back to draft.
-   */
-  private static ArrayNode drafts(JsonNode listed) {
-    ArrayNode drafts = JsonMapper.STRICT_MAPPER.createArrayNode();
-    if (listed != null && listed.isArray()) {
-      for (JsonNode doi : listed) {
-        if (DataciteConstants.DRAFT.equals(doi.path(DataciteConstants.ATTRIBUTES).path("state").asText())) {
-          drafts.add(doi);
-        }
-      }
-    }
-    return drafts;
-  }
-
-  private String getFindableDoi(JsonNode sourceArtifactProxyJson) {
-    String doiName = null;
-    if (sourceArtifactProxyJson.has(ModelNodeNames.ANNOTATIONS)) {
-      JsonNode annotationsNode = sourceArtifactProxyJson.get(ModelNodeNames.ANNOTATIONS);
-      if (annotationsNode.has(ModelNodeNames.DATACITE_DOI_URI)) {
-        JsonNode doiNameNode = annotationsNode.get(ModelNodeNames.DATACITE_DOI_URI);
-        doiName = doiNameNode.get(LinkedData.ID).textValue();
-      }
-    }
-    return doiName;
-  }
-
-  @FunctionalInterface
-  interface DoiAnnotationWriter {
-    ClassicHttpResponse post(String url, CedarRequestContext context, String content)
-        throws CedarProcessingException;
-  }
+  private static final String ALREADY_HAS_DOI = "The artifact already has a findable DOI (doiAlreadyExists), which "
+      + "parameters.doi names. When DataCite has published it and the artifact does not yet carry it, "
+      + "parameters.reconciliationRequired is true.";
 }
