@@ -2,7 +2,9 @@ package org.metadatacenter.cedar.bridge;
 
 import io.dropwizard.core.setup.Bootstrap;
 import io.dropwizard.core.setup.Environment;
+import io.dropwizard.lifecycle.AutoCloseableManager;
 import org.metadatacenter.cedar.bridge.resources.*;
+import org.metadatacenter.cedar.bridge.resources.doi.Neo4jDoiRegistrationStore;
 import org.metadatacenter.cedar.bridge.resources.extauth.*;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceIndexResource;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
@@ -37,7 +39,11 @@ public class BridgeServerApplication extends CedarMicroserviceApplication<Bridge
         new CedarMicroserviceIndexResource(cedarConfig, getServerName());
     environment.jersey().register(index);
 
-    final DataCiteResource dataCite = new DataCiteResource(cedarConfig);
+    // The DOI records live in the graph, beside the outboxes the other servers keep there. The store
+    // opens no connection until its first use, so the server starts without the graph as before.
+    final Neo4jDoiRegistrationStore doiRegistrations = new Neo4jDoiRegistrationStore(cedarConfig);
+    environment.lifecycle().manage(new AutoCloseableManager(doiRegistrations));
+    final DataCiteResource dataCite = new DataCiteResource(cedarConfig, doiRegistrations);
     environment.jersey().register(dataCite);
 
     final SubstanceRegistry substanceRegistry = new SubstanceRegistry(cedarConfig);

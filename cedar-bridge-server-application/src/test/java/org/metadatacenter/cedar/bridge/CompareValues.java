@@ -35,9 +35,12 @@ public class CompareValues {
       String cedarConvertedDataCiteSchemaString = mapper.writeValueAsString(cedarConvertedDataCiteSchema);
       System.out.println("Cedar Given Instance Converted DataCite Schema: " + cedarConvertedDataCiteSchemaString);
 
-      //Deserialize responseMetadata to DtaCiteSchema Class
+      // Read DataCite's answer into the model. DataCite answers with attributes of its own beside those
+      // it was sent, such as the DOI, its state and its suffix, which the model does not name.
       String responseMetadaString = responseMetadata.toString();
-      DataCiteSchema responseDataCiteSchema = mapper.readValue(responseMetadaString, DataCiteSchema.class);
+      DataCiteSchema responseDataCiteSchema = mapper.copy()
+          .disable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+          .readValue(responseMetadaString, DataCiteSchema.class);
       String responseConvertedDataCiteSchemaString = mapper.writeValueAsString(responseDataCiteSchema);
       System.out.println("DataCite response converted Schema: " + responseConvertedDataCiteSchemaString);
 

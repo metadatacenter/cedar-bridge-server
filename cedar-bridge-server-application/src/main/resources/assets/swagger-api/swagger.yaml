@@ -21,7 +21,7 @@ info:
     limiting its requests answers 502, as does an upstream answer that is neither a success nor a
     refusal. The external-authority routes, which take no credentials, therefore never answer 401.
   title: CEDAR Bridge Server API
-  version: 2.9.30
+  version: 2.9.31
 paths:
   /:
     get:
@@ -99,7 +99,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CedarError"
-          description: The artifact already has a findable DOI (doiAlreadyExists)
+          description: "The artifact already has a findable DOI (doiAlreadyExists),\
+            \ which parameters.doi names. When DataCite has published it and the artifact\
+            \ does not yet carry it, parameters.reconciliationRequired is true."
         "429":
           content:
             application/json:
@@ -138,8 +140,11 @@ paths:
         \ body, and record it on the artifact. `state` chooses between a draft, which\
         \ can still be changed, and a published DOI, which is findable and permanent.\
         \ The metadata is validated against the DataCite template first, and a failure\
-        \ is returned rather than half-registered. DataCite integration can be switched\
-        \ off by configuration, and every route here answers 400 when it is."
+        \ is returned rather than half-registered. CEDAR chooses the DOI and records\
+        \ it for the artifact before it asks DataCite to register it, so a request\
+        \ repeated after a timeout or a failed recording continues with the same DOI\
+        \ rather than registering another. DataCite integration can be switched off\
+        \ by configuration, and every route here answers 400 when it is."
       operationId: createDOI
       parameters:
       - description: Identifier of the artifact the DOI is for.
@@ -209,9 +214,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CedarError"
-          description: "The source artifact or DataCite template was not found, or\
-            \ DataCite no longer holds the draft it was asked to update (upstreamServerError,\
-            \ with DataCite's errors in objects.dataCiteErrors)"
+          description: The source artifact or DataCite template was not found
         "406":
           content:
             application/json:
@@ -224,8 +227,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/CedarError"
           description: "The artifact already has a findable DOI (doiAlreadyExists),\
-            \ or DataCite refused the registration as a conflict (upstreamServerError,\
-            \ with DataCite's errors in objects.dataCiteErrors)"
+            \ which parameters.doi names. When DataCite has published it and the artifact\
+            \ does not yet carry it, parameters.reconciliationRequired is true. A\
+            \ draft request for such an artifact records nothing, and a publish request\
+            \ records the DOI on the artifact and answers 201. DataCite refusing the\
+            \ registration as a conflict is also a 409 (upstreamServerError, with\
+            \ DataCite's errors in objects.dataCiteErrors)."
         "415":
           content:
             application/json:
@@ -254,8 +261,10 @@ paths:
             \ credentials this server holds, or limited this deployment's requests\
             \ (upstreamServerError, with DataCite's errors in objects.dataCiteErrors\
             \ when it gave any). The resource server's answer could not be used (upstreamServerError),\
-            \ or the DOI was minted but could not be recorded in CEDAR, which parameters.reconciliationRequired\
-            \ reports."
+            \ or the DOI was published but could not be recorded on the artifact,\
+            \ which parameters.reconciliationRequired reports. Repeating the publish\
+            \ request records the DOI parameters.doi names and registers nothing at\
+            \ DataCite."
         "503":
           content:
             application/json:

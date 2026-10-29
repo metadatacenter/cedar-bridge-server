@@ -1,4 +1,4 @@
-package org.metadatacenter.cedar.bridge.resources;
+package org.metadatacenter.cedar.bridge.resources.doi;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
