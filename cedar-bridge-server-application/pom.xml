@@ -101,12 +101,6 @@
       <artifactId>dropwizard-testing</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.dropwizard</groupId>
-      <artifactId>dropwizard-client</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <!-- OpenAPI annotations on the resource classes. Version managed in cedar-parent. -->
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
