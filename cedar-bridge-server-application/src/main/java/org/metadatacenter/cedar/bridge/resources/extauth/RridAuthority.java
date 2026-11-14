@@ -21,7 +21,7 @@ public class RridAuthority implements ExternalAuthority {
   static final String PATH_SEGMENT = "rrid";
 
   private static final String SCICRUNCH_API_PREFIX = "https://api.scicrunch.io/elastic/v1/*_pr/_search";
-  private static final String IDENTIFIERS_ORG_RRID_PREFIX = "https://identifiers.org/RRID:";
+  private static final String IDENTIFIERS_ORG_PREFIX = "https://identifiers.org/";
   private static final String SCICRUNCH_RESOLVER_API = "https://scicrunch.org/resolver/";
 
   private final String searchApi;
@@ -68,14 +68,15 @@ public class RridAuthority implements ExternalAuthority {
 
     Map<String, Object> results = new LinkedHashMap<>();
     for (JsonNode hit : root.path("hits").path("hits")) {
-      JsonNode itemNode = hit.path("_source").path("item");
-      String identifier = itemNode.path("identifier").asText(null);
+      JsonNode source = hit.path("_source");
+      JsonNode itemNode = source.path("item");
+      String identifier = canonicalRrid(source);
       String name = itemNode.path("name").asText(null);
       if (identifier != null && name != null) {
         Map<String, Object> term = new HashMap<>();
         term.put("name", name);
         term.put("details", buildDetails(itemNode));
-        results.put(IDENTIFIERS_ORG_RRID_PREFIX + identifier, term);
+        results.put(IDENTIFIERS_ORG_PREFIX + identifier, term);
       }
     }
     return answer(results, root.path("hits").path("total"));
@@ -108,15 +109,16 @@ public class RridAuthority implements ExternalAuthority {
     if (!hits.isArray()) return AuthorityDetailsAnswer.incomplete(new HashMap<>());
     if (hits.isEmpty()) return AuthorityDetailsAnswer.notFound(new HashMap<>());
 
-    JsonNode item = hits.get(0).path("_source").path("item");
-    String identifier = item.path("identifier").asText(null);
+    JsonNode source = hits.get(0).path("_source");
+    JsonNode item = source.path("item");
+    String identifier = canonicalRrid(source);
     String name = item.path("name").asText(null);
     if (identifier == null || name == null) {
       return AuthorityDetailsAnswer.incomplete(new HashMap<>());
     }
 
     Map<String, Object> body = new HashMap<>();
-    body.put("id", IDENTIFIERS_ORG_RRID_PREFIX + identifier);
+    body.put("id", IDENTIFIERS_ORG_PREFIX + identifier);
     body.put("name", name);
     return AuthorityDetailsAnswer.found(body);
   }
@@ -168,11 +170,34 @@ public class RridAuthority implements ExternalAuthority {
   }
 
   private static String extractBaseRrid(String rridId) {
-    String id = rridId;
-    if (id.startsWith("http://") || id.startsWith("https://")) {
+    String id = rridId.trim();
+    if (id.startsWith("http://") || id.startsWith("https://")
+        || id.startsWith("identifiers.org/") || id.startsWith("scicrunch.org/resolver/")) {
       id = id.substring(id.lastIndexOf('/') + 1);
     }
-    return id.toUpperCase(Locale.ROOT).startsWith("RRID:") ? id : "RRID:" + id;
+    return id.toUpperCase(Locale.ROOT).startsWith("RRID:") ? "RRID:" + id.substring(5) : "RRID:" + id;
+  }
+
+  /**
+   * A source's local identifier is not necessarily its RRID: NCBI Taxonomy's 1260732
+   * is RRID:NCBITaxon_1260732, and Addgene's 114536 is RRID:Addgene_114536.
+   * Prefer SciCrunch's RRID, retaining the qualified identifiers older records supplied.
+   * A bare local number without a CURIE cannot safely be turned into an RRID.
+   */
+  private static String canonicalRrid(JsonNode source) {
+    for (JsonNode node : new JsonNode[] {source.path("rrid").path("curie"),
+        source.path("item").path("curie"), source.path("item").path("identifier")}) {
+      if (!node.isTextual()) continue;
+      String value = node.asText().trim();
+      if (value.regionMatches(true, 0, "RRID:", 0, 5) && value.length() > 5) {
+        return "RRID:" + value.substring(5);
+      }
+    }
+    String identifier = source.path("item").path("identifier").asText("").trim();
+    if (identifier.matches("[A-Za-z][A-Za-z0-9-]*[_:][A-Za-z0-9][A-Za-z0-9_.:-]*|nif-[0-9]{4}-[0-9]+")) {
+      return "RRID:" + identifier;
+    }
+    return null;
   }
 
   private static String buildDetails(JsonNode itemNode) {
