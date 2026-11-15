@@ -600,6 +600,74 @@ public class RegistryRecordReadingTest {
 
   // ---- SciCrunch ------------------------------------------------------------------------------
 
+  @Test
+  public void rridSearchDropsOnlyExplicitlyFalseRecordsEvenIfTheRegistryReturnsThem() throws Exception {
+    registry = request -> Reply.ok("""
+        {"hits":{"total":6,"hits":[
+          {"_source":{"recordValid":false,"item":{"identifier":"1260732","name":"coal metagenome"},
+                       "rrid":{"curie":"RRID:NCBITaxon_1260732"}}},
+          {"_source":{"recordValid":true,"item":{"identifier":"SCR_1","name":"Valid resource"}}},
+          {"_source":{"item":{"identifier":"SCR_2","name":"Legacy resource"}}},
+          {"_source":{"recordValid":null,"item":{"identifier":"SCR_3","name":"Unknown validity"}}},
+          {"_source":{"recordValid":"false","item":{"identifier":"SCR_4","name":"Text is not a boolean"}}},
+          {"_source":{"recordValid":0,"item":{"identifier":"SCR_5","name":"Zero is not a boolean"}}}
+        ]}}
+        """);
+    RridAuthority authority = new RridAuthority(BASE + "/rrid/search", BASE + "/rrid/resolver/", "key");
+
+    AuthoritySearchAnswer answer = authority.search("resource", 0, 10);
+
+    assertEquals(IntStream.rangeClosed(1, 5).mapToObj(i -> "https://identifiers.org/RRID:SCR_" + i).toList(),
+        new ArrayList<>(answer.results().keySet()));
+    assertTrue(answer.found());
+    assertNull(answer.totalCount(), "An unfiltered registry total cannot count the acceptable matches");
+  }
+
+  @Test
+  public void rridSearchWithOnlyInvalidRecordsOffersNoSelection() throws Exception {
+    registry = request -> Reply.ok("""
+        {"hits":{"total":1,"hits":[{"_source":{"recordValid":false,
+          "item":{"identifier":"1260732","name":"coal metagenome"},
+          "rrid":{"curie":"RRID:NCBITaxon_1260732"}}}]}}
+        """);
+    RridAuthority authority = new RridAuthority(BASE + "/rrid/search", BASE + "/rrid/resolver/", "key");
+
+    AuthoritySearchAnswer answer = authority.search("coal metagenome", 0, 10);
+
+    assertTrue(answer.results().isEmpty());
+    assertFalse(answer.found());
+    assertNull(answer.totalCount());
+    // This policy is for search suggestions; direct identifier resolution keeps its existing contract.
+    assertTrue(authority.details("RRID:NCBITaxon_1260732").found());
+  }
+
+  @Test
+  public void rridFiltersInvalidRecordsBeforePagingWhileStillRequiringANameMatch() throws Exception {
+    registry = request -> Reply.ok("""
+        {"hits":{"total":{"value":3,"relation":"eq"},"hits":[
+          {"_source":{"recordValid":true,"item":{"identifier":"SCR_3","name":"Third matching resource"}}}
+        ]}}
+        """);
+    RridAuthority authority = new RridAuthority(BASE + "/rrid/search", BASE + "/rrid/resolver/", "key");
+
+    AuthoritySearchAnswer answer = authority.search("resource", 2, 1);
+
+    JsonNode request = JsonMapper.STRICT_MAPPER.readTree(received("/rrid/search").get(0).body());
+    assertEquals(2, request.path("from").asInt());
+    assertEquals(1, request.path("size").asInt());
+    JsonNode query = request.path("query").path("bool");
+    assertEquals(JsonMapper.STRICT_MAPPER.readTree("[{\"term\":{\"recordValid\":false}}]"), query.path("must_not"));
+    assertEquals(1, query.path("minimum_should_match").asInt());
+    assertEquals(JsonMapper.STRICT_MAPPER.readTree("""
+        [{"term":{"item.name.aggregate":{"value":"resource","boost":100}}},
+         {"prefix":{"item.name.aggregate":{"value":"resource","boost":10}}},
+         {"wildcard":{"item.name.aggregate":{"value":"*resource*","boost":1}}}]
+        """), query.path("should"));
+    assertEquals(3L, answer.totalCount());
+    assertFalse(answer.countCapped());
+    assertEquals(List.of("https://identifiers.org/RRID:SCR_3"), new ArrayList<>(answer.results().keySet()));
+  }
+
   /** Shapes read from SciCrunch: the source-local number is not the resource's RRID. */
   static Stream<Arguments> rridRecords() {
     return Stream.of(

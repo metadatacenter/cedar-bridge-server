@@ -67,8 +67,14 @@ public class RridAuthority implements ExternalAuthority {
     JsonNode root = reply.json();
 
     Map<String, Object> results = new LinkedHashMap<>();
+    boolean excludedInvalidRecord = false;
     for (JsonNode hit : root.path("hits").path("hits")) {
       JsonNode source = hit.path("_source");
+      JsonNode valid = source.path("recordValid");
+      if (valid.isBoolean() && !valid.booleanValue()) {
+        excludedInvalidRecord = true;
+        continue;
+      }
       JsonNode itemNode = source.path("item");
       String identifier = canonicalRrid(source);
       String name = itemNode.path("name").asText(null);
@@ -79,7 +85,10 @@ public class RridAuthority implements ExternalAuthority {
         results.put(IDENTIFIERS_ORG_PREFIX + identifier, term);
       }
     }
-    return answer(results, root.path("hits").path("total"));
+    // The query filters before paging. If a response nevertheless includes invalid records,
+    // its total cannot tell us how many acceptable records remain across all pages.
+    return excludedInvalidRecord ? AuthoritySearchAnswer.ofUnknownTotal(results)
+        : answer(results, root.path("hits").path("total"));
   }
 
   @Override
@@ -144,7 +153,10 @@ public class RridAuthority implements ExternalAuthority {
     root.put("from", from);
     root.put("size", size);
 
-    ArrayNode should = root.putObject("query").putObject("bool").putArray("should");
+    ObjectNode query = root.putObject("query").putObject("bool");
+    query.putArray("must_not").addObject().putObject("term").put("recordValid", false);
+    query.put("minimum_should_match", 1);
+    ArrayNode should = query.putArray("should");
     should.add(clause("term", q, 100));
     should.add(clause("prefix", q, 10));
     should.add(clause("wildcard", "*" + q + "*", 1));
