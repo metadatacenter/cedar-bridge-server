@@ -1,0 +1,66 @@
+{
+  "type": "dois",
+  "attributes": {
+    "prefix": "{prefix}",
+    "event": "{event}",
+    "url": "{landingPage}",
+    "schemaVersion": "http://datacite.org/schema/kernel-4",
+    "creators": [
+      {
+        "name": "John Doe"
+      }
+    ],
+    "titles": [
+      {
+        "title": "Required properties only"
+      }
+    ],
+    "publisher": "CEDAR",
+    "publicationYear": "{year}",
+    "types": {
+      "resourceTypeGeneral": "Other",
+      "resourceType": "Instance"
+    },
+    "relatedItems": [
+      {
+        "relatedItemType": "Audiovisual",
+        "relationType": "Continues",
+        "relatedItemIdentifier": {
+          "relatedItemIdentifier": "0370-2693",
+          "relatedItemIdentifierType": "ARK",
+          "relatedMetadataScheme": "related metadata scheme",
+          "schemeType": "DOI"
+        },
+        "titles": [
+          {
+            "title": "related item title"
+          }
+        ],
+        "creators": [
+          {
+            "name": "Kelly Spring",
+            "nameType": "Personal",
+            "givenName": "Kelly",
+            "familyName": "Spring"
+          }
+        ],
+        "number": "10",
+        "numberType": "Chapter",
+        "volume": "776",
+        "issue": "issue",
+        "firstPage": "249",
+        "lastPage": "264",
+        "publicationYear": 2003,
+        "publisher": "Stanford",
+        "edition": "5",
+        "contributors": [
+          {
+            "contributorType": "Editor",
+            "name": "Stanford",
+            "nameType": "Organizational"
+          }
+        ]
+      }
+    ]
+  }
+}

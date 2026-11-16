@@ -1,0 +1,40 @@
+{
+  "type": "dois",
+  "attributes": {
+    "prefix": "{prefix}",
+    "event": "{event}",
+    "url": "{landingPage}",
+    "schemaVersion": "http://datacite.org/schema/kernel-4",
+    "creators": [
+      {
+        "name": "John Doe"
+      }
+    ],
+    "titles": [
+      {
+        "title": "Required properties only"
+      }
+    ],
+    "publisher": "CEDAR",
+    "publicationYear": "{year}",
+    "types": {
+      "resourceTypeGeneral": "Other",
+      "resourceType": "Instance"
+    },
+    "geoLocations": [
+      {
+        "geoLocationPlace": "Stanford",
+        "geoLocationPoint": {
+          "pointLongitude": 45.0,
+          "pointLatitude": 60.0
+        },
+        "geoLocationBox": {
+          "westBoundLongitude": 30.0,
+          "eastBoundLongitude": 32.0,
+          "southBoundLatitude": 60.0,
+          "northBoundLatitude": -50.0
+        }
+      }
+    ]
+  }
+}

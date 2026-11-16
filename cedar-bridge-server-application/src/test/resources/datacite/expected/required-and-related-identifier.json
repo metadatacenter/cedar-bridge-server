@@ -1,0 +1,41 @@
+{
+  "type": "dois",
+  "attributes": {
+    "prefix": "{prefix}",
+    "event": "{event}",
+    "url": "{landingPage}",
+    "schemaVersion": "http://datacite.org/schema/kernel-4",
+    "creators": [
+      {
+        "name": "John Doe"
+      }
+    ],
+    "titles": [
+      {
+        "title": "Required properties only"
+      }
+    ],
+    "publisher": "CEDAR",
+    "publicationYear": "{year}",
+    "types": {
+      "resourceTypeGeneral": "Other",
+      "resourceType": "Instance"
+    },
+    "relatedIdentifiers": [
+      {
+        "relatedIdentifier": "https://data.datacite.org/application/citeproc+json/10.5072/example-full",
+        "relatedIdentifierType": "ARK",
+        "relationType": "Compiles",
+        "relatedMetadataScheme": "json",
+        "schemeUri": "https://github.com/citation-style-language/schema/raw/master/csl-data.json",
+        "resourceTypeGeneral": "Book"
+      },
+      {
+        "relatedIdentifier": "https://data.datacite.org/application/citeproc+json/10.5072/example-full",
+        "relatedIdentifierType": "ARK",
+        "relationType": "Compiles",
+        "relatedMetadataScheme": "json"
+      }
+    ]
+  }
+}

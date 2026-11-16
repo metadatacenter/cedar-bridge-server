@@ -26,11 +26,11 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
  * The DataCite to CEDAR conversion, which turns an existing DOI's metadata back into an instance
  * the editor shows and the user updates.
  * <p>
- * The live DataCite suite checks it against DataCite's own response and is excluded by default, so
- * a normal build ran almost none of it. Here each fixture instance goes to DataCite form, back to a
- * CEDAR instance, and to DataCite form again, and the two DataCite documents must agree. A property
- * the reverse conversion drops or alters would vanish from a DOI the next time someone updates it,
- * so the comparison covers the whole document rather than chosen properties.
+ * Each fixture instance goes to DataCite form, back to a CEDAR instance, and to DataCite form again,
+ * and the result must be the DataCite document written for the fixture. A property the reverse
+ * conversion drops or alters would vanish from a DOI the next time someone updates it, so the
+ * comparison covers the whole document rather than chosen properties. A CEE emission is held to the
+ * document of the instance its form opened with.
  * <p>
  * The instance comes back as the JSON document the form receives, and goes to DataCite form again
  * the way the form's answer does, through the library's reader. That instance must also be valid
@@ -90,12 +90,10 @@ class DataCiteMetadataParserTest {
   @ParameterizedTest(name = "{0}")
   @MethodSource("instances")
   void aDoisMetadataSurvivesTheTripBackToCedar(String name, String document) throws Exception {
-    DataCiteSchema sent = CedarInstanceParserTest.convert(CedarInstanceParserTest.fixture(document), "draft");
-
     DataCiteSchema resent = CedarInstanceParserTest.convert(readBack(document), "draft");
 
-    JsonNode expected = MAPPER.valueToTree(sent);
-    JsonNode actual = MAPPER.valueToTree(resent);
+    JsonNode expected = CedarInstanceParserTest.expected(document.replaceFirst("^cee-", ""), "draft");
+    JsonNode actual = CedarInstanceParserTest.sent(resent);
     assertEquals(expected, actual, () -> "the round trip changed the DataCite document:\n"
         + expected.toPrettyString() + "\nbecame\n" + actual.toPrettyString());
   }

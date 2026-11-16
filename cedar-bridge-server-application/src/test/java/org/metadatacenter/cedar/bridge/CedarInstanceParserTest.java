@@ -17,6 +17,7 @@ import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.config.LinkedDataConfig;
 import org.metadatacenter.server.jsonld.LinkedDataUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,6 +47,14 @@ class CedarInstanceParserTest {
   private static final String REPOSITORY_BASE = "https://repo.metadatacenter.org/";
   private static final String SOURCE_ARTIFACT =
       "https://repo.metadatacenter.org/template-instances/8bc64ab5-df6b-48c8-8c61-6c016245918e";
+  private static final String LANDING_PAGE = OPENVIEW_BASE + "template-instances/8bc64ab5-df6b-48c8-8c61-6c016245918e";
+  private static final ObjectMapper MAPPER = new ObjectMapper();
+
+  /** Every property of DataCite's attributes the conversion fills, in the order it writes them. */
+  private static final List<String> DATACITE_PROPERTIES = List.of("prefix", "event", "url", "schemaVersion",
+      "creators", "titles", "publisher", "publicationYear", "subjects", "contributors", "dates",
+      "alternateIdentifiers", "language", "types", "relatedIdentifiers", "sizes", "formats", "version", "rightsList",
+      "descriptions", "geoLocations", "fundingReferences", "relatedItems");
 
   static CedarConfig config(String prefix) {
     CedarConfig config = mock(CedarConfig.class, RETURNS_DEEP_STUBS);
@@ -69,6 +78,58 @@ class CedarInstanceParserTest {
     CedarInstanceParser.parseCedarInstance(new JsonArtifactReader().readTemplateInstanceArtifact(instance), schema,
         SOURCE_ARTIFACT, state, config(PREFIX));
     return schema;
+  }
+
+  /** The DataCite document an instance must become under this test's prefix and source artifact. */
+  static ObjectNode expected(String name, String event) {
+    return DataCiteFixtures.expected(name, PREFIX, LANDING_PAGE, event);
+  }
+
+  /** The document the conversion produced, as it is sent to DataCite and read there. */
+  static JsonNode sent(DataCiteSchema schema) throws Exception {
+    return DataCiteFixtures.withoutNulls(MAPPER.readTree(MAPPER.writeValueAsString(schema)).get("data"));
+  }
+
+  /**
+   * What a DOI says, property by property. Each instance must convert to the DataCite document written
+   * for it from DataCite's schema, so a value the conversion drops, moves into another property or
+   * alters is a difference here.
+   */
+  @ParameterizedTest(name = "{0}")
+  @ValueSource(strings = {"required-only", "rich-metadata", "all-under-required-elements", "required-and-subject",
+      "required-and-contributor", "required-and-date", "required-and-lang", "required-and-alternate-identifier",
+      "required-and-related-identifier", "required-and-size-format-version", "required-and-rights",
+      "required-and-description", "required-and-funding-ref", "required-and-geo-location", "required-and-related-item",
+      "required-and-random-fields", "required-and-empty-string", "required-and-all-empty-fields",
+      "rich-metadata-rich-update", "rich-metadata-add-new-instance", "rich-metadata-delete-instance",
+      "rich-metadata-delete-and-add-instance"})
+  void eachInstanceConvertsToTheDocumentWrittenForIt(String name) throws Exception {
+    JsonNode expected = expected(name, "publish");
+    JsonNode actual = sent(convert(fixture(name), "publish"));
+
+    assertEquals(expected, actual, () -> "expected\n" + expected.toPrettyString() + "\nbut sent\n"
+        + actual.toPrettyString());
+  }
+
+  /**
+   * DataCite leaves a property that an update leaves out as it was, so the request names every
+   * property, null where the instance holds no value. A draft whose description the user removed then
+   * loses it at DataCite too.
+   */
+  @Test
+  void theRequestNamesEveryPropertyAndNullWhereTheInstanceHoldsNoValue() throws Exception {
+    JsonNode attributes = MAPPER.readTree(MAPPER.writeValueAsString(convert(fixture("required-only"), "draft")))
+        .at("/data/attributes");
+    JsonNode held = expected("required-only", "draft").get("attributes");
+
+    List<String> named = new ArrayList<>();
+    attributes.fieldNames().forEachRemaining(named::add);
+    assertEquals(DATACITE_PROPERTIES, named);
+    for (String property : DATACITE_PROPERTIES) {
+      if (!held.has(property)) {
+        assertTrue(attributes.get(property).isNull(), property);
+      }
+    }
   }
 
   @Test
@@ -131,16 +192,14 @@ class CedarInstanceParserTest {
 
   /**
    * The whole loop: a DOI's metadata opens the form as an instance, CEE loads that instance and
-   * emits its own, and the emission must convert to the DataCite document the loop started from.
+   * emits its own, and the emission must convert to the DataCite document written for the instance
+   * the form opened with.
    */
   @ParameterizedTest(name = "{0}")
   @ValueSource(strings = {"rich-metadata", "rich-metadata-add-new-instance", "required-and-empty-string",
       "required-and-all-empty-fields"})
   void whatCeePostsConvertsToTheDocumentTheFormOpenedFrom(String name) throws Exception {
-    JsonNode expected = new ObjectMapper().valueToTree(convert(fixture(name), "publish"));
-    JsonNode actual = new ObjectMapper().valueToTree(convert(fixture("cee-" + name), "publish"));
-
-    assertEquals(expected, actual);
+    assertEquals(expected(name, "publish"), sent(convert(fixture("cee-" + name), "publish")));
   }
 
   /**
@@ -209,16 +268,6 @@ class CedarInstanceParserTest {
       }
     });
     return entry;
-  }
-
-  @Test
-  void richMetadataCarriesItsCreatorsAndTitles() throws Exception {
-    DataCiteSchema schema = convert(fixture("rich-metadata"), "publish");
-
-    assertNotNull(schema.getData().getAttributes().getCreators());
-    assertTrue(schema.getData().getAttributes().getCreators().size() >= 1, "creators should carry over");
-    assertNotNull(schema.getData().getAttributes().getTitles());
-    assertTrue(schema.getData().getAttributes().getTitles().size() >= 1, "titles should carry over");
   }
 
   // The refusals

@@ -1,0 +1,142 @@
+{
+  "type": "dois",
+  "attributes": {
+    "prefix": "{prefix}",
+    "event": "{event}",
+    "url": "{landingPage}",
+    "schemaVersion": "http://datacite.org/schema/kernel-4",
+    "creators": [
+      {
+        "name": "Potter Winner",
+        "nameType": "Personal",
+        "givenName": "Potter",
+        "familyName": "Winner"
+      }
+    ],
+    "titles": [
+      {
+        "title": "Update Rich Metadata with Deleted And New Added Instances of Each Element",
+        "titleType": "Subtitle"
+      }
+    ],
+    "publisher": "CEDAR",
+    "publicationYear": "{year}",
+    "types": {
+      "resourceTypeGeneral": "Other",
+      "resourceType": "Instance"
+    },
+    "subjects": [
+      {
+        "subject": "computer science",
+        "subjectScheme": "dewey",
+        "schemeUri": "http://dewey.info/",
+        "valueUri": "http://value.uri/",
+        "classificationCode": "333"
+      }
+    ],
+    "contributors": [
+      {
+        "name": "Mark, Ten",
+        "nameType": "Personal",
+        "givenName": "Mark",
+        "familyName": "Ten",
+        "contributorType": "ProjectLeader",
+        "affiliation": [
+          {
+            "affiliationIdentifier": "affiliation identifier 2",
+            "affiliationIdentifierScheme": "ROR",
+            "schemeUri": "http://affiliation_identification_scheme_uri"
+          }
+        ],
+        "nameIdentifiers": [
+          {
+            "nameIdentifier": "name identifier 2",
+            "nameIdentifierScheme": "ORCID18"
+          }
+        ]
+      }
+    ],
+    "dates": [
+      {
+        "date": "2023-06-30",
+        "dateType": "Issued"
+      }
+    ],
+    "language": "ar",
+    "alternateIdentifiers": [
+      {
+        "alternateIdentifier": "https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.0.xml",
+        "alternateIdentifierType": "URL"
+      }
+    ],
+    "relatedIdentifiers": [
+      {
+        "relatedIdentifier": "https://data.datacite.org/application/citeproc+json/10.5072/example-full",
+        "relatedIdentifierType": "ARK",
+        "relationType": "Compiles",
+        "relatedMetadataScheme": "json"
+      }
+    ],
+    "sizes": [
+      "30KB"
+    ],
+    "formats": [
+      "PDF"
+    ],
+    "version": "4.4",
+    "rightsList": [
+      {
+        "rights": "rights 3"
+      }
+    ],
+    "descriptions": [
+      {
+        "description": "the third description",
+        "descriptionType": "Abstract"
+      }
+    ],
+    "geoLocations": [
+      {
+        "geoLocationPlace": "Stanford",
+        "geoLocationPoint": {
+          "pointLongitude": 21.0,
+          "pointLatitude": 50.0
+        },
+        "geoLocationBox": {
+          "westBoundLongitude": 100.0,
+          "eastBoundLongitude": 60.0,
+          "southBoundLatitude": 20.0,
+          "northBoundLatitude": -50.0
+        }
+      }
+    ],
+    "fundingReferences": [
+      {
+        "funderName": "Stanford"
+      }
+    ],
+    "relatedItems": [
+      {
+        "relatedItemType": "Audiovisual",
+        "relationType": "Continues",
+        "relatedItemIdentifier": {
+          "relatedItemIdentifier": "0370-2693",
+          "relatedItemIdentifierType": "ARK",
+          "relatedMetadataScheme": "related metadata scheme",
+          "schemeType": "DOI"
+        },
+        "titles": [
+          {
+            "title": "related item title 3"
+          }
+        ],
+        "number": "10",
+        "numberType": "Chapter",
+        "volume": "56",
+        "publicationYear": 2018,
+        "publisher": "Stanford",
+        "edition": "4"
+      }
+    ]
+  }
+}

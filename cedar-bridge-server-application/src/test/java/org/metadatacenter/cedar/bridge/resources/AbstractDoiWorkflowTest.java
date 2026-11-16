@@ -34,6 +34,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -169,6 +170,20 @@ abstract class AbstractDoiWorkflowTest {
   /** The DOI a registration answered with, without a resolver prefix. */
   static String doiOf(Response response) {
     return (String) entity(response).get("doiId");
+  }
+
+  /**
+   * Asserts that DataCite holds, for the DOI, the attributes written for the named fixture, read back
+   * through the metadata route. The DOI's identity and state, which DataCite adds, are checked apart.
+   */
+  void assertDataCiteHolds(String fixture, String doi, String sourceId) throws Exception {
+    ObjectNode expected = (ObjectNode) DataCiteFixtures.expected(fixture, PREFIX, landingPage(sourceId), "")
+        .get("attributes");
+    expected.remove("event");
+    ObjectNode held = (ObjectNode) DataCiteFixtures.withoutNulls(readBack(doi).at("/data/attributes"));
+    held.remove(List.of("doi", "suffix", "state"));
+    assertEquals(expected, held, () -> "DataCite holds\n" + held.toPrettyString() + "\nnot\n"
+        + expected.toPrettyString());
   }
 
   /** What DataCite holds for the DOI, read through the metadata route. */

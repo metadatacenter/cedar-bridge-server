@@ -1,0 +1,67 @@
+{
+  "type": "dois",
+  "attributes": {
+    "prefix": "{prefix}",
+    "event": "{event}",
+    "url": "{landingPage}",
+    "schemaVersion": "http://datacite.org/schema/kernel-4",
+    "creators": [
+      {
+        "name": "John Doe"
+      }
+    ],
+    "titles": [
+      {
+        "title": "Required properties only"
+      }
+    ],
+    "publisher": "CEDAR",
+    "publicationYear": "{year}",
+    "types": {
+      "resourceTypeGeneral": "Other",
+      "resourceType": "Instance"
+    },
+    "contributors": [
+      {
+        "name": "Starr, Joan",
+        "nameType": "Personal",
+        "givenName": "Joan",
+        "familyName": "Starr",
+        "contributorType": "DataCollector",
+        "affiliation": [
+          {
+            "affiliationIdentifier": "affiliation identifier 1",
+            "affiliationIdentifierScheme": "ROR",
+            "schemeUri": "http://affiliation_identification_scheme_uri"
+          }
+        ],
+        "nameIdentifiers": [
+          {
+            "nameIdentifier": "name identifier 1",
+            "nameIdentifierScheme": "ROR"
+          }
+        ]
+      },
+      {
+        "name": "Chou, Jimmy",
+        "nameType": "Personal",
+        "givenName": "Jimmy",
+        "familyName": "Chou",
+        "contributorType": "DataManager",
+        "affiliation": [
+          {
+            "affiliationIdentifier": "affiliation identifier 1",
+            "affiliationIdentifierScheme": "ROR",
+            "schemeUri": "http://affiliation_identification_scheme_uri"
+          }
+        ],
+        "nameIdentifiers": [
+          {
+            "nameIdentifier": "name identifier 1",
+            "nameIdentifierScheme": "ORCID18"
+          }
+        ]
+      }
+    ]
+  }
+}

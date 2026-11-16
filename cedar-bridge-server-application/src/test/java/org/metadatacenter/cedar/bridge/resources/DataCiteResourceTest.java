@@ -1,12 +1,16 @@
 package org.metadatacenter.cedar.bridge.resources;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.metadatacenter.cedar.bridge.CompareValues;
+import org.metadatacenter.artifacts.model.reader.JsonArtifactReader;
+import org.metadatacenter.cedar.bridge.DataCiteFixtures;
+import org.metadatacenter.cedar.bridge.resource.datacite.CedarInstanceParser;
+import org.metadatacenter.cedar.bridge.resource.datacite.form.DataCiteSchema;
 import org.metadatacenter.cedar.bridge.resources.doi.DoiRegistrationState;
 import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.util.http.CedarError;
@@ -23,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The whole mint and attach contract, offline. Each case registers a DOI through the routes against a
  * DataCite fake that keeps what it registers, reads it back through the metadata route, and holds what
- * DataCite received to the metadata the form posted. A published DOI must also be recorded on the
+ * DataCite received to the DataCite document written for the metadata the form posted. A published DOI must also be recorded on the
  * artifact and in the artifact's DOI record.
  *
  * <p>This replaces a suite that called DataCite's test API and could not pass: its source artifacts
@@ -41,9 +45,8 @@ class DataCiteResourceTest extends AbstractDoiWorkflowTest {
       "required-and-random-fields", "required-and-empty-string", "required-and-all-empty-fields"})
   void publishesTheMetadataAndRecordsTheDoiOnTheArtifact(String fixture) throws Exception {
     String source = newSource();
-    JsonNode given = metadata(fixture);
 
-    Response response = resource().createDOI(source, "publish", given);
+    Response response = resource().createDOI(source, "publish", metadata(fixture));
 
     assertEquals(201, response.getStatus(), () -> String.valueOf(response.getEntity()));
     String doi = doiOf(response);
@@ -53,7 +56,7 @@ class DataCiteResourceTest extends AbstractDoiWorkflowTest {
     assertEquals("findable", dataCite.state(doi));
     assertEquals("https://doi.org/" + doi, resourceServer.carriedDoi(source));
     assertEquals(DoiRegistrationState.ATTACHED, recorded(source).state());
-    assertTrue(CompareValues.compareResponseWithGivenMetadata(given, readBack(doi), source, "publish", config));
+    assertDataCiteHolds(fixture, doi, source);
   }
 
   /** A draft is saved, changed, and saved again in place, and the artifact carries nothing until it is published. */
@@ -71,13 +74,13 @@ class DataCiteResourceTest extends AbstractDoiWorkflowTest {
     Response saved = resource().createDOI(source, "draft", metadata(first));
     assertEquals(201, saved.getStatus(), () -> String.valueOf(saved.getEntity()));
     String doi = doiOf(saved);
-    assertTrue(CompareValues.compareResponseWithGivenMetadata(metadata(first), readBack(doi), source, "draft", config));
+    assertDataCiteHolds(first, doi, source);
     assertEquals("draft", dataCite.state(doi));
 
     Response updated = resource().createDOI(source, "draft", metadata(second));
     assertEquals(201, updated.getStatus());
     assertEquals(doi, doiOf(updated), "the draft is updated, not duplicated");
-    assertTrue(CompareValues.compareResponseWithGivenMetadata(metadata(second), readBack(doi), source, "draft", config));
+    assertDataCiteHolds(second, doi, source);
     assertNull(resourceServer.carriedDoi(source), "a draft is not recorded on the artifact");
     assertEquals(DoiRegistrationState.DRAFT, recorded(source).state());
 
@@ -100,9 +103,14 @@ class DataCiteResourceTest extends AbstractDoiWorkflowTest {
 
     assertEquals(200, start.getStatus());
     assertEquals(TextNode.valueOf(doi), entity(start).get("draftDoi"));
-    JsonNode resumed = assertInstanceOf(JsonNode.class, entity(start).get("existingDataCiteMetadata"));
-    assertTrue(CompareValues.compareResponseWithGivenMetadata(resumed, readBack(doi), source, "draft", config),
-        "the form opens on what DataCite holds");
+    ObjectNode resumed = assertInstanceOf(ObjectNode.class, entity(start).get("existingDataCiteMetadata"));
+    DataCiteSchema reopened = new DataCiteSchema();
+    CedarInstanceParser.parseCedarInstance(new JsonArtifactReader().readTemplateInstanceArtifact(resumed), reopened,
+        source, "draft", config);
+    JsonNode sent = DataCiteFixtures.withoutNulls(
+        JsonMapper.STRICT_MAPPER.readTree(JsonMapper.STRICT_MAPPER.writeValueAsString(reopened)));
+    assertEquals(DataCiteFixtures.expected("rich-metadata", PREFIX, landingPage(source), "draft").get("attributes"),
+        sent.at("/data/attributes"), "the form opens on what DataCite holds");
     assertEquals(1, dataCite.count(FakeDataCite.Call.LIST),
         "only the first save looked for a draft begun before CEDAR kept records");
   }

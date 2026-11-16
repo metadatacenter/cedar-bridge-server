@@ -1,0 +1,142 @@
+{
+  "type": "dois",
+  "attributes": {
+    "prefix": "{prefix}",
+    "event": "{event}",
+    "url": "{landingPage}",
+    "schemaVersion": "http://datacite.org/schema/kernel-4",
+    "creators": [
+      {
+        "name": "John Doe"
+      }
+    ],
+    "titles": [
+      {
+        "title": "Required properties only"
+      }
+    ],
+    "publisher": "CEDAR",
+    "publicationYear": "{year}",
+    "types": {
+      "resourceTypeGeneral": "Other",
+      "resourceType": "Instance"
+    },
+    "contributors": [
+      {
+        "name": "Starr, Joan",
+        "nameType": "Personal",
+        "givenName": "Joan",
+        "familyName": "Starr",
+        "contributorType": "DataCollector",
+        "affiliation": [
+          {
+            "affiliationIdentifier": "affiliation identifier 1",
+            "affiliationIdentifierScheme": "ROR",
+            "schemeUri": "http://affiliation_identification_scheme_uri"
+          }
+        ],
+        "nameIdentifiers": [
+          {
+            "nameIdentifier": "name identifier 1",
+            "nameIdentifierScheme": "ROR"
+          }
+        ]
+      },
+      {
+        "name": "Chou, Jimmy",
+        "nameType": "Personal",
+        "contributorType": "DataCollector",
+        "affiliation": [
+          {
+            "affiliationIdentifier": "affiliation identifier 1",
+            "affiliationIdentifierScheme": "ROR"
+          }
+        ]
+      }
+    ],
+    "language": "ar",
+    "alternateIdentifiers": [
+      {
+        "alternateIdentifier": "https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.4.xml",
+        "alternateIdentifierType": "URL"
+      },
+      {
+        "alternateIdentifier": "https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.0.xml",
+        "alternateIdentifierType": "URL"
+      }
+    ],
+    "relatedIdentifiers": [
+      {
+        "relatedIdentifier": "https://data.datacite.org/application/citeproc+json/10.5072/example-full",
+        "relatedIdentifierType": "ARK",
+        "relationType": "Compiles"
+      }
+    ],
+    "sizes": [
+      "10 Pages"
+    ],
+    "formats": [
+      "video"
+    ],
+    "version": "1.0.0",
+    "rightsList": [
+      {
+        "rights": "the rights"
+      }
+    ],
+    "descriptions": [
+      {
+        "description": "the first description",
+        "descriptionType": "Abstract"
+      }
+    ],
+    "geoLocations": [
+      {
+        "geoLocationPlace": "Stanford",
+        "geoLocationPoint": {
+          "pointLongitude": 45.0,
+          "pointLatitude": 60.0
+        }
+      }
+    ],
+    "fundingReferences": [
+      {
+        "funderName": "Mark Ten",
+        "funderIdentifierType": "ROR"
+      }
+    ],
+    "relatedItems": [
+      {
+        "relatedItemType": "Audiovisual",
+        "relationType": "Continues",
+        "relatedItemIdentifier": {
+          "relatedItemIdentifier": "0370-2693",
+          "relatedItemIdentifierType": "ARK"
+        },
+        "titles": [
+          {
+            "title": "related item title"
+          }
+        ],
+        "creators": [
+          {
+            "name": "Kelly Spring"
+          }
+        ],
+        "number": "10",
+        "volume": "776",
+        "firstPage": "249",
+        "lastPage": "264",
+        "publisher": "Stanford",
+        "edition": "5",
+        "contributors": [
+          {
+            "contributorType": "Editor",
+            "name": "Stanford",
+            "nameType": "Organizational"
+          }
+        ]
+      }
+    ]
+  }
+}
