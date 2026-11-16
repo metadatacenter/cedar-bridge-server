@@ -18,6 +18,8 @@ import org.metadatacenter.util.json.JsonMapper;
 
 import jakarta.ws.rs.core.Response;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -113,6 +115,30 @@ class DataCiteResourceTest extends AbstractDoiWorkflowTest {
         sent.at("/data/attributes"), "the form opens on what DataCite holds");
     assertEquals(1, dataCite.count(FakeDataCite.Call.LIST),
         "only the first save looked for a draft begun before CEDAR kept records");
+  }
+
+  /**
+   * Every request the workflow makes uses the method its route takes, and every write declares
+   * DataCite's JSON:API media type. DataCite deletes a draft on {@code DELETE /dois/{id}}, so a read
+   * sent with another method is not harmless.
+   */
+  @Test
+  void everyRequestUsesItsRoutesMethodAndEveryWriteDeclaresJsonApi() throws Exception {
+    String source = newSource();
+    String doi = doiOf(resource().createDOI(source, "draft", metadata("required-only")));
+    resource().createDOIStart(source);
+    resource().createDOI(source, "draft", metadata("rich-metadata"));
+    resource().createDOI(source, "publish", metadata("rich-metadata"));
+    readBack(doi);
+
+    List<FakeDataCite.Received> received = dataCite.received();
+    assertEquals(Set.of(FakeDataCite.Call.values()), received.stream().map(FakeDataCite.Received::call)
+        .collect(Collectors.toSet()), received.toString());
+    for (FakeDataCite.Received request : received) {
+      if (request.call() == FakeDataCite.Call.CREATE || request.call() == FakeDataCite.Call.UPDATE) {
+        assertEquals("application/vnd.api+json", request.contentType(), request.toString());
+      }
+    }
   }
 
   /** Metadata the conversion refuses reaches neither DataCite nor the record. */

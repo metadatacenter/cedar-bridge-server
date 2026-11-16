@@ -928,11 +928,13 @@ class DataCiteDoiRoutesTest {
 
   private HttpResponse<String> answerAsDataCite(HttpRequest.Builder builder) throws HttpTimeoutException {
     HttpRequest request = builder.build();
+    // A read sent with any method but GET could be DataCite's DELETE of a draft, so it is no read.
     DataCiteCall call = switch (request.method()) {
       case "POST" -> DataCiteCall.CREATE;
       case "PUT" -> DataCiteCall.UPDATE;
-      default -> request.uri().getRawQuery().contains("query=")
+      case "GET" -> request.uri().getRawQuery().contains("query=")
           ? DataCiteCall.DRAFT_LOOKUP : DataCiteCall.METADATA_READ;
+      default -> throw new AssertionError("DataCite takes no " + request.method() + " on " + request.uri());
     };
     sentToDataCite.add(new SentToDataCite(call, request.uri(),
         request.headers().firstValue("Content-Type").orElse(null), body(request)));
