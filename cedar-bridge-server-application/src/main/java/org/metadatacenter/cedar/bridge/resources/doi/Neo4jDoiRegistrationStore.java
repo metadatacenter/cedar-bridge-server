@@ -1,12 +1,8 @@
 package org.metadatacenter.cedar.bridge.resources.doi;
 
 import org.metadatacenter.config.CedarConfig;
-import org.metadatacenter.config.CedarTestRuntime;
-import org.metadatacenter.server.neo4j.Neo4jConfig;
-import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Config;
+import org.metadatacenter.server.neo4j.Neo4jDrivers;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 
@@ -15,7 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 /**
  * The DOI records, kept in the graph as nodes of their own, one per source artifact.
@@ -37,22 +32,11 @@ public final class Neo4jDoiRegistrationStore implements DoiRegistrationStore, Au
   private volatile boolean schemaReady;
 
   public Neo4jDoiRegistrationStore(CedarConfig cedarConfig) {
-    this(driver(cedarConfig));
+    this(Neo4jDrivers.open(cedarConfig));
   }
 
   public Neo4jDoiRegistrationStore(Driver driver) {
     this.driver = driver;
-  }
-
-  private static Driver driver(CedarConfig cedarConfig) {
-    Neo4jConfig neo4j = Neo4jConfig.fromCedarConfig(cedarConfig);
-    Config.ConfigBuilder settings = Config.builder();
-    CedarTestRuntime.dependencyTimeoutMillis().ifPresent(timeout -> settings
-        .withConnectionTimeout(timeout, TimeUnit.MILLISECONDS)
-        .withConnectionAcquisitionTimeout(timeout, TimeUnit.MILLISECONDS)
-        .withMaxTransactionRetryTime(timeout, TimeUnit.MILLISECONDS));
-    return GraphDatabase.driver(neo4j.getUri(), AuthTokens.basic(neo4j.getUserName(), neo4j.getUserPassword()),
-        settings.build());
   }
 
   @Override
