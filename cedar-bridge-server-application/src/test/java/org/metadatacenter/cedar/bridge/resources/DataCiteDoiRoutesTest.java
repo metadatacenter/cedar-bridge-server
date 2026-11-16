@@ -863,6 +863,31 @@ class DataCiteDoiRoutesTest {
     assertEquals(URI.create(ENDPOINT + "/" + DRAFT_DOI + "?affiliation=true"), sentToDataCite.get(0).uri());
   }
 
+  /**
+   * DataCite owns its answer and adds properties to it. Both reads that map DataCite's answer into the
+   * model, the metadata route and the form opening on a draft, read past a property the model does not
+   * name, at the top of the attributes and inside a creator, rather than refuse the answer.
+   */
+  @Test
+  void bothReadsOfDataCitesAnswerReadPastAPropertyTheModelDoesNotName() throws Exception {
+    ObjectNode held = (ObjectNode) JsonMapper.STRICT_MAPPER.readTree(heldDraft());
+    ObjectNode attributes = (ObjectNode) held.at("/data/attributes");
+    attributes.put("fieldDataCiteAddedLater", "and did not tell us");
+    ((ObjectNode) attributes.at("/creators/0")).put("anotherFieldDataCiteAddedLater", true);
+    registrations.put(new DoiRegistration(SOURCE_ID, DRAFT_DOI, DoiRegistrationState.DRAFT, null, List.of()));
+    dataCiteReplies.put(DataCiteCall.METADATA_READ, new Reply(200, held.toString()));
+
+    Response read = resource.getDOIMetadata("https://doi.org/" + DRAFT_DOI);
+    Response start = resource.createDOIStart(SOURCE_ID);
+
+    assertEquals(200, read.getStatus(), String.valueOf(read.getEntity()));
+    assertEquals(held, read.getEntity());
+    assertEquals(200, start.getStatus(), String.valueOf(start.getEntity()));
+    JsonNode resumed = assertInstanceOf(JsonNode.class, entity(start).get("existingDataCiteMetadata"));
+    assertEquals("A draft resumed from DataCite", resumed.at("/title/0/title/@value").asText());
+    assertEquals("Doe, Jane", resumed.at("/creator/0/creatorName/@value").asText());
+  }
+
   /** A reservation DataCite does not hold yet is no draft, and the form opens on the pre-filled instance. */
   @Test
   void opensTheFormOnADefaultInstanceForAReservationDataCiteDoesNotHold() throws Exception {
