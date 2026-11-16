@@ -36,6 +36,15 @@ final class DoiResponses {
         .build();
   }
 
+  /** The refusal of a value that names no DOI, given where a DOI is asked for. */
+  static Response notADoi(String value) {
+    return CedarResponse.badRequest()
+        .errorKey(CedarErrorKey.INVALID_INPUT)
+        .message("The value is neither a DOI nor a DOI's resolver URL")
+        .parameter("id", value)
+        .build();
+  }
+
   static Response invalidState(String state) {
     return CedarResponse.badRequest()
         .errorKey(CedarErrorKey.INVALID_INPUT)

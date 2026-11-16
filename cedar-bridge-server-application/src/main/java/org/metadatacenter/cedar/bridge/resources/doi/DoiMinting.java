@@ -22,6 +22,7 @@ import org.metadatacenter.cedar.bridge.resource.datacite.GenerateOpenViewUrl;
 import org.metadatacenter.cedar.bridge.resource.datacite.form.Attributes;
 import org.metadatacenter.cedar.bridge.resource.datacite.form.DataCiteSchema;
 import org.metadatacenter.cedar.bridge.resources.doi.DataCiteClient.Answer;
+import org.metadatacenter.cedar.bridge.resources.extauth.AuthorityIdentifier;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.constant.LinkedData;
 import org.metadatacenter.exception.CedarException;
@@ -40,11 +41,14 @@ import org.slf4j.LoggerFactory;
 
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
-import java.net.URI;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 import static org.metadatacenter.cedar.bridge.resources.doi.DoiRegistrationState.ATTACHED;
 import static org.metadatacenter.cedar.bridge.resources.doi.DoiRegistrationState.DRAFT;
@@ -127,10 +131,14 @@ public final class DoiMinting {
 
   // Reading a DOI's metadata
 
-  /** What DataCite holds for the DOI the resolver URL names. */
+  /** What DataCite holds for the DOI the caller names, as a resolver URL or as the DOI itself. */
   public Response readMetadata(String doiIdUrl) {
+    Optional<String> doi = doiNamed(doiIdUrl);
+    if (doi.isEmpty()) {
+      return DoiResponses.notADoi(doiIdUrl);
+    }
     try {
-      Answer answer = dataCite.readPath(new URI(doiIdUrl).getPath());
+      Answer answer = dataCite.read(doi.get());
       if (!answer.succeeded()) {
         return DoiResponses.dataCiteRefusal(answer.status(), answer.body());
       }
@@ -150,6 +158,40 @@ public final class DoiMinting {
       return CedarResponse.internalServerError().exception(e).build();
     }
   }
+
+  /**
+   * The DOI a caller names, either as its resolver URL, {@code https://doi.org/10.5072/abcd-1234}, or as
+   * the DOI itself, {@code 10.5072/abcd-1234}, or empty when the value names none. A resolver URL's path
+   * is read as a URL's path is, decoding each percent-escape once, and a query or fragment in it is
+   * refused. A DOI is a {@code 10.} registrant code, a slash and a suffix, all of printable characters,
+   * and no segment of it may be {@code .} or {@code ..}, which a server could resolve into another path.
+   */
+  static Optional<String> doiNamed(String value) {
+    if (value == null) {
+      return Optional.empty();
+    }
+    String named = value.trim();
+    String lower = named.toLowerCase(Locale.ROOT);
+    for (String resolver : List.of("https://doi.org/", "http://doi.org/")) {
+      if (lower.startsWith(resolver)) {
+        String path = named.substring(resolver.length());
+        if (path.contains("?") || path.contains("#")) {
+          return Optional.empty();
+        }
+        named = AuthorityIdentifier.decoded(path);
+        break;
+      }
+    }
+    if (lower.startsWith("doi:")) {
+      named = named.substring("doi:".length());
+    }
+    boolean dotSegment = Arrays.stream(named.split("/", -1)).anyMatch(s -> s.equals(".") || s.equals(".."));
+    return DOI_SYNTAX.matcher(named).matches() && AuthorityIdentifier.printable(named) && !dotSegment
+        ? Optional.of(named) : Optional.empty();
+  }
+
+  /** A registrant code of {@code 10.} and digits, a slash, and a suffix of at least one character. */
+  private static final Pattern DOI_SYNTAX = Pattern.compile("10\\.[0-9]+(?:\\.[0-9]+)*/.+");
 
   // Opening the DOI form
 

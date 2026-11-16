@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.bridge.DataCiteFixtures;
@@ -652,6 +653,59 @@ class DataCiteDoiRoutesTest {
     assertEquals(JsonMapper.STRICT_MAPPER.readTree(held), response.getEntity());
     assertEquals(List.of(DataCiteCall.METADATA_READ), calls());
     assertEquals(URI.create(ENDPOINT + "/" + NEW_DOI + "?affiliation=true"), sentToDataCite.get(0).uri());
+  }
+
+  /**
+   * The route takes a DOI as its resolver URL, whose path is decoded once as a URL's is, or as the DOI
+   * itself, and asks DataCite for exactly that DOI. A character a path cannot carry as itself is
+   * encoded, so a question mark in a DOI is part of the DOI rather than the start of a query.
+   */
+  @ParameterizedTest
+  @CsvSource(delimiter = '|', value = {
+      "https://doi.org/10.5072/abcd-1234 | /10.5072/abcd-1234",
+      "http://doi.org/10.5072/abcd-1234  | /10.5072/abcd-1234",
+      "10.5072/abcd-1234                 | /10.5072/abcd-1234",
+      "doi:10.5072/abcd-1234             | /10.5072/abcd-1234",
+      "https://doi.org/10.5072/a%3Fb     | /10.5072/a%3Fb",
+      "10.5072/a?b=c                     | /10.5072/a%3Fb=c",
+      "10.5072/a#b                       | /10.5072/a%23b"})
+  void readsTheDoiTheCallerNamesInEitherForm(String named, String path) throws Exception {
+    dataCiteReplies.put(DataCiteCall.METADATA_READ, new Reply(200, registered(NEW_DOI, "findable")));
+
+    Response response = resource.getDOIMetadata(named);
+
+    assertEquals(200, response.getStatus());
+    assertEquals(List.of(DataCiteCall.METADATA_READ), calls());
+    assertEquals(URI.create(ENDPOINT + path + "?affiliation=true"), sentToDataCite.get(0).uri());
+  }
+
+  /**
+   * The route spends the repository's DataCite credential on the path it builds, so a value that names
+   * no DOI is refused before DataCite is asked. A dot segment would let a server resolve the path into
+   * another DataCite resource, such as the repository's own record, and a query or fragment in a
+   * resolver URL is no part of a DOI.
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {
+      "https://doi.org/10.5072/..%2F..%2Fclients%2Fcedar.test",
+      "10.5072/../../clients/cedar.test",
+      "https://doi.org/10.5072/abcd-1234/..",
+      "10.5072/./abcd-1234",
+      "https://doi.org/10.5072/abcd-1234?query=prefix:10.5072",
+      "https://doi.org/10.5072/abcd-1234#fragment",
+      "https://example.org/10.5072/abcd-1234",
+      "10.5072",
+      "10.5072/",
+      "11.5072/abcd-1234",
+      "10.5072/abcd 1234",
+      ""})
+  void refusesAValueThatNamesNoDoiWithoutAskingDataCite(String named) throws Exception {
+    Response response = resource.getDOIMetadata(named);
+
+    assertEquals(400, response.getStatus());
+    assertEquals(CedarErrorKey.INVALID_INPUT.getValue(),
+        assertInstanceOf(CedarError.class, response.getEntity()).errorKey);
+    assertTrue(sentToDataCite.isEmpty(), sentToDataCite.toString());
   }
 
   /**

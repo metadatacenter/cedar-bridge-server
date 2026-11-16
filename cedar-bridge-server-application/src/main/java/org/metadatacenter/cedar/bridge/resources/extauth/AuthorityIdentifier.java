@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 
 /** Recognizes stored authority IRIs before any resolver is called. This never fetches the given URL.
  * The extracted identifier is only a lookup argument; the caller's stored IRI is never rewritten. */
-final class AuthorityIdentifier {
+public final class AuthorityIdentifier {
   private AuthorityIdentifier() {}
 
   /** A space or another separator, or a control, format, private-use or unassigned character. */
@@ -19,7 +19,7 @@ final class AuthorityIdentifier {
    * Whether {@code id} has at least one character and every one of them is printable, as each
    * character of a DOI or an RRID must be.
    */
-  static boolean printable(String id) {
+  public static boolean printable(String id) {
     return !id.isEmpty() && !UNPRINTABLE.matcher(id).find();
   }
 
@@ -45,7 +45,7 @@ final class AuthorityIdentifier {
    *                even so, as the Handbook recommends, so that no server resolves the segment and asks
    *                for another identifier. When false, a slash is encoded like any other character.
    */
-  static String requestPath(String id, boolean slashes) {
+  public static String requestPath(String id, boolean slashes) {
     StringBuilder path = new StringBuilder();
     String[] segments = slashes ? id.split("/", -1) : new String[]{id};
     for (int i = 0; i < segments.length; i++) {
@@ -69,7 +69,7 @@ final class AuthorityIdentifier {
    * <p>An identifier holding an escape that is not a percent sign and two ASCII hexadecimal digits, or
    * escapes whose octets are not UTF-8, spells no other identifier, and is returned as written.
    */
-  static String decoded(String id) {
+  public static String decoded(String id) {
     if (id.indexOf('%') < 0) {
       return id;
     }
