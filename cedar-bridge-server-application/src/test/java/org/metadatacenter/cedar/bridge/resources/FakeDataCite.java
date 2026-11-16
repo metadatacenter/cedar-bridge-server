@@ -142,6 +142,34 @@ final class FakeDataCite implements AutoCloseable {
     return calls.stream().filter(call::equals).count();
   }
 
+  /**
+   * Whether the next request with this method and path will be held past the client's deadline, because
+   * a test made the next call of its kind fail with a timeout.
+   */
+  synchronized boolean delays(String method, String path) {
+    Call call = callOf(method, path);
+    return call != null && faults.get(call).peek() instanceof Fault;
+  }
+
+  /**
+   * The call a request is taken as, or null for a method its route does not take. Each route takes one
+   * method. DataCite deletes a draft on DELETE /dois/{id}, so a method a route does not take must not be
+   * answered as a read.
+   */
+  private static Call callOf(String method, String path) {
+    boolean oneDoi = doiOf(path) != null;
+    return switch (method) {
+      case "POST" -> oneDoi ? null : Call.CREATE;
+      case "PUT" -> oneDoi ? Call.UPDATE : null;
+      case "GET" -> oneDoi ? Call.READ : Call.LIST;
+      default -> null;
+    };
+  }
+
+  private static String doiOf(String path) {
+    return path.length() > "/dois/".length() ? path.substring("/dois/".length()) : null;
+  }
+
   @Override
   public void close() {
     server.stop(0);
@@ -153,15 +181,8 @@ final class FakeDataCite implements AutoCloseable {
       byte[] requestBody = exchange.getRequestBody().readAllBytes();
       String method = exchange.getRequestMethod();
       String path = exchange.getRequestURI().getPath();
-      String doi = path.length() > "/dois/".length() ? path.substring("/dois/".length()) : null;
-      // Each route takes one method. DataCite deletes a draft on DELETE /dois/{id}, so a method a route
-      // does not take must not be answered as a read.
-      Call call = switch (method) {
-        case "POST" -> doi == null ? Call.CREATE : null;
-        case "PUT" -> doi == null ? null : Call.UPDATE;
-        case "GET" -> doi == null ? Call.LIST : Call.READ;
-        default -> null;
-      };
+      String doi = doiOf(path);
+      Call call = callOf(method, path);
       received.add(new Received(method, path, exchange.getRequestHeaders().getFirst("Content-Type"), call));
       if (call == null) {
         answer(exchange, 405, errors(405, null, "Method Not Allowed"));
