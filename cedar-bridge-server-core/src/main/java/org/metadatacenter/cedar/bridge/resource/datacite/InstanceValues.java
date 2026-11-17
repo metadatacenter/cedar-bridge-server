@@ -3,7 +3,10 @@ package org.metadatacenter.cedar.bridge.resource.datacite;
 import org.metadatacenter.artifacts.model.core.ElementInstanceArtifact;
 import org.metadatacenter.artifacts.model.core.FieldInstanceArtifact;
 import org.metadatacenter.artifacts.model.core.ParentInstanceArtifact;
+import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteMapping.Elements;
+import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteMapping.Entry;
 import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteMapping.Part;
+import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteMapping.Value;
 
 import java.util.Collection;
 import java.util.List;
@@ -59,6 +62,24 @@ public final class InstanceValues {
             .allMatch(InstanceValues::isBlank)
         && parent.attributeValueFieldInstanceGroups().values().stream().map(Map::values)
             .flatMap(Collection::stream).allMatch(InstanceValues::isBlank);
+  }
+
+  /**
+   * Whether an entry of a repeated element fills a child that holds its value, rather than only the
+   * type or scheme that qualifies one. An element that identifies no such child holds a value in any
+   * entry.
+   */
+  public static <C> boolean holdsAValue(ElementInstanceArtifact entry, Elements<?, C> elements) {
+    if (elements.valuedBy().isEmpty()) {
+      return true;
+    }
+    for (Entry<C> child : elements.children()) {
+      if (child instanceof Value<C> value && elements.valuedBy().contains(value.field())
+          && !isBlank(content(entry.singleInstanceFieldInstances().get(value.field()), value.part()))) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** Whether every entry of a repeated element is blank, which is true of none at all. */

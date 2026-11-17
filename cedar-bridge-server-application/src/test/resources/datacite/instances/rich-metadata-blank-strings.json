@@ -122,7 +122,7 @@
             "@value": null
           },
           "affiliationIdentifier": {
-            "@value": "https://ror.org/05dxps055"
+            "@value": ""
           },
           "affiliationIdentifierScheme": {
             "@value": "ROR"
@@ -221,9 +221,11 @@
         "@value": ""
       },
       "subjectScheme": {
-        "@value": "  "
+        "@value": "dewey"
       },
-      "schemeURI": {},
+      "schemeURI": {
+        "@id": "http://dewey.info/"
+      },
       "valueURI": {},
       "classificationCode": {
         "@value": " "
@@ -284,7 +286,7 @@
         {
           "@id": "https://repo.metadatacenter.org/template-element-instances/97293023-45a1-4f62-a2c1-1b67e7c1eba3",
           "name": {
-            "@value": "name identifier 1"
+            "@value": " "
           },
           "nameIdentifierScheme": {
             "@value": "ROR"
@@ -424,7 +426,7 @@
     {
       "@id": "https://repo.metadatacenter.org/template-element-instances/172ca805-a857-49bc-8176-8b45a2e43d45",
       "alternateIdentifier": {
-        "@value": "https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.4.xml"
+        "@value": ""
       },
       "alternateIdentifierType": {
         "@value": "URL"
@@ -437,7 +439,7 @@
     {
       "@id": "https://repo.metadatacenter.org/template-element-instances/e8137ca4-433f-429b-8605-ac18e29ff497",
       "alternateIdentifier": {
-        "@value": "https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.0.xml"
+        "@value": "  "
       },
       "alternateIdentifierType": {
         "@value": "URL"
@@ -488,7 +490,7 @@
     {
       "@id": "https://repo.metadatacenter.org/template-element-instances/a11b4f63-7cb3-4d91-814b-412c111f3a6e",
       "relatedIdentifier": {
-        "@value": "https://data.datacite.org/application/citeproc+json/10.5072/example-full"
+        "@value": " "
       },
       "relatedIdentifierType": {
         "@id": "http://purl.org/datacite/v4.4/ARK",

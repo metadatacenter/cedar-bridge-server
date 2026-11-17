@@ -32,20 +32,7 @@
         "name": "Potter Summer",
         "nameType": "Personal",
         "givenName": "Potter",
-        "familyName": "Summer",
-        "affiliation": [
-          {
-            "affiliationIdentifier": "https://ror.org/05dxps055",
-            "affiliationIdentifierScheme": "ROR",
-            "schemeUri": "http://affiliation_identification_scheme_uri2"
-          }
-        ],
-        "nameIdentifiers": [
-          {
-            "nameIdentifierScheme": "ORCIID",
-            "schemeUri": "https://orcid.org"
-          }
-        ]
+        "familyName": "Summer"
       }
     ],
     "titles": [
@@ -71,12 +58,6 @@
             "affiliationIdentifier": "affiliation identifier 1",
             "affiliationIdentifierScheme": "ROR",
             "schemeUri": "http://affiliation_identification_scheme_uri"
-          }
-        ],
-        "nameIdentifiers": [
-          {
-            "nameIdentifier": "name identifier 1",
-            "nameIdentifierScheme": "ROR"
           }
         ]
       },
@@ -109,16 +90,6 @@
         "dateType": "Issued"
       }
     ],
-    "alternateIdentifiers": [
-      {
-        "alternateIdentifier": "https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.4.xml",
-        "alternateIdentifierType": "URL"
-      },
-      {
-        "alternateIdentifier": "https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.0.xml",
-        "alternateIdentifierType": "URL"
-      }
-    ],
     "relatedIdentifiers": [
       {
         "relatedIdentifier": "https://data.datacite.org/application/citeproc+json/10.5072/example-full",
@@ -126,12 +97,6 @@
         "relationType": "Compiles",
         "schemeUri": "https://github.com/citation-style-language/schema/raw/master/csl-data.json",
         "resourceTypeGeneral": "Book"
-      },
-      {
-        "relatedIdentifier": "https://data.datacite.org/application/citeproc+json/10.5072/example-full",
-        "relatedIdentifierType": "ARK",
-        "relationType": "Compiles",
-        "relatedMetadataScheme": "json"
       }
     ],
     "sizes": [

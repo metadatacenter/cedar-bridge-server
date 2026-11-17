@@ -40,11 +40,6 @@
         ]
       }
     ],
-    "alternateIdentifiers": [
-      {
-        "alternateIdentifierType": "URL"
-      }
-    ],
     "relatedIdentifiers": [
       {
         "relatedIdentifier": "https://data.datacite.org/application/citeproc+json/10.5072/example-full",

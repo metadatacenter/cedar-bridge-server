@@ -105,6 +105,12 @@ class DataCiteMappingTest {
           if (!element.isMultiple()) {
             problems.add(at + ": occurs once in the template, read as repeated");
           }
+          for (String valued : elements.valuedBy()) {
+            if (elements.children().stream().noneMatch(child -> child instanceof Value<?> value
+                && value.field().equals(valued))) {
+              problems.add(at + ": valued by " + valued + ", which is no field of it");
+            }
+          }
           checkEntries(element, elements.children(), at, problems);
         }
       } else if (entry instanceof Element<?, ?> single) {

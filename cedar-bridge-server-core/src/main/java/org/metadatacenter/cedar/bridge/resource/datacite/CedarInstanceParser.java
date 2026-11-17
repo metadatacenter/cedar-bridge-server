@@ -30,7 +30,8 @@ import java.util.Locale;
  * range are refused as soon as they are found.
  * <p>
  * A string that is empty or holds only white space is no value. Below the attributes, a property with
- * no value is left out, and so is an object or a list left with none. A property of the attributes
+ * no value is left out, and so is an object or a list left with none. An entry that holds only a type
+ * or a scheme, without the value it qualifies, is left out too. A property of the attributes
  * themselves is sent as null instead, because DataCite keeps a property that an update leaves out, and
  * a user who empties a field means DataCite to forget it.
  */
@@ -113,6 +114,9 @@ public final class CedarInstanceParser {
     List<C> items = new ArrayList<>();
     if (!InstanceValues.allBlank(entries)) {
       for (ElementInstanceArtifact entry : entries) {
+        if (!InstanceValues.holdsAValue(entry, elements)) {
+          continue;
+        }
         C item = elements.create().get();
         boolean filled = fill(entry, elements.children(), item, context);
         context.problems().throwIfOutOfRange();

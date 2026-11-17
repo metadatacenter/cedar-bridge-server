@@ -6,6 +6,7 @@ import org.metadatacenter.artifacts.model.core.ElementInstanceArtifact;
 import org.metadatacenter.artifacts.model.core.FieldInstanceArtifact;
 import org.metadatacenter.artifacts.model.core.LinkFieldInstance;
 import org.metadatacenter.artifacts.model.core.TextFieldInstance;
+import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteMapping.Elements;
 import org.metadatacenter.cedar.bridge.resource.datacite.DataCiteMapping.Part;
 
 import java.net.URI;
@@ -88,6 +89,35 @@ class InstanceValuesTest {
     assertTrue(InstanceValues.allBlank(List.of()));
     assertTrue(InstanceValues.allBlank(List.of(blank, blank)));
     assertFalse(InstanceValues.allBlank(List.of(blank, filled)));
+  }
+
+  /**
+   * An alternate identifier that holds only its type qualifies nothing, and a subject that holds only
+   * its scheme says nothing. An element that identifies no value children holds a value in any entry.
+   */
+  @Test
+  void anEntryHoldingOnlyItsQualifiersHoldsNoValue() {
+    Elements<?, ?> alternateIdentifier = repeated("alternateIdentifier");
+    Elements<?, ?> subject = repeated("subject");
+    Elements<?, ?> date = repeated("date");
+    ElementInstanceArtifact typeOnly = ElementInstanceArtifact.builder()
+        .withSingleInstanceFieldInstance("alternateIdentifier", text(" "))
+        .withSingleInstanceFieldInstance("alternateIdentifierType", text("URL")).build();
+    ElementInstanceArtifact identified = ElementInstanceArtifact.builder()
+        .withSingleInstanceFieldInstance("alternateIdentifier", text("https://example.org/1"))
+        .withSingleInstanceFieldInstance("alternateIdentifierType", text("URL")).build();
+    ElementInstanceArtifact schemeOnly = element("subjectScheme", text("dewey"));
+
+    assertFalse(InstanceValues.holdsAValue(typeOnly, alternateIdentifier));
+    assertTrue(InstanceValues.holdsAValue(identified, alternateIdentifier));
+    assertFalse(InstanceValues.holdsAValue(schemeOnly, subject));
+    assertTrue(InstanceValues.holdsAValue(element("classificationCode", text("000")), subject));
+    assertTrue(InstanceValues.holdsAValue(element("dateInformation", text(null)), date));
+  }
+
+  private static Elements<?, ?> repeated(String field) {
+    return DataCiteMapping.TEMPLATE.stream().filter(entry -> entry.field().equals(field))
+        .map(Elements.class::cast).findFirst().orElseThrow();
   }
 
   @Test

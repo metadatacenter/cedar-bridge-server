@@ -183,7 +183,7 @@ class CedarInstanceParserTest {
     List<String> named = new ArrayList<>();
     attributes.fieldNames().forEachRemaining(named::add);
     assertEquals(DATACITE_PROPERTIES, named);
-    for (String property : List.of("language", "version", "formats", "subjects")) {
+    for (String property : List.of("language", "version", "formats", "subjects", "alternateIdentifiers")) {
       assertTrue(attributes.get(property).isNull(), property + " should be null, not " + attributes.get(property));
     }
   }
