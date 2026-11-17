@@ -2,6 +2,7 @@ package org.metadatacenter.cedar.bridge;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,6 +51,7 @@ class DataCiteMetadataParserTest {
     return Stream.of(
         fixture("required properties only", "required-only"),
         fixture("rich metadata", "rich-metadata"),
+        fixture("rich metadata with a value in every field", "rich-metadata-every-value"),
         fixture("every property under the required elements", "all-under-required-elements"),
         fixture("subjects", "required-and-subject"),
         fixture("contributors", "required-and-contributor"),
@@ -86,6 +88,34 @@ class DataCiteMetadataParserTest {
     DataCiteSchema sent = CedarInstanceParserTest.convert(CedarInstanceParserTest.fixture(document), "draft");
     return DataCiteMetadataParser.parseDataCiteSchema(sent.getData().getAttributes(), USER, TEMPLATE,
         CedarInstanceParserTest.config(CedarInstanceParserTest.PREFIX));
+  }
+
+  /**
+   * A DataCite record made outside CEDAR can carry a title's and a description's language and a
+   * geolocation polygon, none of which the template holds. The record reads with them, and opens
+   * the form as an instance valid against the template.
+   */
+  @Test
+  void aRecordCarryingLanguagesAndAPolygonOpensTheForm() throws Exception {
+    ObjectNode attributes = CedarInstanceParserTest.expected("rich-metadata", "draft").get("attributes").deepCopy();
+    ((ObjectNode) attributes.get("titles").get(0)).put("lang", "en");
+    ((ObjectNode) attributes.get("descriptions").get(0)).put("lang", "de");
+    ArrayNode points = ((ObjectNode) attributes.get("geoLocations").get(0)).putArray("geoLocationPolygon")
+        .addObject().putArray("polygonPoint");
+    for (double[] point : new double[][]{{-71, 41}, {-69, 41}, {-70, 42}, {-71, 41}}) {
+      points.addObject().put("pointLongitude", point[0]).put("pointLatitude", point[1]);
+    }
+
+    Attributes read = JsonMapper.TOLERANT_MAPPER.treeToValue(attributes, Attributes.class);
+
+    assertEquals("en", read.getTitles().get(0).getLang());
+    assertEquals("de", read.getDescriptions().get(0).getLang());
+    assertEquals(4, read.getGeoLocations().get(0).getGeoLocationPolygonList().get(0).getPolygonPointsList().size());
+    ObjectNode instance = DataCiteMetadataParser.parseDataCiteSchema(read, USER, TEMPLATE,
+        CedarInstanceParserTest.config(CedarInstanceParserTest.PREFIX));
+    ValidationReport report =
+        new CedarValidator().validateTemplateInstance(instance, DataCiteFixtures.templateDocument());
+    assertTrue(report.getErrors().isEmpty(), () -> report.getErrors() + "\n" + instance.toPrettyString());
   }
 
   @ParameterizedTest(name = "{0}")

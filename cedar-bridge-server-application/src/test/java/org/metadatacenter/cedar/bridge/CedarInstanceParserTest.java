@@ -102,7 +102,7 @@ class CedarInstanceParserTest {
       "required-and-description", "required-and-funding-ref", "required-and-geo-location", "required-and-related-item",
       "required-and-random-fields", "required-and-empty-string", "required-and-all-empty-fields",
       "rich-metadata-rich-update", "rich-metadata-add-new-instance", "rich-metadata-delete-instance",
-      "rich-metadata-delete-and-add-instance", "rich-metadata-blank-strings"})
+      "rich-metadata-delete-and-add-instance", "rich-metadata-blank-strings", "rich-metadata-every-value"})
   void eachInstanceConvertsToTheDocumentWrittenForIt(String name) throws Exception {
     JsonNode expected = expected(name, "publish");
     JsonNode actual = sent(convert(fixture(name), "publish"));
@@ -139,7 +139,8 @@ class CedarInstanceParserTest {
    */
   @ParameterizedTest(name = "{0}")
   @ValueSource(strings = {"rich-metadata-blank-strings", "required-and-empty-string", "cee-required-and-empty-string",
-      "required-and-all-empty-fields", "cee-required-and-all-empty-fields", "rich-metadata"})
+      "required-and-all-empty-fields", "cee-required-and-all-empty-fields", "rich-metadata",
+      "rich-metadata-every-value"})
   void noValueBelowTheAttributesIsEmptyBlankOrNull(String name) throws Exception {
     JsonNode attributes = MAPPER.readTree(MAPPER.writeValueAsString(convert(fixture(name), "draft")))
         .at("/data/attributes");
@@ -291,6 +292,30 @@ class CedarInstanceParserTest {
     subjects.removeAll().add(blank).add(blank.deepCopy());
 
     assertNull(convert(instance, "publish").getData().getAttributes().getSubjects());
+  }
+
+  /**
+   * A child the mapping does not name gives a geolocation box a value, but no bound. The box is then
+   * refused for want of its bounds, as a box holding only some of them is, rather than sent empty.
+   */
+  @Test
+  void aBoxHoldingOnlyAChildTheMappingDoesNotNameIsRefusedForItsBounds() {
+    ObjectNode instance = fixture("rich-metadata");
+    ObjectNode box = (ObjectNode) instance.get("geoLocation").get(0).get("geoLocationBox");
+    List<String> bounds = List.of("westBoundLongitude", "eastBoundLongitude", "southBoundLatitude",
+        "northBoundLatitude");
+    for (String bound : bounds) {
+      ((ObjectNode) box.get(bound)).putNull("@value");
+    }
+    box.putObject("fieldAnotherCedarReleaseAddedLater").put("@value", "and did not tell us");
+
+    DataCiteInstanceValidationException refused = assertThrows(DataCiteInstanceValidationException.class,
+        () -> convert(instance, "publish"));
+
+    for (String bound : List.of("West Bound Longitude", "East Bound Longitude", "South Bound Latitude",
+        "North Bound Latitude")) {
+      assertTrue(refused.getMessage().contains(bound + " under Geographic Locations"), refused::getMessage);
+    }
   }
 
   /**
