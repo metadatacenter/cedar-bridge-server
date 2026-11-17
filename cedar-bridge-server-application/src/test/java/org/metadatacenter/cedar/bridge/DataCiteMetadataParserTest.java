@@ -71,6 +71,7 @@ class DataCiteMetadataParserTest {
         fixture("rich metadata with an instance deleted", "rich-metadata-delete-instance"),
         fixture("rich metadata with an instance deleted and another added",
             "rich-metadata-delete-and-add-instance"),
+        fixture("empty and blank strings at every level", "rich-metadata-blank-strings"),
         fixture("rich metadata, as CEE posts it", "cee-rich-metadata"),
         fixture("rich metadata with an instance added, as CEE posts it", "cee-rich-metadata-add-new-instance"),
         fixture("empty strings, as CEE posts them", "cee-required-and-empty-string"),

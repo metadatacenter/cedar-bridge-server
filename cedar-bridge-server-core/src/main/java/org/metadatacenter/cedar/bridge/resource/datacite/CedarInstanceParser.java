@@ -28,6 +28,11 @@ import java.util.Locale;
  * An instance that leaves a required property blank is refused, and the refusal lists every such
  * property. A wrong prefix, a publication year other than the current one and a coordinate out of
  * range are refused as soon as they are found.
+ * <p>
+ * A string that is empty or holds only white space is no value. Below the attributes, a property with
+ * no value is left out, and so is an object or a list left with none. A property of the attributes
+ * themselves is sent as null instead, because DataCite keeps a property that an update leaves out, and
+ * a user who empties a field means DataCite to forget it.
  */
 public final class CedarInstanceParser {
   private static final String STATE_DRAFT = "draft";
@@ -60,62 +65,83 @@ public final class CedarInstanceParser {
     context.problems().throwIfMissing();
   }
 
-  private static <T> void fill(ParentInstanceArtifact instance, List<Entry<T>> entries, T target, Context context)
-      throws DataCiteInstanceValidationException {
+  /**
+   * Fills the target from the instance's children that the entries identify, and says whether the
+   * target was given any value.
+   */
+  private static <T> boolean fill(ParentInstanceArtifact instance, List<Entry<T>> entries, T target,
+                                  Context context) throws DataCiteInstanceValidationException {
+    boolean filled = false;
     for (Entry<T> entry : entries) {
       if (entry instanceof Value<T> value) {
         String content = InstanceValues.content(instance.singleInstanceFieldInstances().get(value.field()),
             value.part());
-        if (value.requiredAs() != null && InstanceValues.isBlank(content)) {
-          context.problems().missing(value.requiredAs());
+        if (InstanceValues.isBlank(content)) {
+          content = null;
+          if (value.requiredAs() != null) {
+            context.problems().missing(value.requiredAs());
+          }
         }
         value.writer().write(target, content, context);
+        filled |= content != null;
       } else if (entry instanceof Values<T> values) {
-        List<FieldInstanceArtifact> fields = instance.multiInstanceFieldInstances().getOrDefault(values.field(),
-            List.of());
-        if (!fields.stream().allMatch(InstanceValues::isBlank)) {
-          List<String> contents = new ArrayList<>();
-          for (FieldInstanceArtifact field : fields) {
-            contents.add(field.jsonLdValue().orElse(null));
+        List<String> contents = new ArrayList<>();
+        for (FieldInstanceArtifact field : instance.multiInstanceFieldInstances().getOrDefault(values.field(),
+            List.of())) {
+          String content = field.jsonLdValue().orElse(null);
+          if (!InstanceValues.isBlank(content)) {
+            contents.add(content);
           }
+        }
+        if (!contents.isEmpty()) {
           values.set().accept(target, contents);
+          filled = true;
         }
       } else if (entry instanceof Elements<T, ?> elements) {
-        fillElements(instance, elements, target, context);
+        filled |= fillElements(instance, elements, target, context);
       } else if (entry instanceof Element<T, ?> element) {
-        fillElement(instance, element, target, context);
+        filled |= fillElement(instance, element, target, context);
       }
     }
+    return filled;
   }
 
-  private static <T, C> void fillElements(ParentInstanceArtifact instance, Elements<T, C> elements, T target,
-                                          Context context) throws DataCiteInstanceValidationException {
+  private static <T, C> boolean fillElements(ParentInstanceArtifact instance, Elements<T, C> elements, T target,
+                                             Context context) throws DataCiteInstanceValidationException {
     List<ElementInstanceArtifact> entries = instance.multiInstanceElementInstances().getOrDefault(elements.field(),
         List.of());
-    if (InstanceValues.allBlank(entries)) {
+    List<C> items = new ArrayList<>();
+    if (!InstanceValues.allBlank(entries)) {
+      for (ElementInstanceArtifact entry : entries) {
+        C item = elements.create().get();
+        boolean filled = fill(entry, elements.children(), item, context);
+        context.problems().throwIfOutOfRange();
+        if (filled) {
+          items.add(item);
+        }
+      }
+    }
+    if (items.isEmpty()) {
       if (elements.requiredAs() != null) {
         context.problems().missing(elements.requiredAs());
       }
-      return;
-    }
-    List<C> items = new ArrayList<>();
-    for (ElementInstanceArtifact entry : entries) {
-      C item = elements.create().get();
-      fill(entry, elements.children(), item, context);
-      context.problems().throwIfOutOfRange();
-      items.add(item);
+      return false;
     }
     elements.set().accept(target, items);
+    return true;
   }
 
-  private static <T, C> void fillElement(ParentInstanceArtifact instance, Element<T, C> element, T target,
-                                         Context context) throws DataCiteInstanceValidationException {
+  private static <T, C> boolean fillElement(ParentInstanceArtifact instance, Element<T, C> element, T target,
+                                            Context context) throws DataCiteInstanceValidationException {
     ElementInstanceArtifact entry = instance.singleInstanceElementInstances().get(element.field());
     if (InstanceValues.isBlank(entry)) {
-      return;
+      return false;
     }
     C item = element.create().get();
-    fill(entry, element.children(), item, context);
+    if (!fill(entry, element.children(), item, context)) {
+      return false;
+    }
     element.set().accept(target, item);
+    return true;
   }
 }

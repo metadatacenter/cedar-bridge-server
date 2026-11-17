@@ -71,7 +71,10 @@ public final class DataCiteMapping {
     String read(T dataCite, Context context);
   }
 
-  /** Writes the content of one field, read from an instance, into a DataCite object. */
+  /**
+   * Writes the content of one field, read from an instance, into a DataCite object. The content is null
+   * where the field holds no value, which includes an empty string and one of white space alone.
+   */
   @FunctionalInterface
   public interface Writer<T> {
     void write(T dataCite, String content, Context context) throws DataCiteInstanceValidationException;
@@ -459,9 +462,14 @@ public final class DataCiteMapping {
     return copy(field, Part.IRI, get, set);
   }
 
+  /** An entry that copies a value. A field with no value writes nothing, not even an empty object to hold it. */
   private static <T> Value<T> copy(String field, Part part, Function<T, String> get, BiConsumer<T, String> set) {
     return new Value<>(field, part, (dataCite, context) -> get.apply(dataCite),
-        (dataCite, content, context) -> set.accept(dataCite, content), null);
+        (dataCite, content, context) -> {
+          if (content != null) {
+            set.accept(dataCite, content);
+          }
+        }, null);
   }
 
   private static <T> Values<T> texts(String field, Function<T, List<String>> get, BiConsumer<T, List<String>> set) {

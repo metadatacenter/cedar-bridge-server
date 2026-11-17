@@ -7,9 +7,7 @@
     "schemaVersion": "http://datacite.org/schema/kernel-4",
     "creators": [
       {
-        "name": "John Doe",
-        "givenName": "",
-        "familyName": ""
+        "name": "John Doe"
       }
     ],
     "titles": [
@@ -27,8 +25,6 @@
       {
         "name": "Starr, Joan",
         "nameType": "Personal",
-        "givenName": "",
-        "familyName": "",
         "contributorType": "DataCollector",
         "affiliation": [
           {
@@ -44,10 +40,8 @@
         ]
       }
     ],
-    "language": "",
     "alternateIdentifiers": [
       {
-        "alternateIdentifier": "",
         "alternateIdentifierType": "URL"
       }
     ],
@@ -58,7 +52,6 @@
         "relationType": "Compiles"
       }
     ],
-    "version": "",
     "rightsList": [
       {
         "rights": "rights",
@@ -98,11 +91,6 @@
             "name": "Kelly Spring"
           }
         ],
-        "number": "",
-        "volume": "",
-        "firstPage": "",
-        "lastPage": "",
-        "publisher": "",
         "edition": "5",
         "contributors": [
           {

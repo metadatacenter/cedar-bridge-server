@@ -16,8 +16,9 @@ import java.util.Optional;
  * A user who leaves an entry of a repeated element empty has said nothing in it. So the conversion to
  * DataCite reads an entry that holds no value at any depth as blank, and a repeated element whose
  * entries are all blank as absent. A value is content in {@code @value}, {@code @id} or
- * {@code rdfs:label}, and an empty string is no content. An element's own {@code @id} identifies the
- * element and is not a value in it.
+ * {@code rdfs:label}. A string that is empty or holds only white space is no content, since DataCite
+ * would register it as a value that says nothing. An element's own {@code @id} identifies the element
+ * and is not a value in it.
  */
 public final class InstanceValues {
 
@@ -38,7 +39,7 @@ public final class InstanceValues {
   }
 
   public static boolean isBlank(String content) {
-    return content == null || content.isEmpty();
+    return content == null || content.isBlank();
   }
 
   public static boolean isBlank(FieldInstanceArtifact field) {

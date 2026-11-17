@@ -86,8 +86,8 @@ public final class DataCiteFixtures {
 
   /**
    * The document as DataCite reads it, without the properties that hold null. The conversion names
-   * every property it knows, null where the instance holds no value, and the expected documents name
-   * only those that hold one. Every number becomes a double, so that 45 and 45.0, which DataCite reads
+   * every property of the attributes, null where the instance holds no value, and the expected
+   * documents name only those that hold one. Every number becomes a double, so that 45 and 45.0, which DataCite reads
    * alike, compare equal however each side was parsed.
    */
   public static JsonNode withoutNulls(JsonNode document) {

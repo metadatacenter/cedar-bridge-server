@@ -4,6 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
+/**
+ * The attributes of a DOI, as DataCite registers them. A request names every property, null where the
+ * DOI has no value, because DataCite keeps a property that an update leaves out. The objects below the
+ * attributes leave out a property with no value, since DataCite replaces each list of them whole.
+ */
 public class Attributes {
   @JsonProperty("prefix")
   private String prefix;

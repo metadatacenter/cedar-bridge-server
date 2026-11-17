@@ -102,7 +102,7 @@ class CedarInstanceParserTest {
       "required-and-description", "required-and-funding-ref", "required-and-geo-location", "required-and-related-item",
       "required-and-random-fields", "required-and-empty-string", "required-and-all-empty-fields",
       "rich-metadata-rich-update", "rich-metadata-add-new-instance", "rich-metadata-delete-instance",
-      "rich-metadata-delete-and-add-instance"})
+      "rich-metadata-delete-and-add-instance", "rich-metadata-blank-strings"})
   void eachInstanceConvertsToTheDocumentWrittenForIt(String name) throws Exception {
     JsonNode expected = expected(name, "publish");
     JsonNode actual = sent(convert(fixture(name), "publish"));
@@ -129,6 +129,62 @@ class CedarInstanceParserTest {
       if (!held.has(property)) {
         assertTrue(attributes.get(property).isNull(), property);
       }
+    }
+  }
+
+  /**
+   * A string that is empty or holds only white space says nothing, and DataCite would register it as a
+   * value. Below the attributes, a property with no value is left out, and so is an object or a list
+   * left with none. These instances hold such strings at every level, as the form posts them.
+   */
+  @ParameterizedTest(name = "{0}")
+  @ValueSource(strings = {"rich-metadata-blank-strings", "required-and-empty-string", "cee-required-and-empty-string",
+      "required-and-all-empty-fields", "cee-required-and-all-empty-fields", "rich-metadata"})
+  void noValueBelowTheAttributesIsEmptyBlankOrNull(String name) throws Exception {
+    JsonNode attributes = MAPPER.readTree(MAPPER.writeValueAsString(convert(fixture(name), "draft")))
+        .at("/data/attributes");
+
+    List<String> found = new ArrayList<>();
+    attributes.properties().forEach(property -> {
+      JsonNode value = property.getValue();
+      if (value.isTextual() && value.asText().isBlank() || value.isContainerNode() && value.isEmpty()) {
+        found.add("/" + property.getKey());
+      } else if (value.isContainerNode()) {
+        collectNoValue(value, "/" + property.getKey(), found);
+      }
+    });
+    assertEquals(List.of(), found, "properties sent with no value");
+  }
+
+  private static void collectNoValue(JsonNode node, String path, List<String> found) {
+    if (node.isObject()) {
+      node.properties().forEach(property -> collectNoValue(property.getValue(), path + "/" + property.getKey(),
+          found));
+    } else if (node.isArray()) {
+      for (int i = 0; i < node.size(); i++) {
+        collectNoValue(node.get(i), path + "/" + i, found);
+      }
+    }
+    if (node.isNull() || node.isTextual() && node.asText().isBlank() || node.isContainerNode() && node.isEmpty()) {
+      found.add(path);
+    }
+  }
+
+  /**
+   * A property of the attributes that the user emptied is sent as null rather than left out, because
+   * DataCite keeps a property an update leaves out. A string property, a list of strings and a list of
+   * objects, each emptied or blanked, then lose their value at DataCite.
+   */
+  @Test
+  void anEmptiedPropertyOfTheAttributesIsSentAsNull() throws Exception {
+    JsonNode attributes = MAPPER.readTree(MAPPER.writeValueAsString(
+        convert(fixture("rich-metadata-blank-strings"), "draft"))).at("/data/attributes");
+
+    List<String> named = new ArrayList<>();
+    attributes.fieldNames().forEachRemaining(named::add);
+    assertEquals(DATACITE_PROPERTIES, named);
+    for (String property : List.of("language", "version", "formats", "subjects")) {
+      assertTrue(attributes.get(property).isNull(), property + " should be null, not " + attributes.get(property));
     }
   }
 
@@ -237,9 +293,12 @@ class CedarInstanceParserTest {
     assertNull(convert(instance, "publish").getData().getAttributes().getSubjects());
   }
 
-  /** A blank entry beside filled ones is still sent, so a blank contributor still lacks a name. */
+  /**
+   * A blank entry beside filled ones is not sent, but it still lacks the values its element requires,
+   * so a blank contributor is refused for want of a name.
+   */
   @Test
-  void aBlankEntryBesideFilledOnesIsStillSent() throws Exception {
+  void aBlankEntryBesideFilledOnesStillLacksItsRequiredValues() throws Exception {
     ObjectNode instance = fixture("required-and-contributor");
     ArrayNode contributors = (ArrayNode) instance.get("contributor");
     contributors.add(blanked(contributors.get(0).deepCopy()));

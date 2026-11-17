@@ -44,7 +44,8 @@ class DataCiteResourceTest extends AbstractDoiWorkflowTest {
       "required-and-contributor", "required-and-date", "required-and-lang", "required-and-alternate-identifier",
       "required-and-related-identifier", "required-and-size-format-version", "required-and-rights",
       "required-and-description", "required-and-funding-ref", "required-and-geo-location", "required-and-related-item",
-      "required-and-random-fields", "required-and-empty-string", "required-and-all-empty-fields"})
+      "required-and-random-fields", "required-and-empty-string", "required-and-all-empty-fields",
+      "rich-metadata-blank-strings"})
   void publishesTheMetadataAndRecordsTheDoiOnTheArtifact(String fixture) throws Exception {
     String source = newSource();
 

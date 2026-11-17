@@ -39,11 +39,12 @@ class InstanceValuesTest {
   }
 
   @Test
-  void aLiteralIsBlankWhenItHoldsNothingOrAnEmptyString() {
+  void aLiteralIsBlankWhenItHoldsNothingOrOnlyWhiteSpace() {
     assertTrue(InstanceValues.isBlank(TextFieldInstance.builder().build()));
     assertTrue(InstanceValues.isBlank(text("")));
+    assertTrue(InstanceValues.isBlank(text(" \t ")), "white space alone says nothing DataCite should register");
     assertFalse(InstanceValues.isBlank(text("a title")));
-    assertFalse(InstanceValues.isBlank(text(" ")), "a space is something the user typed");
+    assertFalse(InstanceValues.isBlank(text(" a title ")));
   }
 
   @Test
