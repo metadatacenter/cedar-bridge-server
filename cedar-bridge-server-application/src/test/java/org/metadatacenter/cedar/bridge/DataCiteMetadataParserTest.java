@@ -2,6 +2,7 @@ package org.metadatacenter.cedar.bridge;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,11 +27,11 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
  * The DataCite to CEDAR conversion, which turns an existing DOI's metadata back into an instance
  * the editor shows and the user updates.
  * <p>
- * The live DataCite suite checks it against DataCite's own response and is excluded by default, so
- * a normal build ran almost none of it. Here each fixture instance goes to DataCite form, back to a
- * CEDAR instance, and to DataCite form again, and the two DataCite documents must agree. A property
- * the reverse conversion drops or alters would vanish from a DOI the next time someone updates it,
- * so the comparison covers the whole document rather than chosen properties.
+ * Each fixture instance goes to DataCite form, back to a CEDAR instance, and to DataCite form again,
+ * and the result must be the DataCite document written for the fixture. A property the reverse
+ * conversion drops or alters would vanish from a DOI the next time someone updates it, so the
+ * comparison covers the whole document rather than chosen properties. A CEE emission is held to the
+ * document of the instance its form opened with.
  * <p>
  * The instance comes back as the JSON document the form receives, and goes to DataCite form again
  * the way the form's answer does, through the library's reader. That instance must also be valid
@@ -50,6 +51,7 @@ class DataCiteMetadataParserTest {
     return Stream.of(
         fixture("required properties only", "required-only"),
         fixture("rich metadata", "rich-metadata"),
+        fixture("rich metadata with a value in every field", "rich-metadata-every-value"),
         fixture("every property under the required elements", "all-under-required-elements"),
         fixture("subjects", "required-and-subject"),
         fixture("contributors", "required-and-contributor"),
@@ -71,6 +73,7 @@ class DataCiteMetadataParserTest {
         fixture("rich metadata with an instance deleted", "rich-metadata-delete-instance"),
         fixture("rich metadata with an instance deleted and another added",
             "rich-metadata-delete-and-add-instance"),
+        fixture("empty and blank strings at every level", "rich-metadata-blank-strings"),
         fixture("rich metadata, as CEE posts it", "cee-rich-metadata"),
         fixture("rich metadata with an instance added, as CEE posts it", "cee-rich-metadata-add-new-instance"),
         fixture("empty strings, as CEE posts them", "cee-required-and-empty-string"),
@@ -87,15 +90,41 @@ class DataCiteMetadataParserTest {
         CedarInstanceParserTest.config(CedarInstanceParserTest.PREFIX));
   }
 
+  /**
+   * A DataCite record made outside CEDAR can carry a title's and a description's language and a
+   * geolocation polygon, none of which the template holds. The record reads with them, and opens
+   * the form as an instance valid against the template.
+   */
+  @Test
+  void aRecordCarryingLanguagesAndAPolygonOpensTheForm() throws Exception {
+    ObjectNode attributes = CedarInstanceParserTest.expected("rich-metadata", "draft").get("attributes").deepCopy();
+    ((ObjectNode) attributes.get("titles").get(0)).put("lang", "en");
+    ((ObjectNode) attributes.get("descriptions").get(0)).put("lang", "de");
+    ArrayNode points = ((ObjectNode) attributes.get("geoLocations").get(0)).putArray("geoLocationPolygon")
+        .addObject().putArray("polygonPoint");
+    for (double[] point : new double[][]{{-71, 41}, {-69, 41}, {-70, 42}, {-71, 41}}) {
+      points.addObject().put("pointLongitude", point[0]).put("pointLatitude", point[1]);
+    }
+
+    Attributes read = JsonMapper.TOLERANT_MAPPER.treeToValue(attributes, Attributes.class);
+
+    assertEquals("en", read.getTitles().get(0).getLang());
+    assertEquals("de", read.getDescriptions().get(0).getLang());
+    assertEquals(4, read.getGeoLocations().get(0).getGeoLocationPolygonList().get(0).getPolygonPointsList().size());
+    ObjectNode instance = DataCiteMetadataParser.parseDataCiteSchema(read, USER, TEMPLATE,
+        CedarInstanceParserTest.config(CedarInstanceParserTest.PREFIX));
+    ValidationReport report =
+        new CedarValidator().validateTemplateInstance(instance, DataCiteFixtures.templateDocument());
+    assertTrue(report.getErrors().isEmpty(), () -> report.getErrors() + "\n" + instance.toPrettyString());
+  }
+
   @ParameterizedTest(name = "{0}")
   @MethodSource("instances")
   void aDoisMetadataSurvivesTheTripBackToCedar(String name, String document) throws Exception {
-    DataCiteSchema sent = CedarInstanceParserTest.convert(CedarInstanceParserTest.fixture(document), "draft");
-
     DataCiteSchema resent = CedarInstanceParserTest.convert(readBack(document), "draft");
 
-    JsonNode expected = MAPPER.valueToTree(sent);
-    JsonNode actual = MAPPER.valueToTree(resent);
+    JsonNode expected = CedarInstanceParserTest.expected(document.replaceFirst("^cee-", ""), "draft");
+    JsonNode actual = CedarInstanceParserTest.sent(resent);
     assertEquals(expected, actual, () -> "the round trip changed the DataCite document:\n"
         + expected.toPrettyString() + "\nbecame\n" + actual.toPrettyString());
   }

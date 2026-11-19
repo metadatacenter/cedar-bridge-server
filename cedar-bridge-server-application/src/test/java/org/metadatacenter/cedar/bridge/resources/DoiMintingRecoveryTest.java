@@ -2,7 +2,6 @@ package org.metadatacenter.cedar.bridge.resources;
 
 import com.fasterxml.jackson.databind.node.TextNode;
 import org.junit.jupiter.api.Test;
-import org.metadatacenter.cedar.bridge.CompareValues;
 import org.metadatacenter.cedar.bridge.resources.doi.DoiRegistration;
 import org.metadatacenter.cedar.bridge.resources.doi.DoiRegistrationState;
 import org.metadatacenter.error.CedarErrorKey;
@@ -100,8 +99,7 @@ class DoiMintingRecoveryTest extends AbstractDoiWorkflowTest {
     assertEquals(doi, doiOf(retry));
     assertEquals(List.of(doi), dataCite.dois());
     assertEquals("draft", dataCite.state(doi));
-    assertTrue(CompareValues.compareResponseWithGivenMetadata(metadata("rich-metadata"), readBack(doi), source,
-        "draft", config), "DataCite holds the metadata of the retry");
+    assertDataCiteHolds("rich-metadata", doi, source);
     assertEquals(1, dataCite.count(UPDATE));
     assertEquals(DoiRegistrationState.DRAFT, recorded(source).state());
   }

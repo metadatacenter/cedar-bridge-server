@@ -1,0 +1,25 @@
+{
+  "type": "dois",
+  "attributes": {
+    "prefix": "{prefix}",
+    "event": "{event}",
+    "url": "{landingPage}",
+    "schemaVersion": "http://datacite.org/schema/kernel-4",
+    "creators": [
+      {
+        "name": "John Doe"
+      }
+    ],
+    "titles": [
+      {
+        "title": "Required And All Empty Fields"
+      }
+    ],
+    "publisher": "CEDAR",
+    "publicationYear": "{year}",
+    "types": {
+      "resourceTypeGeneral": "Other",
+      "resourceType": "Instance"
+    }
+  }
+}

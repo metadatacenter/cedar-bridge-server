@@ -1,0 +1,35 @@
+{
+  "type": "dois",
+  "attributes": {
+    "prefix": "{prefix}",
+    "event": "{event}",
+    "url": "{landingPage}",
+    "schemaVersion": "http://datacite.org/schema/kernel-4",
+    "creators": [
+      {
+        "name": "John Doe"
+      }
+    ],
+    "titles": [
+      {
+        "title": "Required properties only"
+      }
+    ],
+    "publisher": "CEDAR",
+    "publicationYear": "{year}",
+    "types": {
+      "resourceTypeGeneral": "Other",
+      "resourceType": "Instance"
+    },
+    "alternateIdentifiers": [
+      {
+        "alternateIdentifier": "https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.4.xml",
+        "alternateIdentifierType": "URL"
+      },
+      {
+        "alternateIdentifier": "https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.0.xml",
+        "alternateIdentifierType": "URL"
+      }
+    ]
+  }
+}

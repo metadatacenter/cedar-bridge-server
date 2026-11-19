@@ -20,8 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * <p>DataCite and the EPA own the shapes read here and add fields to them without asking. That
  * used to be survivable because every model carried {@code @JsonIgnoreProperties(ignoreUnknown =
  * true)}, which is a property of the class rather than of the read: a new model, or one someone
- * forgot to annotate, was strict by accident. The reads name the tolerant mapper now, so these
- * tests pin the policy to the read and would fail if a read went back to a strict mapper.
+ * forgot to annotate, was strict by accident. The reads name the tolerant mapper now.
+ *
+ * <p>These tests pin the two mappers' behaviour: the tolerant one reads past a property a model does
+ * not name, and the strict one refuses it. They call no code of the bridge. That the bridge's own reads
+ * of DataCite's answer take the tolerant mapper is held by
+ * {@code DataCiteDoiRoutesTest.bothReadsOfDataCitesAnswerReadPastAPropertyTheModelDoesNotName}.
  */
 class DataCiteJsonToleranceTest {
 

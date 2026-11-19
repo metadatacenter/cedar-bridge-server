@@ -1,6 +1,7 @@
 package org.metadatacenter.cedar.bridge.resources.doi;
 
 import org.metadatacenter.cedar.bridge.resource.datacite.DataciteConstants;
+import org.metadatacenter.cedar.bridge.resources.extauth.AuthorityIdentifier;
 import org.metadatacenter.constant.HttpConstants;
 
 import java.io.IOException;
@@ -39,13 +40,7 @@ final class DataCiteClient {
    * found, and a draft is found because the request carries its repository's credential.
    */
   Answer read(String doi) throws IOException, InterruptedException {
-    return readPath("/" + doi);
-  }
-
-  /** {@link #read(String)} for a DOI given as the path of its resolver URL, such as {@code /10.5072/abcd-1234}. */
-  Answer readPath(String doiPath) throws IOException, InterruptedException {
-    return send(HttpRequest.newBuilder(URI.create(settings.endpointUrl() + doiPath + DataciteConstants.QUERY_AFFILIATION))
-        .GET());
+    return send(HttpRequest.newBuilder(URI.create(doiUrl(doi) + DataciteConstants.QUERY_AFFILIATION)).GET());
   }
 
   /**
@@ -72,9 +67,18 @@ final class DataCiteClient {
 
   /** Replaces the metadata of a DOI DataCite holds, and publishes it when the body's event asks for that. */
   Answer update(String doi, String body) throws IOException, InterruptedException {
-    return send(HttpRequest.newBuilder(URI.create(settings.endpointUrl() + "/" + doi))
+    return send(HttpRequest.newBuilder(URI.create(doiUrl(doi)))
         .header(DataciteConstants.CONTENT_TYPE, DataciteConstants.APPLICATION_VND_API_JSON)
         .PUT(HttpRequest.BodyPublishers.ofString(body)));
+  }
+
+  /**
+   * The address of one DOI at DataCite. Each character of the DOI that a path cannot carry as itself is
+   * encoded, so DataCite is asked for exactly that DOI, and never for another path a dot segment or a
+   * query delimiter in it would make.
+   */
+  private String doiUrl(String doi) {
+    return settings.endpointUrl() + "/" + AuthorityIdentifier.requestPath(doi, true);
   }
 
   private Answer send(HttpRequest.Builder request) throws IOException, InterruptedException {

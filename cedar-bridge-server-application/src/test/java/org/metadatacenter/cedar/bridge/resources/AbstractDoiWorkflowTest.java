@@ -25,6 +25,10 @@ import org.metadatacenter.util.http.ProxyUtil;
 import org.metadatacenter.util.json.JsonMapper;
 
 import jakarta.ws.rs.core.Response;
+import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -34,6 +38,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -60,8 +65,14 @@ abstract class AbstractDoiWorkflowTest {
   static final String USER_ID = "https://metadatacenter.org/users/6124554b-9c83-443c-8207-241d75b82f44";
   static final String TEMPLATE_ID = "https://repo.metadatacenter.org/templates/f2c2d19d-d94c-420e-80bd-77a9d65e5dc7";
 
-  /** The client's deadline for a DataCite answer, well inside the fake's delay for a faulted call. */
-  static final Duration DATACITE_TIMEOUT = Duration.ofMillis(1500);
+  /**
+   * The client's deadline for a DataCite answer. A loaded build can hold an ordinary answer for a second
+   * or more, so only a request the fake is about to hold back gets a short one.
+   */
+  static final Duration DATACITE_TIMEOUT = Duration.ofSeconds(10);
+
+  /** The deadline for a request the fake will hold back, well inside its delay for a faulted call. */
+  static final Duration FAULTED_TIMEOUT = Duration.ofMillis(500);
 
   FakeDataCite dataCite;
   FakeResourceServer resourceServer;
@@ -121,11 +132,29 @@ abstract class AbstractDoiWorkflowTest {
   DataCiteResource resource() {
     Neo4jDoiRegistrationStore store = new Neo4jDoiRegistrationStore(ScratchNeo4j.driver());
     stores.add(store);
-    return new DataCiteResource(config, dataServices, new DataCiteHttpClient(Duration.ofSeconds(2), DATACITE_TIMEOUT),
+    return new DataCiteResource(config, dataServices, dataCiteClient(),
         ProxyUtil::proxyPost, store, suffixes) {
       @Override
       protected CedarRequestContext buildRequestContext() {
         return context;
+      }
+    };
+  }
+
+  /**
+   * The production client, except that a request the fake will hold back gets {@link #FAULTED_TIMEOUT}
+   * rather than {@link #DATACITE_TIMEOUT}, so a faulted case times out quickly and no other request
+   * times out under load.
+   */
+  private DataCiteHttpClient dataCiteClient() {
+    HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
+    return new DataCiteHttpClient(http, DATACITE_TIMEOUT) {
+      @Override
+      public HttpResponse<String> send(HttpRequest.Builder requestBuilder) throws IOException, InterruptedException {
+        HttpRequest request = requestBuilder.build();
+        Duration deadline = dataCite.delays(request.method(), request.uri().getPath()) ? FAULTED_TIMEOUT
+            : DATACITE_TIMEOUT;
+        return http.send(requestBuilder.timeout(deadline).build(), HttpResponse.BodyHandlers.ofString());
       }
     };
   }
@@ -169,6 +198,20 @@ abstract class AbstractDoiWorkflowTest {
   /** The DOI a registration answered with, without a resolver prefix. */
   static String doiOf(Response response) {
     return (String) entity(response).get("doiId");
+  }
+
+  /**
+   * Asserts that DataCite holds, for the DOI, the attributes written for the named fixture, read back
+   * through the metadata route. The DOI's identity and state, which DataCite adds, are checked apart.
+   */
+  void assertDataCiteHolds(String fixture, String doi, String sourceId) throws Exception {
+    ObjectNode expected = (ObjectNode) DataCiteFixtures.expected(fixture, PREFIX, landingPage(sourceId), "")
+        .get("attributes");
+    expected.remove("event");
+    ObjectNode held = (ObjectNode) DataCiteFixtures.withoutNulls(readBack(doi).at("/data/attributes"));
+    held.remove(List.of("doi", "suffix", "state"));
+    assertEquals(expected, held, () -> "DataCite holds\n" + held.toPrettyString() + "\nnot\n"
+        + expected.toPrettyString());
   }
 
   /** What DataCite holds for the DOI, read through the metadata route. */

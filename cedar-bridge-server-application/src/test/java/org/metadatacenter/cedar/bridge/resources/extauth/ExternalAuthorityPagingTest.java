@@ -68,7 +68,6 @@ public class ExternalAuthorityPagingTest {
     Map<String, String> environment = new HashMap<>(CedarEnvironmentSource.getAll());
     environment.put("CEDAR_BRIDGE_HTTP_PORT", "0");
     environment.put("CEDAR_BRIDGE_ADMIN_PORT", "0");
-    environment.put("CEDAR_BRIDGE_STOP_PORT", "0");
     // The server loads its CompTox registry as it starts. Point it at a port nothing listens on, so
     // it never reaches EPA's API, which CI configures.
     environment.put("CEDAR_COMP_TOX_API_PREFIX", "http://127.0.0.1:1/");

@@ -1,0 +1,35 @@
+{
+  "type": "dois",
+  "attributes": {
+    "prefix": "{prefix}",
+    "event": "{event}",
+    "url": "{landingPage}",
+    "schemaVersion": "http://datacite.org/schema/kernel-4",
+    "creators": [
+      {
+        "name": "John Doe"
+      }
+    ],
+    "titles": [
+      {
+        "title": "Required properties only"
+      }
+    ],
+    "publisher": "CEDAR",
+    "publicationYear": "{year}",
+    "types": {
+      "resourceTypeGeneral": "Other",
+      "resourceType": "Instance"
+    },
+    "fundingReferences": [
+      {
+        "funderName": "Mark Ten",
+        "funderIdentifier": "05dxps055",
+        "funderIdentifierType": "ROR",
+        "awardNumber": "CBET-106",
+        "awardUri": "https://www.moore.org/grants/list/GBMF3859.01",
+        "awardTitle": "Full DataCite XML Example"
+      }
+    ]
+  }
+}

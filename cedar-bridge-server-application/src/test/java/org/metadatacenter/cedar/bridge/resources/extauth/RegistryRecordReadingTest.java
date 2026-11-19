@@ -600,6 +600,122 @@ public class RegistryRecordReadingTest {
 
   // ---- SciCrunch ------------------------------------------------------------------------------
 
+  @Test
+  public void rridSearchDropsOnlyExplicitlyFalseRecordsEvenIfTheRegistryReturnsThem() throws Exception {
+    registry = request -> Reply.ok("""
+        {"hits":{"total":6,"hits":[
+          {"_source":{"recordValid":false,"item":{"identifier":"1260732","name":"coal metagenome"},
+                       "rrid":{"curie":"RRID:NCBITaxon_1260732"}}},
+          {"_source":{"recordValid":true,"item":{"identifier":"SCR_1","name":"Valid resource"}}},
+          {"_source":{"item":{"identifier":"SCR_2","name":"Legacy resource"}}},
+          {"_source":{"recordValid":null,"item":{"identifier":"SCR_3","name":"Unknown validity"}}},
+          {"_source":{"recordValid":"false","item":{"identifier":"SCR_4","name":"Text is not a boolean"}}},
+          {"_source":{"recordValid":0,"item":{"identifier":"SCR_5","name":"Zero is not a boolean"}}}
+        ]}}
+        """);
+    RridAuthority authority = new RridAuthority(BASE + "/rrid/search", BASE + "/rrid/resolver/", "key");
+
+    AuthoritySearchAnswer answer = authority.search("resource", 0, 10);
+
+    assertEquals(IntStream.rangeClosed(1, 5).mapToObj(i -> "https://identifiers.org/RRID:SCR_" + i).toList(),
+        new ArrayList<>(answer.results().keySet()));
+    assertTrue(answer.found());
+    assertNull(answer.totalCount(), "An unfiltered registry total cannot count the acceptable matches");
+  }
+
+  @Test
+  public void rridSearchWithOnlyInvalidRecordsOffersNoSelection() throws Exception {
+    registry = request -> Reply.ok("""
+        {"hits":{"total":1,"hits":[{"_source":{"recordValid":false,
+          "item":{"identifier":"1260732","name":"coal metagenome"},
+          "rrid":{"curie":"RRID:NCBITaxon_1260732"}}}]}}
+        """);
+    RridAuthority authority = new RridAuthority(BASE + "/rrid/search", BASE + "/rrid/resolver/", "key");
+
+    AuthoritySearchAnswer answer = authority.search("coal metagenome", 0, 10);
+
+    assertTrue(answer.results().isEmpty());
+    assertFalse(answer.found());
+    assertNull(answer.totalCount());
+    // This policy is for search suggestions; direct identifier resolution keeps its existing contract.
+    assertTrue(authority.details("RRID:NCBITaxon_1260732").found());
+  }
+
+  @Test
+  public void rridFiltersInvalidRecordsBeforePagingWhileStillRequiringANameMatch() throws Exception {
+    registry = request -> Reply.ok("""
+        {"hits":{"total":{"value":3,"relation":"eq"},"hits":[
+          {"_source":{"recordValid":true,"item":{"identifier":"SCR_3","name":"Third matching resource"}}}
+        ]}}
+        """);
+    RridAuthority authority = new RridAuthority(BASE + "/rrid/search", BASE + "/rrid/resolver/", "key");
+
+    AuthoritySearchAnswer answer = authority.search("resource", 2, 1);
+
+    JsonNode request = JsonMapper.STRICT_MAPPER.readTree(received("/rrid/search").get(0).body());
+    assertEquals(2, request.path("from").asInt());
+    assertEquals(1, request.path("size").asInt());
+    JsonNode query = request.path("query").path("bool");
+    assertEquals(JsonMapper.STRICT_MAPPER.readTree("[{\"term\":{\"recordValid\":false}}]"), query.path("must_not"));
+    assertEquals(1, query.path("minimum_should_match").asInt());
+    assertEquals(JsonMapper.STRICT_MAPPER.readTree("""
+        [{"term":{"item.name.aggregate":{"value":"resource","boost":100}}},
+         {"prefix":{"item.name.aggregate":{"value":"resource","boost":10}}},
+         {"wildcard":{"item.name.aggregate":{"value":"*resource*","boost":1}}}]
+        """), query.path("should"));
+    assertEquals(3L, answer.totalCount());
+    assertFalse(answer.countCapped());
+    assertEquals(List.of("https://identifiers.org/RRID:SCR_3"), new ArrayList<>(answer.results().keySet()));
+  }
+
+  /** Shapes read from SciCrunch: the source-local number is not the resource's RRID. */
+  static Stream<Arguments> rridRecords() {
+    return Stream.of(
+        arguments("""
+            {"item":{"identifier":"1260732","curie":"RRID:NCBITaxon_1260732","name":"coal metagenome"},
+             "rrid":{"curie":"RRID:NCBITaxon_1260732"}}
+            """, "RRID:NCBITaxon_1260732", "coal metagenome"),
+        arguments("""
+            {"item":{"identifier":"114536","curie":"addgene:114536","name":"Anti-GFAP R416WT [N206B/9R]"},
+             "rrid":{"curie":"RRID:Addgene_114536"}}
+            """, "RRID:Addgene_114536", "Anti-GFAP R416WT [N206B/9R]"),
+        arguments("""
+            {"item":{"identifier":"1260732","curie":"RRID:NCBITaxon_1260732","name":"coal metagenome"}}
+            """, "RRID:NCBITaxon_1260732", "coal metagenome"),
+        arguments("""
+            {"item":{"identifier":"AB_1","name":"An antibody"},"rrid":{"curie":" "}}
+            """, "RRID:AB_1", "An antibody"),
+        arguments("""
+            {"item":{"identifier":"RRID:SCR_003070","name":"ImageJ"}}
+            """, "RRID:SCR_003070", "ImageJ"));
+  }
+
+  @ParameterizedTest @MethodSource("rridRecords")
+  public void rridSearchAndDetailsPreserveTheRegistrysFullIdentifier(String source, String rrid, String name)
+      throws Exception {
+    registry = request -> Reply.ok("{\"hits\":{\"total\":1,\"hits\":[{\"_source\":" + source + "}]}}");
+    RridAuthority authority = new RridAuthority(BASE + "/rrid/search", BASE + "/rrid/resolver/", "key");
+    String iri = "https://identifiers.org/" + rrid;
+
+    AuthoritySearchAnswer answer = authority.search(name, 0, 10);
+    assertEquals(List.of(iri), new ArrayList<>(answer.results().keySet()));
+    assertEquals(name, term(answer, iri, "name"));
+    AuthorityDetailsAnswer details = authority.details(iri);
+    assertEquals(iri, details.body().get("id"));
+    assertEquals(name, details.body().get("name"));
+    assertEquals(1, received("/rrid/resolver/" + rrid + ".json").size());
+  }
+
+  @Test
+  public void rridDoesNotInventANamespaceForABareLocalIdentifier() throws Exception {
+    registry = request -> Reply.ok("""
+        {"hits":{"total":1,"hits":[{"_source":{"item":{"identifier":"1260732","name":"coal metagenome"}}}]}}
+        """);
+    RridAuthority authority = new RridAuthority(BASE + "/rrid/search", BASE + "/rrid/resolver/", "key");
+    assertTrue(authority.search("coal metagenome", 0, 10).results().isEmpty());
+    assertEquals(AuthorityDetailsAnswer.incomplete(Map.of()), authority.details("1260732"));
+  }
+
   /** A resource is described by its type, with the article its type takes. */
   @Test
   public void rridDescribesAResourceByItsType() throws Exception {
@@ -646,6 +762,8 @@ public class RegistryRecordReadingTest {
         arguments("pmid", "https://pubmed.ncbi.nlm.nih.gov/123/", "&id=123&"),
         arguments("rrid", "AB_123", "/rrid/resolver/RRID:AB_123.json?"),
         arguments("rrid", "https://identifiers.org/RRID:AB_123", "/rrid/resolver/RRID:AB_123.json?"),
+        arguments("rrid", "identifiers.org/RRID:AB_123", "/rrid/resolver/RRID:AB_123.json?"),
+        arguments("rrid", "https://scicrunch.org/resolver/RRID:AB_123", "/rrid/resolver/RRID:AB_123.json?"),
         arguments("nih-grant", " r01gm000001 ", "{\"criteria\":{\"project_nums\":[\"R01GM000001\"]}}"));
   }
 

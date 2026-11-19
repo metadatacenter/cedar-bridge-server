@@ -1,7 +1,9 @@
 package org.metadatacenter.cedar.bridge.resource.datacite.form;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class DataCiteAffiliation {
   @JsonProperty("name")
   private String name;

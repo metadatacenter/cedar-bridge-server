@@ -3,7 +3,7 @@
   "info" : {
     "description" : "Better Metadata - Better Science\n\nFolders and artifacts use type-qualified selectors: `folders/<uuid>`, `templates/<uuid>`,\n`template-elements/<uuid>`, `template-fields/<uuid>`, or `template-instances/<uuid>`.\nTyped routes include the type once, for example `/templates/<uuid>`. Query parameters and\ncommand-body selectors retain the type, including folder parameters. Percent-encoded full\nIRIs remain accepted for compatibility. Stored document identities and references remain\nfull IRIs; legacy repository hosts must remain absolute until their data is migrated.\n\nThe bridge server is CEDAR's connection to registries outside it. It mints DOIs through DataCite\nso a CEDAR artifact can be cited, and it resolves and searches identifiers held by seven external\nauthorities: DOI, NIH grants, ORCID, CompTox, PubMed, ROR and RRID.\n\nAn upstream refusal is answered in the shared error body with the key `upstreamServerError`,\nrather than flattened into a 500. Its parameters name the upstream service and the status it\nanswered, and its objects carry what it answered. A refusal keeps the upstream status, except that\nDataCite or an external registry failing, refusing this deployment's credentials or access, or\nlimiting its requests answers 502, as does an upstream answer that is neither a success nor a\nrefusal. The external-authority routes, which take no credentials, therefore never answer 401.\n",
     "title" : "CEDAR Bridge Server API",
-    "version" : "2.9.36"
+    "version" : "2.9.37"
   },
   "paths" : {
     "/" : {
@@ -331,7 +331,7 @@
         "description" : "Fetch what DataCite holds for a DOI, including affiliation detail. A refusal of the request itself keeps DataCite's status, so a DOI DataCite does not know is a 404. Every refusal DataCite makes is answered in the shared error body (upstreamServerError), with DataCite's own errors in objects.dataCiteErrors and its status in parameters.upstreamStatusCode. DataCite integration can be switched off by configuration, and every route here answers 400 when it is.",
         "operationId" : "getDOIMetadata",
         "parameters" : [ {
-          "description" : "The DOI as a URL. Example: https://doi.org/10.82658/abcd-1234",
+          "description" : "The DOI, as its resolver URL or as the DOI itself. A resolver URL may carry no query or fragment, and no segment of the DOI may be a single or a double dot. Examples: https://doi.org/10.82658/abcd-1234, 10.82658/abcd-1234",
           "in" : "path",
           "name" : "id",
           "required" : true,
@@ -358,7 +358,7 @@
                 }
               }
             },
-            "description" : "DataCite integration is disabled (dataCiteDOIDisabled), or DataCite refused the request (upstreamServerError)"
+            "description" : "DataCite integration is disabled (dataCiteDOIDisabled), the value names no DOI (invalidInput), or DataCite refused the request (upstreamServerError)"
           },
           "401" : {
             "content" : {

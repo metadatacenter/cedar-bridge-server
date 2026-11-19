@@ -21,7 +21,7 @@ info:
     limiting its requests answers 502, as does an upstream answer that is neither a success nor a
     refusal. The external-authority routes, which take no credentials, therefore never answer 401.
   title: CEDAR Bridge Server API
-  version: 2.9.36
+  version: 2.9.37
 paths:
   /:
     get:
@@ -288,7 +288,10 @@ paths:
         \ it is."
       operationId: getDOIMetadata
       parameters:
-      - description: "The DOI as a URL. Example: https://doi.org/10.82658/abcd-1234"
+      - description: "The DOI, as its resolver URL or as the DOI itself. A resolver\
+          \ URL may carry no query or fragment, and no segment of the DOI may be a\
+          \ single or a double dot. Examples: https://doi.org/10.82658/abcd-1234,\
+          \ 10.82658/abcd-1234"
         in: path
         name: id
         required: true
@@ -306,8 +309,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CedarError"
-          description: "DataCite integration is disabled (dataCiteDOIDisabled), or\
-            \ DataCite refused the request (upstreamServerError)"
+          description: "DataCite integration is disabled (dataCiteDOIDisabled), the\
+            \ value names no DOI (invalidInput), or DataCite refused the request (upstreamServerError)"
         "401":
           content:
             application/json:

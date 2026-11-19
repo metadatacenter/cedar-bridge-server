@@ -1,0 +1,34 @@
+{
+  "type": "dois",
+  "attributes": {
+    "prefix": "{prefix}",
+    "event": "{event}",
+    "url": "{landingPage}",
+    "schemaVersion": "http://datacite.org/schema/kernel-4",
+    "creators": [
+      {
+        "name": "John Doe"
+      }
+    ],
+    "titles": [
+      {
+        "title": "Required properties only"
+      }
+    ],
+    "publisher": "CEDAR",
+    "publicationYear": "{year}",
+    "types": {
+      "resourceTypeGeneral": "Other",
+      "resourceType": "Instance"
+    },
+    "sizes": [
+      "10KB",
+      "10 Pages"
+    ],
+    "formats": [
+      "video",
+      "PDF"
+    ],
+    "version": "1.0.0"
+  }
+}

@@ -76,7 +76,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       @ApiResponse(responseCode = "200", description = "The DOI's metadata, as DataCite returned it",
           content = @Content(schema = @Schema(ref = "#/components/schemas/DataCiteDoiMetadata"))),
       @ApiResponse(responseCode = "400", description = "DataCite integration is disabled (dataCiteDOIDisabled), "
-          + "or DataCite refused the request (upstreamServerError)",
+          + "the value names no DOI (invalidInput), or DataCite refused the request (upstreamServerError)",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "401", description = UNAUTHORIZED,
           content = @Content(schema = @Schema(implementation = CedarError.class))),
@@ -95,7 +95,9 @@ public class DataCiteResource extends CedarMicroserviceResource {
           content = @Content(schema = @Schema(implementation = CedarError.class)))
   })
   public Response getDOIMetadata(
-      @Parameter(description = "The DOI as a URL. Example: https://doi.org/10.82658/abcd-1234",
+      @Parameter(description = "The DOI, as its resolver URL or as the DOI itself. A resolver URL may carry no "
+          + "query or fragment, and no segment of the DOI may be a single or a double dot. Examples: "
+          + "https://doi.org/10.82658/abcd-1234, 10.82658/abcd-1234",
           required = true)
       @PathParam(PP_ID) String doiIdUrl) throws CedarException {
     CedarRequestContext c = buildRequestContext();

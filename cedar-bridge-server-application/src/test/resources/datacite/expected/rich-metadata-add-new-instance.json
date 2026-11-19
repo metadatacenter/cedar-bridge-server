@@ -1,0 +1,349 @@
+{
+  "type": "dois",
+  "attributes": {
+    "prefix": "{prefix}",
+    "event": "{event}",
+    "url": "{landingPage}",
+    "schemaVersion": "http://datacite.org/schema/kernel-4",
+    "creators": [
+      {
+        "name": "John Doe",
+        "nameType": "Personal",
+        "givenName": "John",
+        "familyName": "Doe",
+        "affiliation": [
+          {
+            "name": "affiliation name",
+            "affiliationIdentifier": "https://ror.org/04wxnsj81",
+            "affiliationIdentifierScheme": "ROR"
+          },
+          {
+            "affiliationIdentifier": "https://ror.org/05dxps055",
+            "affiliationIdentifierScheme": "ROR",
+            "schemeUri": "http://affiliation_identification_scheme_uri2"
+          }
+        ],
+        "nameIdentifiers": [
+          {
+            "nameIdentifier": "https://orcid.org/0000-0001-5000-0007",
+            "nameIdentifierScheme": "ORCIID",
+            "schemeUri": "https://orcid.org"
+          }
+        ]
+      },
+      {
+        "name": "Potter Summer",
+        "nameType": "Personal",
+        "givenName": "Potter",
+        "familyName": "Summer",
+        "affiliation": [
+          {
+            "affiliationIdentifier": "https://ror.org/05dxps055",
+            "affiliationIdentifierScheme": "ROR",
+            "schemeUri": "http://affiliation_identification_scheme_uri2"
+          }
+        ],
+        "nameIdentifiers": [
+          {
+            "nameIdentifier": "https://orcid.org/0000-0001-5000-0007",
+            "nameIdentifierScheme": "ORCIID",
+            "schemeUri": "https://orcid.org"
+          }
+        ]
+      },
+      {
+        "name": "Joel Haggard",
+        "nameType": "Personal",
+        "givenName": "Joel",
+        "familyName": "Haggard",
+        "nameIdentifiers": [
+          {
+            "nameIdentifier": "https://orcid.org/0000-0001-5000-0007",
+            "nameIdentifierScheme": "ORCIID",
+            "schemeUri": "https://orcid.org"
+          }
+        ]
+      }
+    ],
+    "titles": [
+      {
+        "title": "Update Rich Metadata with New Added Instances of Each Element",
+        "titleType": "Other"
+      },
+      {
+        "title": "Rich Metadata Test",
+        "titleType": "Other"
+      }
+    ],
+    "publisher": "CEDAR",
+    "publicationYear": "{year}",
+    "types": {
+      "resourceTypeGeneral": "Other",
+      "resourceType": "Instance"
+    },
+    "subjects": [
+      {
+        "subject": "computer science",
+        "subjectScheme": "dewey",
+        "schemeUri": "http://dewey.info/",
+        "valueUri": "http://value.uri/",
+        "classificationCode": "000"
+      },
+      {
+        "subject": "computer science",
+        "subjectScheme": "dewey",
+        "schemeUri": "http://dewey.info/",
+        "valueUri": "http://value.uri/",
+        "classificationCode": "111"
+      },
+      {
+        "subject": "computer science",
+        "subjectScheme": "dewey",
+        "schemeUri": "http://dewey.info/",
+        "valueUri": "http://value.uri/",
+        "classificationCode": "222"
+      }
+    ],
+    "contributors": [
+      {
+        "name": "Starr, Joan",
+        "nameType": "Personal",
+        "givenName": "Joan",
+        "familyName": "Starr",
+        "contributorType": "DataCollector",
+        "affiliation": [
+          {
+            "affiliationIdentifier": "affiliation identifier 1",
+            "affiliationIdentifierScheme": "ROR",
+            "schemeUri": "http://affiliation_identification_scheme_uri"
+          }
+        ],
+        "nameIdentifiers": [
+          {
+            "nameIdentifier": "name identifier 1",
+            "nameIdentifierScheme": "ROR"
+          }
+        ]
+      },
+      {
+        "name": "Chou, Jimmy",
+        "nameType": "Personal",
+        "givenName": "Jimmy",
+        "familyName": "Chou",
+        "contributorType": "DataManager",
+        "affiliation": [
+          {
+            "affiliationIdentifier": "affiliation identifier 1",
+            "affiliationIdentifierScheme": "ROR",
+            "schemeUri": "http://affiliation_identification_scheme_uri"
+          }
+        ],
+        "nameIdentifiers": [
+          {
+            "nameIdentifier": "name identifier 1",
+            "nameIdentifierScheme": "ORCID18"
+          }
+        ]
+      },
+      {
+        "name": "Cao, Ming",
+        "nameType": "Personal",
+        "givenName": "Ming",
+        "familyName": "Cao",
+        "contributorType": "DataManager"
+      }
+    ],
+    "dates": [
+      {
+        "date": "2023-06-12",
+        "dateType": "Created"
+      },
+      {
+        "date": "2023-06-08",
+        "dateType": "Issued"
+      },
+      {
+        "date": "2023-05-08",
+        "dateType": "Created"
+      }
+    ],
+    "language": "ar",
+    "alternateIdentifiers": [
+      {
+        "alternateIdentifier": "https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.4.xml",
+        "alternateIdentifierType": "URL"
+      },
+      {
+        "alternateIdentifier": "https://schema.datacite.org/meta/kernel-4.4/example/datacite-example-full-v4.0.xml",
+        "alternateIdentifierType": "URL"
+      }
+    ],
+    "relatedIdentifiers": [
+      {
+        "relatedIdentifier": "https://data.datacite.org/application/citeproc+json/10.5072/example-full",
+        "relatedIdentifierType": "ARK",
+        "relationType": "Compiles",
+        "relatedMetadataScheme": "json",
+        "schemeUri": "https://github.com/citation-style-language/schema/raw/master/csl-data.json",
+        "resourceTypeGeneral": "Book"
+      },
+      {
+        "relatedIdentifier": "https://data.datacite.org/application/citeproc+json/10.5072/example-full",
+        "relatedIdentifierType": "ARK",
+        "relationType": "Compiles",
+        "relatedMetadataScheme": "json"
+      },
+      {
+        "relatedIdentifier": "https://data.datacite.org/application/citeproc+json/10.5072/example-full",
+        "relatedIdentifierType": "DOI",
+        "relationType": "Compiles",
+        "relatedMetadataScheme": "json"
+      }
+    ],
+    "sizes": [
+      "10KB",
+      "10 Pages",
+      "2 Articles"
+    ],
+    "formats": [
+      "video",
+      "PDF",
+      "Journal"
+    ],
+    "version": "1.0.0",
+    "rightsList": [
+      {
+        "rights": "Creative Commons Zero v1.0 Universal",
+        "rightsUri": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+        "rightsIdentifier": "cc0-1.0",
+        "rightsIdentifierScheme": "SPDX",
+        "schemeUri": "https://spdx.org/licenses/"
+      },
+      {
+        "rights": "rights 2"
+      },
+      {
+        "rights": "rights 3"
+      }
+    ],
+    "descriptions": [
+      {
+        "description": "the first description",
+        "descriptionType": "TableOfContents"
+      },
+      {
+        "description": "the second description",
+        "descriptionType": "Abstract"
+      },
+      {
+        "description": "the third description",
+        "descriptionType": "Methods"
+      }
+    ],
+    "geoLocations": [
+      {
+        "geoLocationPlace": "Stanford",
+        "geoLocationPoint": {
+          "pointLongitude": 45.0,
+          "pointLatitude": 60.0
+        },
+        "geoLocationBox": {
+          "westBoundLongitude": 30.0,
+          "eastBoundLongitude": 32.0,
+          "southBoundLatitude": 60.0,
+          "northBoundLatitude": -50.0
+        }
+      },
+      {
+        "geoLocationPlace": "Stanford",
+        "geoLocationPoint": {
+          "pointLongitude": 21.0,
+          "pointLatitude": 50.0
+        },
+        "geoLocationBox": {
+          "westBoundLongitude": 100.0,
+          "eastBoundLongitude": 60.0,
+          "southBoundLatitude": 20.0,
+          "northBoundLatitude": -50.0
+        }
+      }
+    ],
+    "fundingReferences": [
+      {
+        "funderName": "Mark Ten",
+        "funderIdentifier": "05dxps055",
+        "funderIdentifierType": "ROR",
+        "awardNumber": "CBET-106",
+        "awardUri": "https://www.moore.org/grants/list/GBMF3859.01",
+        "awardTitle": "Full DataCite XML Example"
+      },
+      {
+        "funderName": "Stanford"
+      }
+    ],
+    "relatedItems": [
+      {
+        "relatedItemType": "Audiovisual",
+        "relationType": "Continues",
+        "relatedItemIdentifier": {
+          "relatedItemIdentifier": "0370-2693",
+          "relatedItemIdentifierType": "ARK",
+          "relatedMetadataScheme": "related metadata scheme",
+          "schemeType": "DOI"
+        },
+        "titles": [
+          {
+            "title": "related item title"
+          }
+        ],
+        "creators": [
+          {
+            "name": "Kelly Spring",
+            "nameType": "Personal",
+            "givenName": "Kelly",
+            "familyName": "Spring"
+          }
+        ],
+        "number": "10",
+        "numberType": "Chapter",
+        "volume": "776",
+        "issue": "issue",
+        "firstPage": "249",
+        "lastPage": "264",
+        "publicationYear": 2003,
+        "publisher": "Stanford",
+        "edition": "5",
+        "contributors": [
+          {
+            "contributorType": "Editor",
+            "name": "Stanford",
+            "nameType": "Organizational"
+          }
+        ]
+      },
+      {
+        "relatedItemType": "Audiovisual",
+        "relationType": "Continues",
+        "relatedItemIdentifier": {
+          "relatedItemIdentifier": "0370-2693",
+          "relatedItemIdentifierType": "ARK",
+          "relatedMetadataScheme": "related metadata scheme",
+          "schemeType": "DOI"
+        },
+        "titles": [
+          {
+            "title": "related item title 2"
+          }
+        ],
+        "number": "10",
+        "numberType": "Chapter",
+        "volume": "776",
+        "issue": "issue",
+        "firstPage": "249",
+        "lastPage": "264",
+        "publicationYear": 2018,
+        "publisher": "Stanford"
+      }
+    ]
+  }
+}

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.bridge.DataCiteFixtures;
@@ -388,6 +389,74 @@ class DataCiteDoiRoutesTest {
     verifyNoInteractions(annotationWriter);
   }
 
+  /**
+   * DataCite may register a DOI other than the one asked for. The record then holds the DOI DataCite
+   * holds, so the next request updates that DOI rather than registering the reserved one a second time.
+   */
+  @Test
+  void recordsTheDoiDataCiteRegisteredWhenItIsNotTheOneAskedFor() throws Exception {
+    String chosen = PREFIX + "/chosen-by-datacite";
+    dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP, new Reply(200, "{\"data\": []}"));
+    dataCiteReplies.put(DataCiteCall.CREATE, new Reply(201, registered(chosen, "draft")));
+
+    Response response = resource.createDOI(SOURCE_ID, "draft", dataCiteInstance());
+
+    assertEquals(201, response.getStatus());
+    assertEquals(chosen, entity(response).get("doiId"));
+    assertEquals(NEW_DOI, JsonMapper.STRICT_MAPPER.readTree(sentToDataCite.get(1).body())
+        .at("/data/attributes/doi").asText(), "CEDAR asked for the DOI it reserved");
+    assertRecorded(chosen, DoiRegistrationState.DRAFT);
+
+    dataCiteReplies.put(DataCiteCall.UPDATE, new Reply(200, registered(chosen, "draft")));
+    Response again = resource.createDOI(SOURCE_ID, "draft", dataCiteInstance());
+
+    assertEquals(201, again.getStatus());
+    assertEquals(List.of(DataCiteCall.DRAFT_LOOKUP, DataCiteCall.CREATE, DataCiteCall.UPDATE), calls());
+    assertEquals(URI.create(ENDPOINT + "/" + chosen), sentToDataCite.get(2).uri());
+  }
+
+  /**
+   * DataCite refusing a draft's new metadata is the caller's to correct, as a refused registration is,
+   * and the draft stays as DataCite held it, recorded and on nothing else.
+   */
+  @Test
+  void relaysDataCitesRefusalOfADraftUpdate() throws Exception {
+    registrations.put(new DoiRegistration(SOURCE_ID, DRAFT_DOI, DoiRegistrationState.DRAFT, null, List.of()));
+    dataCiteReplies.put(DataCiteCall.UPDATE, new Reply(422, """
+        {"errors": [{"status": "422", "source": "titles", "title": "Title can't be blank"}]}
+        """));
+
+    Response response = resource.createDOI(SOURCE_ID, "publish", dataCiteInstance());
+
+    assertEquals(400, response.getStatus());
+    CedarError error = assertInstanceOf(CedarError.class, response.getEntity());
+    assertEquals(CedarErrorKey.INVALID_INPUT.getValue(), error.errorKey);
+    assertEquals("titles: Title can't be blank", error.message);
+    assertEquals(List.of(DataCiteCall.UPDATE), calls());
+    verifyNoInteractions(annotationWriter);
+    assertRecorded(DRAFT_DOI, DoiRegistrationState.DRAFT);
+  }
+
+  /**
+   * A reserved DOI is read before it is registered, in case an earlier attempt registered it. DataCite
+   * failing that read, or limiting the deployment's account, is a bad gateway, and nothing is registered
+   * on a guess.
+   */
+  @ParameterizedTest
+  @ValueSource(ints = {429, 500, 503})
+  void aFailedReadOfTheReservedDoiRegistersNothing(int status) throws Exception {
+    registrations.put(new DoiRegistration(SOURCE_ID, NEW_DOI, DoiRegistrationState.RESERVED, null, List.of()));
+    String failed = "{\"errors\": [{\"status\": \"" + status + "\", \"title\": \"Refused\"}]}";
+    dataCiteReplies.put(DataCiteCall.METADATA_READ, new Reply(status, failed));
+
+    Response response = resource.createDOI(SOURCE_ID, "publish", dataCiteInstance());
+
+    assertDataCiteRefusal(response, 502, status, failureExplanation(status) + "\nRefused", failed);
+    assertEquals(List.of(DataCiteCall.METADATA_READ), calls());
+    verifyNoInteractions(annotationWriter);
+    assertRecorded(NEW_DOI, DoiRegistrationState.RESERVED);
+  }
+
   @Test
   void reportsAnUnreadableDataCiteFailureAsABadGatewayWithoutErrors() throws Exception {
     dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP, new Reply(200, "{\"data\": []}"));
@@ -655,6 +724,59 @@ class DataCiteDoiRoutesTest {
   }
 
   /**
+   * The route takes a DOI as its resolver URL, whose path is decoded once as a URL's is, or as the DOI
+   * itself, and asks DataCite for exactly that DOI. A character a path cannot carry as itself is
+   * encoded, so a question mark in a DOI is part of the DOI rather than the start of a query.
+   */
+  @ParameterizedTest
+  @CsvSource(delimiter = '|', value = {
+      "https://doi.org/10.5072/abcd-1234 | /10.5072/abcd-1234",
+      "http://doi.org/10.5072/abcd-1234  | /10.5072/abcd-1234",
+      "10.5072/abcd-1234                 | /10.5072/abcd-1234",
+      "doi:10.5072/abcd-1234             | /10.5072/abcd-1234",
+      "https://doi.org/10.5072/a%3Fb     | /10.5072/a%3Fb",
+      "10.5072/a?b=c                     | /10.5072/a%3Fb=c",
+      "10.5072/a#b                       | /10.5072/a%23b"})
+  void readsTheDoiTheCallerNamesInEitherForm(String named, String path) throws Exception {
+    dataCiteReplies.put(DataCiteCall.METADATA_READ, new Reply(200, registered(NEW_DOI, "findable")));
+
+    Response response = resource.getDOIMetadata(named);
+
+    assertEquals(200, response.getStatus());
+    assertEquals(List.of(DataCiteCall.METADATA_READ), calls());
+    assertEquals(URI.create(ENDPOINT + path + "?affiliation=true"), sentToDataCite.get(0).uri());
+  }
+
+  /**
+   * The route spends the repository's DataCite credential on the path it builds, so a value that names
+   * no DOI is refused before DataCite is asked. A dot segment would let a server resolve the path into
+   * another DataCite resource, such as the repository's own record, and a query or fragment in a
+   * resolver URL is no part of a DOI.
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {
+      "https://doi.org/10.5072/..%2F..%2Fclients%2Fcedar.test",
+      "10.5072/../../clients/cedar.test",
+      "https://doi.org/10.5072/abcd-1234/..",
+      "10.5072/./abcd-1234",
+      "https://doi.org/10.5072/abcd-1234?query=prefix:10.5072",
+      "https://doi.org/10.5072/abcd-1234#fragment",
+      "https://example.org/10.5072/abcd-1234",
+      "10.5072",
+      "10.5072/",
+      "11.5072/abcd-1234",
+      "10.5072/abcd 1234",
+      ""})
+  void refusesAValueThatNamesNoDoiWithoutAskingDataCite(String named) throws Exception {
+    Response response = resource.getDOIMetadata(named);
+
+    assertEquals(400, response.getStatus());
+    assertEquals(CedarErrorKey.INVALID_INPUT.getValue(),
+        assertInstanceOf(CedarError.class, response.getEntity()).errorKey);
+    assertTrue(sentToDataCite.isEmpty(), sentToDataCite.toString());
+  }
+
+  /**
    * What DataCite holds for a DOI fills the DOI form, so an answer the DataCite model cannot map, such as
    * one holding a field the model knows in a shape it does not, is a bad gateway rather than metadata
    * relayed into a form that cannot read it.
@@ -809,6 +931,54 @@ class DataCiteDoiRoutesTest {
     assertEquals(URI.create(ENDPOINT + "/" + DRAFT_DOI + "?affiliation=true"), sentToDataCite.get(0).uri());
   }
 
+  /**
+   * DataCite owns its answer and adds properties to it. Both reads that map DataCite's answer into the
+   * model, the metadata route and the form opening on a draft, read past a property the model does not
+   * name, at the top of the attributes and inside a creator, rather than refuse the answer.
+   */
+  @Test
+  void bothReadsOfDataCitesAnswerReadPastAPropertyTheModelDoesNotName() throws Exception {
+    ObjectNode held = (ObjectNode) JsonMapper.STRICT_MAPPER.readTree(heldDraft());
+    ObjectNode attributes = (ObjectNode) held.at("/data/attributes");
+    attributes.put("fieldDataCiteAddedLater", "and did not tell us");
+    ((ObjectNode) attributes.at("/creators/0")).put("anotherFieldDataCiteAddedLater", true);
+    registrations.put(new DoiRegistration(SOURCE_ID, DRAFT_DOI, DoiRegistrationState.DRAFT, null, List.of()));
+    dataCiteReplies.put(DataCiteCall.METADATA_READ, new Reply(200, held.toString()));
+
+    Response read = resource.getDOIMetadata("https://doi.org/" + DRAFT_DOI);
+    Response start = resource.createDOIStart(SOURCE_ID);
+
+    assertEquals(200, read.getStatus(), String.valueOf(read.getEntity()));
+    assertEquals(held, read.getEntity());
+    assertEquals(200, start.getStatus(), String.valueOf(start.getEntity()));
+    JsonNode resumed = assertInstanceOf(JsonNode.class, entity(start).get("existingDataCiteMetadata"));
+    assertEquals("A draft resumed from DataCite", resumed.at("/title/0/title/@value").asText());
+    assertEquals("Doe, Jane", resumed.at("/creator/0/creatorName/@value").asText());
+  }
+
+  /**
+   * DataCite failing the read of the recorded draft, or limiting the deployment's account, leaves the
+   * form unopened with a bad gateway that carries DataCite's status, rather than opening it on a blank
+   * instance that would replace the draft when saved.
+   */
+  @ParameterizedTest
+  @ValueSource(ints = {429, 500, 503})
+  void aFailedReadOfTheRecordedDraftLeavesTheFormUnopened(int status) throws Exception {
+    registrations.put(new DoiRegistration(SOURCE_ID, DRAFT_DOI, DoiRegistrationState.DRAFT, null, List.of()));
+    String failed = "{\"errors\": [{\"status\": \"" + status + "\", \"title\": \"Refused\"}]}";
+    dataCiteReplies.put(DataCiteCall.METADATA_READ, new Reply(status, failed));
+
+    Response response = resource.createDOIStart(SOURCE_ID);
+
+    assertEquals(502, response.getStatus());
+    CedarError error = assertInstanceOf(CedarError.class, response.getEntity());
+    assertEquals("The DataCite draft lookup failed", error.message);
+    assertEquals(status, error.parameters.get("upstreamStatusCode"));
+    assertEquals(JsonMapper.STRICT_MAPPER.readTree(failed).path("errors"), error.objects.get("dataCiteErrors"));
+    assertEquals(List.of(DataCiteCall.METADATA_READ), calls());
+    assertRecorded(DRAFT_DOI, DoiRegistrationState.DRAFT);
+  }
+
   /** A reservation DataCite does not hold yet is no draft, and the form opens on the pre-filled instance. */
   @Test
   void opensTheFormOnADefaultInstanceForAReservationDataCiteDoesNotHold() throws Exception {
@@ -928,11 +1098,13 @@ class DataCiteDoiRoutesTest {
 
   private HttpResponse<String> answerAsDataCite(HttpRequest.Builder builder) throws HttpTimeoutException {
     HttpRequest request = builder.build();
+    // A read sent with any method but GET could be DataCite's DELETE of a draft, so it is no read.
     DataCiteCall call = switch (request.method()) {
       case "POST" -> DataCiteCall.CREATE;
       case "PUT" -> DataCiteCall.UPDATE;
-      default -> request.uri().getRawQuery().contains("query=")
+      case "GET" -> request.uri().getRawQuery().contains("query=")
           ? DataCiteCall.DRAFT_LOOKUP : DataCiteCall.METADATA_READ;
+      default -> throw new AssertionError("DataCite takes no " + request.method() + " on " + request.uri());
     };
     sentToDataCite.add(new SentToDataCite(call, request.uri(),
         request.headers().firstValue("Content-Type").orElse(null), body(request)));

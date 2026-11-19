@@ -71,7 +71,10 @@ public final class DataCiteMapping {
     String read(T dataCite, Context context);
   }
 
-  /** Writes the content of one field, read from an instance, into a DataCite object. */
+  /**
+   * Writes the content of one field, read from an instance, into a DataCite object. The content is null
+   * where the field holds no value, which includes an empty string and one of white space alone.
+   */
   @FunctionalInterface
   public interface Writer<T> {
     void write(T dataCite, String content, Context context) throws DataCiteInstanceValidationException;
@@ -96,12 +99,20 @@ public final class DataCiteMapping {
   /**
    * A repeated element, which DataCite holds as a list of objects. When {@code requiredAs} is
    * present, an instance that holds no entry of it is refused, as for a field.
+   * <p>
+   * When {@code valuedBy} identifies children, they hold the entry's value and the others qualify it,
+   * as a type or a scheme does. An entry with none of them filled is empty, whatever its qualifiers
+   * say, and is left out without being checked for the qualifiers it requires.
    */
   public record Elements<T, C>(String field, Function<T, List<C>> get, BiConsumer<T, List<C>> set,
-                               Supplier<C> create, List<Entry<C>> children, String requiredAs)
-      implements Entry<T> {
+                               Supplier<C> create, List<Entry<C>> children, String requiredAs,
+                               Set<String> valuedBy) implements Entry<T> {
     Elements<T, C> required(String phrase) {
-      return new Elements<>(field, get, set, create, children, phrase);
+      return new Elements<>(field, get, set, create, children, phrase, valuedBy);
+    }
+
+    Elements<T, C> valuedBy(String... fields) {
+      return new Elements<>(field, get, set, create, children, requiredAs, Set.of(fields));
     }
   }
 
@@ -193,7 +204,8 @@ public final class DataCiteMapping {
           text("subjectScheme", DataCiteSubject::getSubjectScheme, DataCiteSubject::setSubjectScheme),
           link("schemeURI", DataCiteSubject::getSchemeUri, DataCiteSubject::setSchemeUri),
           link("valueURI", DataCiteSubject::getValueUri, DataCiteSubject::setValueUri),
-          text("classificationCode", DataCiteSubject::getClassificationCode, DataCiteSubject::setClassificationCode)),
+          text("classificationCode", DataCiteSubject::getClassificationCode, DataCiteSubject::setClassificationCode))
+          .valuedBy("subject", "valueURI", "classificationCode"),
       elements("contributor", Attributes::getContributors, Attributes::setContributors, DataCiteContributor::new,
           text("contributorName", DataCiteContributor::getName, DataCiteContributor::setName)
               .required("Contributor Name under Contributors"),
@@ -216,7 +228,8 @@ public final class DataCiteMapping {
               DataCiteAlternateIdentifier::setAlternateIdentifier),
           text("alternateIdentifierType", DataCiteAlternateIdentifier::getAlternateIdentifierType,
               DataCiteAlternateIdentifier::setAlternateIdentifierType)
-              .required("Alternate Identifier Type under Alternate Identifiers")),
+              .required("Alternate Identifier Type under Alternate Identifiers"))
+          .valuedBy("alternateIdentifier"),
       elements("relatedIdentifier", Attributes::getRelatedIdentifiers, Attributes::setRelatedIdentifiers,
           DataCiteRelatedIdentifier::new,
           text("relatedIdentifier", DataCiteRelatedIdentifier::getRelatedIdentifier,
@@ -231,7 +244,8 @@ public final class DataCiteMapping {
           link("schemeURI", DataCiteRelatedIdentifier::getSchemeUri, DataCiteRelatedIdentifier::setSchemeUri),
           text("schemeType", DataCiteRelatedIdentifier::getSchemeType, DataCiteRelatedIdentifier::setSchemeType),
           term("resourceTypeGeneral", DataCiteRelatedIdentifier::getResourceTypeGeneral,
-              DataCiteRelatedIdentifier::setResourceTypeGeneral)),
+              DataCiteRelatedIdentifier::setResourceTypeGeneral))
+          .valuedBy("relatedIdentifier"),
       texts("size", Attributes::getSizes, Attributes::setSizes),
       texts("format", Attributes::getFormats, Attributes::setFormats),
       text("version", Attributes::getVersion, Attributes::setVersion),
@@ -341,7 +355,8 @@ public final class DataCiteMapping {
         text("affiliationIdentifierScheme", DataCiteAffiliation::getAffiliationIdentifierScheme,
             DataCiteAffiliation::setAffiliationIdentifierScheme)
             .required("Affiliation Identifier Scheme under " + where),
-        link("schemeURI", DataCiteAffiliation::getAffiliationSchemeURI, DataCiteAffiliation::setAffiliationSchemeURI));
+        link("schemeURI", DataCiteAffiliation::getAffiliationSchemeURI, DataCiteAffiliation::setAffiliationSchemeURI))
+        .valuedBy("name", "affiliationIdentifier");
   }
 
   private static <T> Elements<T, DataCiteNameIdentifier> nameIdentifiers(
@@ -351,7 +366,8 @@ public final class DataCiteMapping {
         text("nameIdentifierScheme", DataCiteNameIdentifier::getNameIdentifierScheme,
             DataCiteNameIdentifier::setNameIdentifierScheme)
             .required("Name Identifier Scheme under " + where),
-        link("schemeURI", DataCiteNameIdentifier::getSchemeUri, DataCiteNameIdentifier::setSchemeUri));
+        link("schemeURI", DataCiteNameIdentifier::getSchemeUri, DataCiteNameIdentifier::setSchemeUri))
+        .valuedBy("name");
   }
 
   private static List<Entry<DataCiteTitle>> titleFields(String where) {
@@ -459,9 +475,14 @@ public final class DataCiteMapping {
     return copy(field, Part.IRI, get, set);
   }
 
+  /** An entry that copies a value. A field with no value writes nothing, not even an empty object to hold it. */
   private static <T> Value<T> copy(String field, Part part, Function<T, String> get, BiConsumer<T, String> set) {
     return new Value<>(field, part, (dataCite, context) -> get.apply(dataCite),
-        (dataCite, content, context) -> set.accept(dataCite, content), null);
+        (dataCite, content, context) -> {
+          if (content != null) {
+            set.accept(dataCite, content);
+          }
+        }, null);
   }
 
   private static <T> Values<T> texts(String field, Function<T, List<String>> get, BiConsumer<T, List<String>> set) {
@@ -476,7 +497,7 @@ public final class DataCiteMapping {
 
   private static <T, C> Elements<T, C> elements(String field, Function<T, List<C>> get, BiConsumer<T, List<C>> set,
                                                 Supplier<C> create, List<Entry<C>> children) {
-    return new Elements<>(field, get, set, create, children, null);
+    return new Elements<>(field, get, set, create, children, null, Set.of());
   }
 
   @SafeVarargs

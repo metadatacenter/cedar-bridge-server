@@ -29,7 +29,9 @@ import java.util.regex.Pattern;
  * DataCite's DOI API on a local port, keeping what it registers, as DataCite's REST API does for the
  * calls the DOI workflow makes. It refuses a request without the repository credential, registers the
  * DOI a request names and refuses one it holds already, updates only a DOI it holds, publishes on the
- * {@code publish} event, answers a read by identifier at once, and lists drafts by landing page.
+ * {@code publish} event, answers a read by identifier at once, and lists drafts by landing page. It
+ * answers 405 to a method a route does not take, and refuses with 422 a publish that lacks a property
+ * a findable DOI must have.
  *
  * <p>A test can make the next call of one kind fail. {@link Fault#ANSWER_LOST} carries the call out and
  * then answers too late for the client; {@link Fault#NEVER_ARRIVED} answers too late without carrying
@@ -40,6 +42,9 @@ final class FakeDataCite implements AutoCloseable {
   enum Call { LIST, READ, CREATE, UPDATE }
 
   enum Fault { ANSWER_LOST, NEVER_ARRIVED }
+
+  /** One request as it arrived: its method, path and content type, and the call it was taken as, or null. */
+  record Received(String method, String path, String contentType, Call call) {}
 
   /** How long a faulted call waits before answering. The client gives up well before. */
   static final long FAULT_DELAY_MILLIS = 4_000;
@@ -53,6 +58,7 @@ final class FakeDataCite implements AutoCloseable {
   private final Map<String, ObjectNode> held = new LinkedHashMap<>();
   private final Map<Call, Deque<Object>> faults = new EnumMap<>(Call.class);
   private final List<Call> calls = new CopyOnWriteArrayList<>();
+  private final List<Received> received = new CopyOnWriteArrayList<>();
   private volatile boolean refuseCredentials;
 
   FakeDataCite(String repositoryId, String password, String prefix) throws IOException {
@@ -126,9 +132,42 @@ final class FakeDataCite implements AutoCloseable {
     return List.copyOf(calls);
   }
 
+  /** Every request DataCite received, in order, including those it refused for their method. */
+  List<Received> received() {
+    return List.copyOf(received);
+  }
+
   /** How many calls of this kind DataCite received. */
   long count(Call call) {
     return calls.stream().filter(call::equals).count();
+  }
+
+  /**
+   * Whether the next request with this method and path will be held past the client's deadline, because
+   * a test made the next call of its kind fail with a timeout.
+   */
+  synchronized boolean delays(String method, String path) {
+    Call call = callOf(method, path);
+    return call != null && faults.get(call).peek() instanceof Fault;
+  }
+
+  /**
+   * The call a request is taken as, or null for a method its route does not take. Each route takes one
+   * method. DataCite deletes a draft on DELETE /dois/{id}, so a method a route does not take must not be
+   * answered as a read.
+   */
+  private static Call callOf(String method, String path) {
+    boolean oneDoi = doiOf(path) != null;
+    return switch (method) {
+      case "POST" -> oneDoi ? null : Call.CREATE;
+      case "PUT" -> oneDoi ? Call.UPDATE : null;
+      case "GET" -> oneDoi ? Call.READ : Call.LIST;
+      default -> null;
+    };
+  }
+
+  private static String doiOf(String path) {
+    return path.length() > "/dois/".length() ? path.substring("/dois/".length()) : null;
   }
 
   @Override
@@ -142,12 +181,13 @@ final class FakeDataCite implements AutoCloseable {
       byte[] requestBody = exchange.getRequestBody().readAllBytes();
       String method = exchange.getRequestMethod();
       String path = exchange.getRequestURI().getPath();
-      String doi = path.length() > "/dois/".length() ? path.substring("/dois/".length()) : null;
-      Call call = switch (method) {
-        case "POST" -> Call.CREATE;
-        case "PUT" -> Call.UPDATE;
-        default -> doi == null ? Call.LIST : Call.READ;
-      };
+      String doi = doiOf(path);
+      Call call = callOf(method, path);
+      received.add(new Received(method, path, exchange.getRequestHeaders().getFirst("Content-Type"), call));
+      if (call == null) {
+        answer(exchange, 405, errors(405, null, "Method Not Allowed"));
+        return;
+      }
       calls.add(call);
       if (refuseCredentials || !authorization.equals(exchange.getRequestHeaders().getFirst("Authorization"))) {
         answer(exchange, 401, errors(401, null, "Bad credentials."));
@@ -209,6 +249,10 @@ final class FakeDataCite implements AutoCloseable {
 
   private Reply create(String body) throws IOException {
     ObjectNode attributes = (ObjectNode) JsonMapper.STRICT_MAPPER.readTree(body).path("data").path("attributes").deepCopy();
+    Reply unpublishable = unpublishable(attributes);
+    if (unpublishable != null) {
+      return unpublishable;
+    }
     String doi = attributes.path("doi").asText("");
     if (!doi.startsWith(prefix + "/")) {
       return new Reply(422, errors(422, "doi", "The DOI is not under this repository's prefix"));
@@ -228,10 +272,32 @@ final class FakeDataCite implements AutoCloseable {
       return new Reply(404, errors(404, null, "The resource you are looking for doesn't exist."));
     }
     ObjectNode attributes = (ObjectNode) JsonMapper.STRICT_MAPPER.readTree(body).path("data").path("attributes").deepCopy();
+    Reply unpublishable = unpublishable(attributes);
+    if (unpublishable != null) {
+      return unpublishable;
+    }
     String state = "publish".equals(attributes.path("event").asText()) ? "findable" : current.path("state").asText();
     ObjectNode stored = stored(doi, state, attributes);
     held.put(doi, stored);
     return new Reply(200, document(stored));
+  }
+
+  /**
+   * DataCite's refusal of a publish whose attributes lack a property a findable DOI must have, or null.
+   * A draft may lack them.
+   */
+  private static Reply unpublishable(ObjectNode attributes) {
+    if (!"publish".equals(attributes.path("event").asText())) {
+      return null;
+    }
+    for (String property : List.of("/url", "/creators/0/name", "/titles/0/title", "/publisher", "/publicationYear",
+        "/types/resourceTypeGeneral")) {
+      JsonNode value = attributes.at(property);
+      if (value.isMissingNode() || value.isNull() || value.asText().isEmpty()) {
+        return new Reply(422, errors(422, property.substring(1), "can't be blank"));
+      }
+    }
+    return null;
   }
 
   /** The attributes DataCite keeps for a DOI: those it was sent, its identity and its state, and no event. */
