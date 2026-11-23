@@ -63,17 +63,9 @@ public class ExternalAuthorityContractTest {
   private static final int NOT_FOUND = 404;
   private static final int SERVICE_UNAVAILABLE = 503;
 
-  /**
-   * The rejection, worded once.
-   *
-   * <p>Six of the seven built this from a bare string, so a JSON API answered {@code text/plain};
-   * ROR used {@code CedarResponse.badRequest().message(…)}, the framework's structured error,
-   * and its wording had drifted with it — a comma where the others had "and". Neither difference
-   * was anyone's decision; they are what seven copies of one method turn into. ROR's form is the
-   * one that survived, since these routes declare they produce JSON.
-   */
-  private static final String PAGINATION_ERROR =
-      "Invalid pagination parameters: page must be >= 0, pageSize must be > 1";
+  /** The refusal of a page-number request, worded once and in the framework's structured error. */
+  private static final String PAGE_BY_NUMBER_REFUSAL =
+      "This search pages by limit and offset. It does not accept page or pageSize.";
 
   private static final HttpClient CLIENT = HttpClient.newHttpClient();
 
@@ -112,7 +104,7 @@ public class ExternalAuthorityContractTest {
     assertEquals(BAD_REQUEST, response.statusCode(), authority + " did not reject the request");
     assertTrue(response.body().contains("\"statusCode\":400"),
         authority + " did not answer a CEDAR error object: " + response.body());
-    assertTrue(response.body().contains(PAGINATION_ERROR),
+    assertTrue(response.body().contains(PAGE_BY_NUMBER_REFUSAL),
         authority + " worded the pagination error differently: " + response.body());
   }
 
@@ -138,27 +130,29 @@ public class ExternalAuthorityContractTest {
   @ParameterizedTest(name = "{0} serves a search route")
   @MethodSource("authorities")
   public void everyAuthorityServesItsSearchRoute(String authority) {
-    int status = get("/ext-auth/" + authority + "/search-by-name?q=x&page=-1").statusCode();
+    int status = get("/ext-auth/" + authority + "/search-by-name?q=x&limit=0").statusCode();
 
     assertTrue(status != 404 && status != 405,
         "/ext-auth/" + authority + "/search-by-name does not answer: " + status);
   }
 
-  @ParameterizedTest(name = "{0} rejects a negative page")
+  @ParameterizedTest(name = "{0} refuses a page number")
   @MethodSource("authorities")
-  public void everyAuthorityRejectsANegativePage(String authority) {
-    assertRejectedForPagination(authority, get("/ext-auth/" + authority + "/search-by-name?q=x&page=-1"));
+  public void everyAuthorityRefusesAPageNumber(String authority) {
+    assertRejectedForPagination(authority, get("/ext-auth/" + authority + "/search-by-name?q=x&page=0"));
   }
 
-  /**
-   * Deliberately {@code <= 1} rather than {@code < 1}, which is what all seven have always done:
-   * a page of one is rejected. Pinned because it is surprising, so a refactor cannot quietly
-   * "fix" it into a behaviour change nobody asked for.
-   */
-  @ParameterizedTest(name = "{0} rejects a page size of one")
+  @ParameterizedTest(name = "{0} refuses a page size")
   @MethodSource("authorities")
-  public void everyAuthorityRejectsAPageSizeOfOne(String authority) {
-    assertRejectedForPagination(authority, get("/ext-auth/" + authority + "/search-by-name?q=x&pageSize=1"));
+  public void everyAuthorityRefusesAPageSize(String authority) {
+    assertRejectedForPagination(authority, get("/ext-auth/" + authority + "/search-by-name?q=x&pageSize=100"));
+  }
+
+  @ParameterizedTest(name = "{0} refuses a limit over 500")
+  @MethodSource("authorities")
+  public void everyAuthorityRefusesALimitOver500(String authority) {
+    HttpResponse<String> response = get("/ext-auth/" + authority + "/search-by-name?q=x&limit=501");
+    assertEquals(BAD_REQUEST, response.statusCode(), authority + " did not refuse a limit of 501");
   }
 
   /**

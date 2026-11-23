@@ -20,6 +20,13 @@ info:
     DataCite or an external registry failing, refusing this deployment's credentials or access, or
     limiting its requests answers 502, as does an upstream answer that is neither a success nor a
     refusal. The external-authority routes, which take no credentials, therefore never answer 401.
+
+    An external-authority search pages by `limit` and `offset`. The limit defaults to 100 and may be
+    at most 500; a larger one is refused with 400, as is a request that sends `page` or `pageSize`.
+    A page carries CEDAR's paging envelope, `request`, `totalCount`, `currentOffset` and `paging`,
+    with two variations. Its rows are held in `results`, keyed by term IRI, rather than in a list.
+    ROR and NIH RePORTER cannot report an exact total, so their pages carry `countCapped` as true,
+    `totalCount` is a lower bound, and there is no `last` link.
   title: CEDAR Bridge Server API
   version: 2.9.38-SNAPSHOT
 paths:
@@ -411,38 +418,22 @@ paths:
         schema:
           type: integer
           format: int32
-      - description: "Zero-based page number, for clients that page by number. Cannot\
-          \ be sent with `limit` or `offset`. Defaults to 0."
-        in: query
-        name: page
-        schema:
-          type: integer
-          format: int32
-      - description: "Entries per page, for clients that page by number. Cannot be\
-          \ sent with `limit` or `offset`. Defaults to 100, and must be greater than\
-          \ one and at most 500."
-        in: query
-        name: pageSize
-        schema:
-          type: integer
-          format: int32
       responses:
         "200":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthoritySearchResults"
-          description: "A page of matching entries, with the paging envelope and,\
-            \ for clients that still page by number, `found`, `page` and `pageSize`"
+          description: "A page of matching entries in the paging envelope, keyed by\
+            \ term IRI, with `found` saying whether the registry offered any"
         "400":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CedarError"
-          description: "The limit or offset is out of range, `page` is negative or\
-            \ `pageSize` is not greater than one, `page` times `pageSize` is beyond\
-            \ 2147483647, both kinds of paging were sent, or a paging parameter is\
-            \ not a number. The registry refusing the search with 400 is reported\
+          description: "The limit or offset is out of range, a paging parameter is\
+            \ not a number, or the request sent `page` or `pageSize`, which the route\
+            \ does not accept. The registry refusing the search with 400 is reported\
             \ too (upstreamServerError)."
         "404":
           content:
@@ -890,11 +881,10 @@ components:
       type: object
       additionalProperties: false
       description: |
-        The entries one authority offers for a name, in CEDAR's paging envelope. A registry's refusal
-        is not a page. It is answered in the shared error body, with `found`, `results` and any reasons
-        the authority read off the refusal in `objects.authorityAnswer`. `found`, `page` and `pageSize`
-        are the fields the route answered with before it took `limit` and `offset`, kept for clients
-        that still page by number.
+        The entries one authority offers for a name, in CEDAR's paging envelope. The rows are held in
+        `results`, keyed by term IRI, rather than in a list. A registry's refusal is not a page. It is
+        answered in the shared error body, with `found`, `results` and any reasons the authority read
+        off the refusal in `objects.authorityAnswer`.
       properties:
         countCapped:
           type: boolean
@@ -907,14 +897,6 @@ components:
         found:
           type: boolean
           description: Whether the registry answered and offered at least one entry.
-        page:
-          type: integer
-          format: int32
-          description: "The zero-based page returned, defaulted to 0."
-        pageSize:
-          type: integer
-          format: int32
-          description: "The page size used, defaulted to 100."
         paging:
           type: object
           additionalProperties:
@@ -939,8 +921,6 @@ components:
       required:
       - currentOffset
       - found
-      - page
-      - pageSize
       - paging
       - request
       - results

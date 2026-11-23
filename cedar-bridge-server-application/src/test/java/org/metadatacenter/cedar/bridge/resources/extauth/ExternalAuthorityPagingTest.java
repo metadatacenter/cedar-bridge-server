@@ -163,92 +163,39 @@ public class ExternalAuthorityPagingTest {
   }
 
   @Test
-  public void aPageNumberBecomesTheOffsetItStandsFor() throws Exception {
-    SCRIPTED.answer = AuthoritySearchAnswer.of(terms(0, 10), 50);
-
-    JsonNode page = get("/ext-auth/scripted/search-by-name?q=x&page=2&pageSize=10");
-
-    assertEquals(20, SCRIPTED.lastOffset);
-    assertEquals(10, SCRIPTED.lastLimit);
-    assertEquals(2, page.get("page").asInt(), "a client paging by number reads back its own page");
-    assertEquals(10, page.get("pageSize").asInt());
-    assertEquals(20, page.get("currentOffset").asLong());
-  }
-
-  @Test
-  public void thePagingLinksOfAPageNumberRequestCanBeFollowed() throws Exception {
-    SCRIPTED.answer = AuthoritySearchAnswer.of(terms(0, 10), 50);
-
-    JsonNode page = get("/ext-auth/scripted/search-by-name?q=x&page=2&pageSize=10");
-
-    for (String rel : List.of("first", "prev", "next", "last")) {
-      String link = page.get("paging").get(rel).asText();
-      Map<String, String> query = query(link);
-      assertFalse(query.containsKey("page") || query.containsKey("pageSize"),
-          "the " + rel + " link pages by offset alone, but was " + link);
-      assertEquals("x", query.get("q"));
-      assertEquals(200, status(pathOf(link)), "the " + rel + " link " + link + " can be followed");
-    }
-    assertEquals("30", query(page.get("paging").get("next").asText()).get("offset"));
-  }
-
-  @Test
   public void outOfRangePagingIsRefused() throws Exception {
     assertEquals(400, status("/ext-auth/scripted/search-by-name?q=x&limit=0"));
     assertEquals(400, status("/ext-auth/scripted/search-by-name?q=x&limit=501"));
     assertEquals(400, status("/ext-auth/scripted/search-by-name?q=x&offset=-1"));
-    assertEquals(400, status("/ext-auth/scripted/search-by-name?q=x&pageSize=501"));
     assertEquals(200, status("/ext-auth/scripted/search-by-name?q=x&limit=500"));
-    assertEquals(200, status("/ext-auth/scripted/search-by-name?q=x&pageSize=500"));
-  }
-
-  @Test
-  public void thePageNumberRulesStillReadAsTheyAlwaysDid() throws Exception {
-    HttpResponse<String> one = send("/ext-auth/scripted/search-by-name?q=x&pageSize=1");
-    HttpResponse<String> negative = send("/ext-auth/scripted/search-by-name?q=x&page=-1");
-
-    assertEquals(400, one.statusCode());
-    assertTrue(one.body().contains("pageSize must be > 1"), one.body());
-    assertEquals(400, negative.statusCode());
-    assertTrue(negative.body().contains("page must be >= 0"), negative.body());
+    assertEquals(500, SCRIPTED.lastLimit);
   }
 
   /**
-   * A page starts at its number times its size. A product beyond the largest offset an int holds
-   * overflowed to a negative offset, which reached the authority. DataCite was asked for a page
-   * numbered below one, and ROR and PFAS failed with 500. It is refused before any authority runs.
+   * The route pages by limit and offset alone. A page-number parameter, with or without a limit or
+   * offset beside it, is refused before an authority is asked, and the refusal names the parameters
+   * the route does take.
    */
   @Test
-  public void aPageStartingBeyondTheLargestOffsetIsRefusedBeforeAnAuthorityIsAsked() throws Exception {
+  public void aPageNumberOrPageSizeIsRefusedBeforeAnAuthorityIsAsked() throws Exception {
     for (String authority : List.of("scripted", "doi")) {
-      for (String paging : List.of("page=21474837&pageSize=100", "page=1073741824&pageSize=2", "page=2147483647")) {
+      for (String paging : List.of("page=0", "page=2", "pageSize=10", "page=2&pageSize=10", "page=1&limit=10",
+          "pageSize=10&offset=20", "page=-1", "pageSize=1", "page=")) {
         HttpResponse<String> response = send("/ext-auth/" + authority + "/search-by-name?q=x&" + paging);
 
         JsonNode error = SharedErrorBody.of(response, 400);
-        assertEquals("Invalid pagination parameters: page times pageSize must be at most 2147483647",
-            error.get("message").asText(), authority + " " + paging);
+        String message = error.get("message").asText();
+        assertTrue(message.contains("limit") && message.contains("offset"), authority + " " + paging + ": " + message);
       }
     }
     assertEquals(-1, SCRIPTED.lastOffset, "the authority was asked anyway");
     assertEquals(List.of(), dataciteRequests, "DataCite was asked anyway");
-
-    get("/ext-auth/scripted/search-by-name?q=x&page=1073741823&pageSize=2");
-    assertEquals(2147483646, SCRIPTED.lastOffset, "the furthest page that can be asked for");
-  }
-
-  @Test
-  public void bothKindsOfPagingTogetherAreRefusedBeforeAnAuthorityIsAsked() throws Exception {
-    HttpResponse<String> response = send("/ext-auth/scripted/search-by-name?q=x&page=1&limit=10");
-
-    assertEquals(400, response.statusCode());
-    assertTrue(response.body().contains("not both"), response.body());
-    assertEquals(-1, SCRIPTED.lastOffset, "the authority was asked anyway");
   }
 
   // ---- the route: building the envelope --------------------------------------------------------
 
   @Test
-  public void anExactTotalFillsTheEnvelopeAndTheOldFields() throws Exception {
+  public void anExactTotalFillsTheEnvelope() throws Exception {
     SCRIPTED.answer = AuthoritySearchAnswer.of(terms(10, 10), 35);
 
     JsonNode page = get("/ext-auth/scripted/search-by-name?q=smith&limit=10&offset=10");
@@ -259,8 +206,8 @@ public class ExternalAuthorityPagingTest {
     assertEquals(10, page.get("request").get("offset").asInt());
     assertFalse(page.has("countCapped"));
     assertTrue(page.get("found").asBoolean());
-    assertEquals(1, page.get("page").asInt());
-    assertEquals(10, page.get("pageSize").asInt());
+    assertFalse(page.has("page"));
+    assertFalse(page.has("pageSize"));
     assertEquals(10, page.get("results").size());
     assertFalse(page.has("errors"));
     Map<String, String> next = query(page.get("paging").get("next").asText());
@@ -441,12 +388,12 @@ public class ExternalAuthorityPagingTest {
   @Test
   public void everyPagingRefusalIsASharedErrorBody() throws Exception {
     for (String query : List.of("limit=0", "limit=501", "offset=-1", "pageSize=1", "page=-1", "pageSize=501",
-        "page=1&limit=10")) {
+        "page=1&limit=10", "page=abc", "pageSize=abc")) {
       HttpResponse<String> response = send("/ext-auth/scripted/search-by-name?q=x&" + query);
       JsonNode error = SharedErrorBody.of(response, 400);
       assertFalse(error.get("message").asText("").isBlank(), query + " -> " + error);
     }
-    for (String parameter : List.of("page", "pageSize", "limit", "offset")) {
+    for (String parameter : List.of("limit", "offset")) {
       HttpResponse<String> response = send("/ext-auth/scripted/search-by-name?q=x&" + parameter + "=abc");
       JsonNode error = SharedErrorBody.of(response, 400);
       assertEquals("The query parameter " + parameter + " must be an integer from -2147483648 to 2147483647",
@@ -523,8 +470,8 @@ public class ExternalAuthorityPagingTest {
   }
 
   @Test
-  public void aPageNumberStillPagesDatacite() throws Exception {
-    JsonNode page = get("/ext-auth/doi/search-by-name?q=climate&page=1&pageSize=10");
+  public void anOffsetOnAPageBoundaryPagesDatacite() throws Exception {
+    JsonNode page = get("/ext-auth/doi/search-by-name?q=climate&limit=10&offset=10");
 
     assertEquals(List.of("2:10"), dataciteRequests);
     assertEquals(10, page.get("results").size());

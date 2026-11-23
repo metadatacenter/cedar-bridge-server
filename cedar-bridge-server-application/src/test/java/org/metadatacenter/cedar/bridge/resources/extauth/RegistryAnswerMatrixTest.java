@@ -450,14 +450,12 @@ public class RegistryAnswerMatrixTest {
 
   /**
    * RePORTER pages no further than an offset of 14,999, and refuses a deeper one with an error the route
-   * did not pass on. Such an offset is refused before RePORTER is asked, in words a client can show,
-   * however the page was asked for.
+   * did not pass on. Such an offset is refused before RePORTER is asked, in words a client can show.
    */
   @Test
   void aRePorterOffsetBeyondItsMaximumIsRefusedWithoutAsking() throws Exception {
     ASKED.clear();
-    for (String paging : List.of("offset=15000", "offset=15000&limit=10", "page=150&pageSize=100",
-        "offset=2147483647")) {
+    for (String paging : List.of("offset=15000", "offset=15000&limit=10", "offset=2147483647")) {
       HttpResponse<String> response = CLIENT.send(HttpRequest.newBuilder()
               .uri(URI.create("http://localhost:" + SERVER.getLocalPort() + "/ext-auth/nih-grant/search-by-name?q=cancer&"
                   + paging)).GET().build(),

@@ -1,14 +1,15 @@
 package org.metadatacenter.cedar.bridge.resources.extauth;
 
 import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
 import org.junit.jupiter.api.Test;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.exception.CedarProcessingException;
 
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -237,7 +238,8 @@ class AuthorityCircuitBreakerTest {
   /** The route over PubMed, NIH RePORTER, ORCID and DataCite, none of whose registries answers. */
   private ExternalAuthorityResource route() {
     UriInfo requestUri = mock(UriInfo.class);
-    when(requestUri.getRequestUriBuilder()).thenAnswer(call -> UriBuilder.fromUri("http://localhost/ext-auth"));
+    when(requestUri.getRequestUri()).thenReturn(URI.create("http://localhost/ext-auth"));
+    when(requestUri.getQueryParameters()).thenAnswer(call -> new MultivaluedHashMap<String, String>());
     return new ExternalAuthorityResource(mock(CedarConfig.class, RETURNS_DEEP_STUBS),
         List.of(new PubMedAuthority(NOWHERE + "eutils/", "key"), new NihGrantAuthority(NOWHERE + "nih"),
             new OrcidAuthority(NOWHERE + "orcid/", NOWHERE + "orcid/api/", "id", "secret"),
@@ -269,7 +271,7 @@ class AuthorityCircuitBreakerTest {
   }
 
   private static Response search(ExternalAuthorityResource route, String authority, String query) throws Exception {
-    return route.searchByName(authority, query, Optional.empty(), Optional.empty(), null, null);
+    return route.searchByName(authority, query, Optional.empty(), Optional.empty());
   }
 
   /** Each request answered here, which finds nothing. */

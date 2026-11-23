@@ -24,6 +24,13 @@ info:
     DataCite or an external registry failing, refusing this deployment's credentials or access, or
     limiting its requests answers 502, as does an upstream answer that is neither a success nor a
     refusal. The external-authority routes, which take no credentials, therefore never answer 401.
+
+    An external-authority search pages by `limit` and `offset`. The limit defaults to 100 and may be
+    at most 500; a larger one is refused with 400, as is a request that sends `page` or `pageSize`.
+    A page carries CEDAR's paging envelope, `request`, `totalCount`, `currentOffset` and `paging`,
+    with two variations. Its rows are held in `results`, keyed by term IRI, rather than in a list.
+    ROR and NIH RePORTER cannot report an exact total, so their pages carry `countCapped` as true,
+    `totalCount` is a lower bound, and there is no `last` link.
   version: ${project.version}
 components:
   schemas:
@@ -123,16 +130,13 @@ components:
     AuthoritySearchResults:
       type: object
       description: |
-        The entries one authority offers for a name, in CEDAR's paging envelope. A registry's refusal
-        is not a page. It is answered in the shared error body, with `found`, `results` and any reasons
-        the authority read off the refusal in `objects.authorityAnswer`. `found`, `page` and `pageSize`
-        are the fields the route answered with before it took `limit` and `offset`, kept for clients
-        that still page by number.
+        The entries one authority offers for a name, in CEDAR's paging envelope. The rows are held in
+        `results`, keyed by term IRI, rather than in a list. A registry's refusal is not a page. It is
+        answered in the shared error body, with `found`, `results` and any reasons the authority read
+        off the refusal in `objects.authorityAnswer`.
       required:
         - found
         - results
-        - page
-        - pageSize
         - request
         - totalCount
         - currentOffset
@@ -167,14 +171,6 @@ components:
           description: One entry per matching term, keyed by the term's IRI, in the order the registry offered them.
           additionalProperties:
             $ref: '#/components/schemas/AuthorityTerm'
-        page:
-          type: integer
-          format: int32
-          description: The zero-based page returned, defaulted to 0.
-        pageSize:
-          type: integer
-          format: int32
-          description: The page size used, defaulted to 100.
       additionalProperties: false
     AuthoritySearchRequest:
       type: object

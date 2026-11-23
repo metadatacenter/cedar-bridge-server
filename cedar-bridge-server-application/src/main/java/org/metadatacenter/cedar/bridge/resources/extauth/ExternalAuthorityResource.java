@@ -101,16 +101,9 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
    */
   static final int MAX_PAGE_SIZE = 500;
 
-  /**
-   * The refusal for the zero-based {@code page} and {@code pageSize} the route took before it took
-   * {@code limit} and {@code offset}, kept for the clients that still send them.
-   *
-   * <p>{@code pageSize} is rejected at {@code <= 1} rather than {@code < 1}, which is surprising —
-   * a page of one is refused — and is what all seven did. The contract test pins it, so changing
-   * it has to be a decision.
-   */
-  private static final String PAGINATION_ERROR =
-      "Invalid pagination parameters: page must be >= 0, pageSize must be > 1";
+  /** The refusal of a request that pages by number, which this route does not accept. */
+  static final String PAGE_BY_NUMBER_REFUSAL =
+      "This search pages by limit and offset. It does not accept page or pageSize.";
 
   private static final String AUTHORITY_ANSWER = "authorityAnswer";
 
@@ -175,13 +168,12 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
           + "and one whose answer cannot be read is a 502. An authority that has not finished loading "
           + "answers 503 with Retry-After rather than an empty result.")
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "A page of matching entries, with the paging envelope and, "
-          + "for clients that still page by number, `found`, `page` and `pageSize`",
+      @ApiResponse(responseCode = "200", description = "A page of matching entries in the paging envelope, keyed "
+          + "by term IRI, with `found` saying whether the registry offered any",
           content = @Content(schema = @Schema(ref = "#/components/schemas/AuthoritySearchResults"))),
-      @ApiResponse(responseCode = "400", description = "The limit or offset is out of range, `page` is negative or "
-          + "`pageSize` is not greater than one, `page` times `pageSize` is beyond 2147483647, both kinds of paging "
-          + "were sent, or a paging parameter is not a number. The registry refusing the search with 400 is "
-          + "reported too (upstreamServerError).",
+      @ApiResponse(responseCode = "400", description = "The limit or offset is out of range, a paging parameter is "
+          + "not a number, or the request sent `page` or `pageSize`, which the route does not accept. The registry "
+          + "refusing the search with 400 is reported too (upstreamServerError).",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "404", description = UNKNOWN_AUTHORITY + ", or the registry answered the "
           + "search with 404 (upstreamServerError)",
@@ -204,51 +196,23 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
       @QueryParam("limit") Optional<Integer> limit,
       @Parameter(description = "How many matching entries to skip. Defaults to 0. `nih-grant` refuses an offset "
           + "beyond 14999, the furthest NIH RePORTER pages.")
-      @QueryParam("offset") Optional<Integer> offset,
-      @Parameter(description = "Zero-based page number, for clients that page by number. Cannot be sent with "
-          + "`limit` or `offset`. Defaults to 0.")
-      @QueryParam("page") Integer page,
-      @Parameter(description = "Entries per page, for clients that page by number. Cannot be sent with `limit` "
-          + "or `offset`. Defaults to 100, and must be greater than one and at most 500.")
-      @QueryParam("pageSize") Integer pageSize) throws CedarException {
+      @QueryParam("offset") Optional<Integer> offset) throws CedarException {
 
     ExternalAuthority authority = authoritiesBySegment.get(segment);
     if (authority == null) {
       return unknownAuthority(segment);
     }
 
-    final int offsetVal;
-    final int limitVal;
-    boolean byNumber = page != null || pageSize != null;
-    if (byNumber && (limit.isPresent() || offset.isPresent())) {
-      return CedarResponse.badRequest()
-          .message("Send either limit and offset or page and pageSize, not both").build();
+    // A parameter the route does not declare would otherwise be ignored, and a page-number request
+    // would be answered from offset 0 as though it had asked for the first page.
+    Map<String, List<String>> sent = uriInfo.getQueryParameters();
+    if (sent.containsKey("page") || sent.containsKey("pageSize")) {
+      return CedarResponse.badRequest().message(PAGE_BY_NUMBER_REFUSAL).build();
     }
-    if (byNumber) {
-      int pageVal = (page != null) ? page : 0;
-      int pageSizeVal = (pageSize != null) ? pageSize : DEFAULT_PAGE_SIZE;
-      if (pageVal < 0 || pageSizeVal <= 1) {
-        return CedarResponse.badRequest().message(PAGINATION_ERROR).build();
-      }
-      if (pageSizeVal > MAX_PAGE_SIZE) {
-        return CedarResponse.badRequest()
-            .message("Invalid pagination parameters: pageSize must be at most " + MAX_PAGE_SIZE).build();
-      }
-      if (pageVal > Integer.MAX_VALUE / pageSizeVal) {
-        // Such a page starts beyond the largest offset an int holds. Multiplied out, the offset
-        // overflowed to a negative one, which reached the authority.
-        return CedarResponse.badRequest()
-            .message("Invalid pagination parameters: page times pageSize must be at most " + Integer.MAX_VALUE)
-            .build();
-      }
-      offsetVal = pageVal * pageSizeVal;
-      limitVal = pageSizeVal;
-    } else {
-      PagedQuery pagedQuery = new PagedQuery(DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE).limit(limit).offset(offset);
-      pagedQuery.validate();
-      offsetVal = pagedQuery.getOffset();
-      limitVal = pagedQuery.getLimit();
-    }
+    PagedQuery pagedQuery = new PagedQuery(DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE).limit(limit).offset(offset);
+    pagedQuery.validate();
+    final int offsetVal = pagedQuery.getOffset();
+    final int limitVal = pagedQuery.getLimit();
 
     AuthoritySearchAnswer answer;
     try {
@@ -270,11 +234,8 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
       return refused(authority, answer.statusCode(), null, authorityAnswer, answer.errors());
     }
 
-    // The links page by offset and limit. Built from the request as sent, a request paging by number
-    // gave links carrying both kinds of paging, which this route refuses.
-    String linkBase = uriInfo.getRequestUriBuilder().replaceQueryParam("page").replaceQueryParam("pageSize")
-        .build().toString();
-    AuthoritySearchPage body = new AuthoritySearchPage(answer, linkBase, limitVal, offsetVal);
+    AuthoritySearchPage body = new AuthoritySearchPage(answer, uriInfo.getRequestUri().toString(), limitVal,
+        offsetVal);
     return answered(body);
   }
 

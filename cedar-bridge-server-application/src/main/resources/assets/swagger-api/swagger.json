@@ -1,7 +1,7 @@
 {
   "openapi" : "3.0.1",
   "info" : {
-    "description" : "Better Metadata - Better Science\n\nFolders and artifacts use type-qualified selectors: `folders/<uuid>`, `templates/<uuid>`,\n`template-elements/<uuid>`, `template-fields/<uuid>`, or `template-instances/<uuid>`.\nTyped routes include the type once, for example `/templates/<uuid>`. Query parameters and\ncommand-body selectors retain the type, including folder parameters. Percent-encoded full\nIRIs remain accepted for compatibility. Stored document identities and references remain\nfull IRIs; legacy repository hosts must remain absolute until their data is migrated.\n\nThe bridge server is CEDAR's connection to registries outside it. It mints DOIs through DataCite\nso a CEDAR artifact can be cited, and it resolves and searches identifiers held by seven external\nauthorities: DOI, NIH grants, ORCID, CompTox, PubMed, ROR and RRID.\n\nAn upstream refusal is answered in the shared error body with the key `upstreamServerError`,\nrather than flattened into a 500. Its parameters name the upstream service and the status it\nanswered, and its objects carry what it answered. A refusal keeps the upstream status, except that\nDataCite or an external registry failing, refusing this deployment's credentials or access, or\nlimiting its requests answers 502, as does an upstream answer that is neither a success nor a\nrefusal. The external-authority routes, which take no credentials, therefore never answer 401.\n",
+    "description" : "Better Metadata - Better Science\n\nFolders and artifacts use type-qualified selectors: `folders/<uuid>`, `templates/<uuid>`,\n`template-elements/<uuid>`, `template-fields/<uuid>`, or `template-instances/<uuid>`.\nTyped routes include the type once, for example `/templates/<uuid>`. Query parameters and\ncommand-body selectors retain the type, including folder parameters. Percent-encoded full\nIRIs remain accepted for compatibility. Stored document identities and references remain\nfull IRIs; legacy repository hosts must remain absolute until their data is migrated.\n\nThe bridge server is CEDAR's connection to registries outside it. It mints DOIs through DataCite\nso a CEDAR artifact can be cited, and it resolves and searches identifiers held by seven external\nauthorities: DOI, NIH grants, ORCID, CompTox, PubMed, ROR and RRID.\n\nAn upstream refusal is answered in the shared error body with the key `upstreamServerError`,\nrather than flattened into a 500. Its parameters name the upstream service and the status it\nanswered, and its objects carry what it answered. A refusal keeps the upstream status, except that\nDataCite or an external registry failing, refusing this deployment's credentials or access, or\nlimiting its requests answers 502, as does an upstream answer that is neither a success nor a\nrefusal. The external-authority routes, which take no credentials, therefore never answer 401.\n\nAn external-authority search pages by `limit` and `offset`. The limit defaults to 100 and may be\nat most 500; a larger one is refused with 400, as is a request that sends `page` or `pageSize`.\nA page carries CEDAR's paging envelope, `request`, `totalCount`, `currentOffset` and `paging`,\nwith two variations. Its rows are held in `results`, keyed by term IRI, rather than in a list.\nROR and NIH RePORTER cannot report an exact total, so their pages carry `countCapped` as true,\n`totalCount` is a lower bound, and there is no `last` link.\n",
     "title" : "CEDAR Bridge Server API",
     "version" : "2.9.38-SNAPSHOT"
   },
@@ -473,22 +473,6 @@
             "type" : "integer",
             "format" : "int32"
           }
-        }, {
-          "description" : "Zero-based page number, for clients that page by number. Cannot be sent with `limit` or `offset`. Defaults to 0.",
-          "in" : "query",
-          "name" : "page",
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        }, {
-          "description" : "Entries per page, for clients that page by number. Cannot be sent with `limit` or `offset`. Defaults to 100, and must be greater than one and at most 500.",
-          "in" : "query",
-          "name" : "pageSize",
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
         } ],
         "responses" : {
           "200" : {
@@ -499,7 +483,7 @@
                 }
               }
             },
-            "description" : "A page of matching entries, with the paging envelope and, for clients that still page by number, `found`, `page` and `pageSize`"
+            "description" : "A page of matching entries in the paging envelope, keyed by term IRI, with `found` saying whether the registry offered any"
           },
           "400" : {
             "content" : {
@@ -509,7 +493,7 @@
                 }
               }
             },
-            "description" : "The limit or offset is out of range, `page` is negative or `pageSize` is not greater than one, `page` times `pageSize` is beyond 2147483647, both kinds of paging were sent, or a paging parameter is not a number. The registry refusing the search with 400 is reported too (upstreamServerError)."
+            "description" : "The limit or offset is out of range, a paging parameter is not a number, or the request sent `page` or `pageSize`, which the route does not accept. The registry refusing the search with 400 is reported too (upstreamServerError)."
           },
           "404" : {
             "content" : {
@@ -1090,7 +1074,7 @@
       "AuthoritySearchResults" : {
         "type" : "object",
         "additionalProperties" : false,
-        "description" : "The entries one authority offers for a name, in CEDAR's paging envelope. A registry's refusal\nis not a page. It is answered in the shared error body, with `found`, `results` and any reasons\nthe authority read off the refusal in `objects.authorityAnswer`. `found`, `page` and `pageSize`\nare the fields the route answered with before it took `limit` and `offset`, kept for clients\nthat still page by number.\n",
+        "description" : "The entries one authority offers for a name, in CEDAR's paging envelope. The rows are held in\n`results`, keyed by term IRI, rather than in a list. A registry's refusal is not a page. It is\nanswered in the shared error body, with `found`, `results` and any reasons the authority read\noff the refusal in `objects.authorityAnswer`.\n",
         "properties" : {
           "countCapped" : {
             "type" : "boolean",
@@ -1104,16 +1088,6 @@
           "found" : {
             "type" : "boolean",
             "description" : "Whether the registry answered and offered at least one entry."
-          },
-          "page" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "The zero-based page returned, defaulted to 0."
-          },
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "The page size used, defaulted to 100."
           },
           "paging" : {
             "type" : "object",
@@ -1138,7 +1112,7 @@
             "description" : "How many entries match. A lower bound when `countCapped` is true: ROR can be read only\none upstream page deep, and NIH RePORTER narrows its answers after the fact and cannot\nknow its total at all.\n"
           }
         },
-        "required" : [ "currentOffset", "found", "page", "pageSize", "paging", "request", "results", "totalCount" ]
+        "required" : [ "currentOffset", "found", "paging", "request", "results", "totalCount" ]
       },
       "AuthorityTerm" : {
         "type" : "object",
