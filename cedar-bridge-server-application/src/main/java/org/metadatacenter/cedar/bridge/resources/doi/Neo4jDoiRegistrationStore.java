@@ -1,6 +1,7 @@
 package org.metadatacenter.cedar.bridge.resources.doi;
 
 import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.server.neo4j.GraphTransactionTimeouts;
 import org.metadatacenter.server.neo4j.Neo4jDrivers;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
@@ -44,7 +45,7 @@ public final class Neo4jDoiRegistrationStore implements DoiRegistrationStore, Au
     ensureSchema();
     try (Session session = driver.session()) {
       return session.executeRead(tx -> tx.run("MATCH (r:" + LABEL + " {sourceArtifactId: $id}) RETURN " + RECORD,
-          Map.of("id", sourceArtifactId)).list().stream().findFirst().map(Neo4jDoiRegistrationStore::registration));
+          Map.of("id", sourceArtifactId)).list().stream().findFirst().map(Neo4jDoiRegistrationStore::registration), GraphTransactionTimeouts.request());
     }
   }
 
@@ -60,7 +61,7 @@ public final class Neo4jDoiRegistrationStore implements DoiRegistrationStore, Au
       return session.executeWrite(tx -> registration(tx.run("MERGE (r:" + LABEL + " {sourceArtifactId: $id}) "
           + "ON CREATE SET r.doi = $doi, r.state = $state, r.createdBy = $user, "
           + "r.createdAt = timestamp(), r.updatedAt = timestamp() "
-          + "RETURN " + RECORD, parameters).single()));
+          + "RETURN " + RECORD, parameters).single()), GraphTransactionTimeouts.request());
     }
   }
 
@@ -88,7 +89,7 @@ public final class Neo4jDoiRegistrationStore implements DoiRegistrationStore, Au
         + "r.updatedAt = CASE WHEN forward THEN timestamp() ELSE r.updatedAt END "
         + "RETURN " + RECORD;
     try (Session session = driver.session()) {
-      List<Record> records = session.executeWrite(tx -> tx.run(query, parameters).list());
+      List<Record> records = session.executeWrite(tx -> tx.run(query, parameters).list(), GraphTransactionTimeouts.request());
       if (records.isEmpty()) {
         throw new IllegalStateException("No DOI record for " + sourceArtifactId + " holds " + doi);
       }
@@ -109,7 +110,7 @@ public final class Neo4jDoiRegistrationStore implements DoiRegistrationStore, Au
         + "REMOVE r.dataCiteResponse "
         + "RETURN " + RECORD;
     try (Session session = driver.session()) {
-      List<Record> records = session.executeWrite(tx -> tx.run(query, parameters).list());
+      List<Record> records = session.executeWrite(tx -> tx.run(query, parameters).list(), GraphTransactionTimeouts.request());
       if (records.isEmpty()) {
         throw new IllegalStateException("No DOI record for " + sourceArtifactId + " holds " + doi
             + " as a reservation or a draft");
@@ -131,7 +132,7 @@ public final class Neo4jDoiRegistrationStore implements DoiRegistrationStore, Au
       if (!schemaReady) {
         try (Session session = driver.session()) {
           session.run("CREATE CONSTRAINT cedar_doi_registration_source IF NOT EXISTS "
-              + "FOR (r:" + LABEL + ") REQUIRE r.sourceArtifactId IS UNIQUE").consume();
+              + "FOR (r:" + LABEL + ") REQUIRE r.sourceArtifactId IS UNIQUE", GraphTransactionTimeouts.longRunning()).consume();
         }
         schemaReady = true;
       }
