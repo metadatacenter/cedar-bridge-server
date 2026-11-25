@@ -508,7 +508,9 @@ class DataCiteDoiRoutesTest {
 
     Response response = resource.createDOI(SOURCE_ID, "publish", dataCiteInstance());
 
-    assertEquals(401, response.getStatus());
+    assertEquals(403, response.getStatus());
+    CedarError error = assertInstanceOf(CedarError.class, response.getEntity());
+    assertEquals(CedarErrorKey.NO_WRITE_ACCESS_TO_ARTIFACT.getValue(), error.errorKey);
     assertEquals(List.of("read source"), sentToResource);
     assertTrue(sentToDataCite.isEmpty(), "an ineligible request must not reach DataCite: " + sentToDataCite);
     verifyNoInteractions(annotationWriter);

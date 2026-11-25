@@ -40,7 +40,11 @@ import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Supplier;
 
+import static org.metadatacenter.constant.CedarPathParameters.PP_AUTHORITY;
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
+import static org.metadatacenter.constant.CedarQueryParameters.QP_LIMIT;
+import static org.metadatacenter.constant.CedarQueryParameters.QP_OFFSET;
+import static org.metadatacenter.constant.CedarQueryParameters.QP_Q;
 
 /**
  * The bridge's external-authority surface: two routes, seven authorities.
@@ -100,10 +104,6 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
    * for any number of entries on the deployment's credentials.
    */
   static final int MAX_PAGE_SIZE = 500;
-
-  /** The refusal of a request that pages by number, which this route does not accept. */
-  static final String PAGE_BY_NUMBER_REFUSAL =
-      "This search pages by limit and offset. It does not accept page or pageSize.";
 
   private static final String AUTHORITY_ANSWER = "authorityAnswer";
 
@@ -189,27 +189,22 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   })
   public Response searchByName(
       @Parameter(description = "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`, `pmid`, `ror`, `rrid`. A segment no authority is registered under answers 404 naming the ones that are.", required = true)
-      @PathParam("authority") String segment,
+      @PathParam(PP_AUTHORITY) String segment,
       @Parameter(description = "The name to search for.")
-      @QueryParam("q") String query,
+      @QueryParam(QP_Q) String query,
       @Parameter(description = "How many entries to return, from 1 to 500. Defaults to 100.")
-      @QueryParam("limit") Optional<Integer> limit,
+      @QueryParam(QP_LIMIT) Optional<Integer> limit,
       @Parameter(description = "How many matching entries to skip. Defaults to 0. `nih-grant` refuses an offset "
           + "beyond 14999, the furthest NIH RePORTER pages.")
-      @QueryParam("offset") Optional<Integer> offset) throws CedarException {
+      @QueryParam(QP_OFFSET) Optional<Integer> offset) throws CedarException {
 
     ExternalAuthority authority = authoritiesBySegment.get(segment);
     if (authority == null) {
       return unknownAuthority(segment);
     }
 
-    // A parameter the route does not declare would otherwise be ignored, and a page-number request
-    // would be answered from offset 0 as though it had asked for the first page.
-    Map<String, List<String>> sent = uriInfo.getQueryParameters();
-    if (sent.containsKey("page") || sent.containsKey("pageSize")) {
-      return CedarResponse.badRequest().message(PAGE_BY_NUMBER_REFUSAL).build();
-    }
-    PagedQuery pagedQuery = new PagedQuery(DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE).limit(limit).offset(offset);
+    PagedQuery pagedQuery = new PagedQuery(DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE).limit(limit).offset(offset)
+        .queryParameters(uriInfo.getQueryParameters());
     pagedQuery.validate();
     final int offsetVal = pagedQuery.getOffset();
     final int limitVal = pagedQuery.getLimit();
@@ -274,7 +269,7 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   })
   public Response details(
       @Parameter(description = "Which registry to ask. One of `doi`, `nih-grant`, `orcid`, `comp-tox`, `pmid`, `ror`, `rrid`. A segment no authority is registered under answers 404 naming the ones that are.", required = true)
-      @PathParam("authority") String segment,
+      @PathParam(PP_AUTHORITY) String segment,
       @Parameter(description = "The identifier to resolve, as that registry spells it.", required = true)
       @PathParam(PP_ID) String id) throws CedarException {
 
@@ -323,7 +318,7 @@ public class ExternalAuthorityResource extends CedarMicroserviceResource {
   @ApiResponse(responseCode = "200", description = "Semantic verification facts", content = @Content(schema = @Schema(implementation = AuthorityVerification.class)))
   @ApiResponse(responseCode = "400", description = "Malformed identifier or request shape", content = @Content(schema = @Schema(implementation = CedarError.class)))
   @ApiResponse(responseCode = "404", description = UNKNOWN_AUTHORITY, content = @Content(schema = @Schema(implementation = CedarError.class)))
-  public Response verify(@PathParam("authority") String segment, @Parameter(hidden = true) JsonNode request) {
+  public Response verify(@PathParam(PP_AUTHORITY) String segment, @Parameter(hidden = true) JsonNode request) {
     ExternalAuthority authority = authoritiesBySegment.get(segment);
     if (authority == null) return unknownAuthority(segment);
     if (request == null || !request.isObject() || request.size() != 1

@@ -44,104 +44,6 @@ paths:
       tags:
       - Service
   /datacite/create-doi:
-    get:
-      description: "Return everything the workbench needs to open the DOI form for\
-        \ one artifact: the DataCite metadata template, the source artifact, and either\
-        \ the draft DOI already started for it or a metadata instance pre-filled with\
-        \ what can be derived. Reads only; nothing is minted here. DataCite integration\
-        \ can be switched off by configuration, and every route here answers 400 when\
-        \ it is."
-      operationId: createDOIStart
-      parameters:
-      - description: Identifier of the artifact the DOI is for.
-        in: query
-        name: source_artifact_id
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/DoiFormStart"
-          description: "The template, the artifact, and the draft or pre-filled metadata"
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: "DataCite integration is disabled (dataCiteDOIDisabled), the\
-            \ artifact is not eligible for a DOI, or the resource server refused a\
-            \ read (upstreamServerError)"
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: "The request carries no valid credentials, the caller cannot\
-            \ edit the source artifact (noWriteAccessToArtifact), or the resource\
-            \ server refused a read (upstreamServerError)"
-        "403":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: "The caller cannot read the source artifact or the DataCite\
-            \ template (upstreamServerError), or lacks the template read permission"
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: The source artifact or DataCite template was not found
-        "406":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: The request does not accept a JSON response
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: "The artifact already has a findable DOI (doiAlreadyExists),\
-            \ which parameters.doi names. When DataCite has published it and the artifact\
-            \ does not yet carry it, parameters.reconciliationRequired is true."
-        "429":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: "The caller, or the reads the workflow makes of the resource\
-            \ server, exceeded the deployment's request rate"
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: Internal server error
-        "502":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: "DataCite could not be reached or refused the draft lookup,\
-            \ whose errors are then in objects.dataCiteErrors, or the resource server's\
-            \ answer could not be used (upstreamServerError)"
-        "503":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CedarError"
-          description: The graph database or another service the request depends on
-            is unavailable
-      security:
-      - api_key: []
-      summary: Begin minting a DOI for an artifact
-      tags:
-      - DOIs
     post:
       description: "Register a DOI with DataCite from the metadata instance in the\
         \ body, and record it on the artifact. `state` chooses between a draft, which\
@@ -206,16 +108,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CedarError"
-          description: "The request carries no valid credentials, the caller cannot\
-            \ edit the source artifact (noWriteAccessToArtifact), or the resource\
+          description: "The request carries no valid credentials, or the resource\
             \ server refused a read (upstreamServerError)"
         "403":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CedarError"
-          description: "The caller cannot read the source artifact or the DataCite\
-            \ template (upstreamServerError), or lacks the template read permission"
+          description: "The caller cannot edit the source artifact (noWriteAccessToArtifact),\
+            \ cannot read the source artifact or the DataCite template (upstreamServerError),\
+            \ or lacks the template read permission"
         "404":
           content:
             application/json:
@@ -284,7 +186,106 @@ paths:
       summary: Mint a DOI for an artifact
       tags:
       - DOIs
-  /datacite/get-doi-metadata/{id}:
+  /datacite/doi-form:
+    get:
+      description: "Return everything the workbench needs to open the DOI form for\
+        \ one artifact: the DataCite metadata template, the source artifact, and either\
+        \ the draft DOI already started for it or a metadata instance pre-filled with\
+        \ what can be derived. Reads only; nothing is minted here. DataCite integration\
+        \ can be switched off by configuration, and every route here answers 400 when\
+        \ it is."
+      operationId: createDOIStart
+      parameters:
+      - description: Identifier of the artifact the DOI is for.
+        in: query
+        name: source_artifact_id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoiFormStart"
+          description: "The template, the artifact, and the draft or pre-filled metadata"
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: "DataCite integration is disabled (dataCiteDOIDisabled), the\
+            \ artifact is not eligible for a DOI, or the resource server refused a\
+            \ read (upstreamServerError)"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: "The request carries no valid credentials, or the resource\
+            \ server refused a read (upstreamServerError)"
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: "The caller cannot edit the source artifact (noWriteAccessToArtifact),\
+            \ cannot read the source artifact or the DataCite template (upstreamServerError),\
+            \ or lacks the template read permission"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: The source artifact or DataCite template was not found
+        "406":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: The request does not accept a JSON response
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: "The artifact already has a findable DOI (doiAlreadyExists),\
+            \ which parameters.doi names. When DataCite has published it and the artifact\
+            \ does not yet carry it, parameters.reconciliationRequired is true."
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: "The caller, or the reads the workflow makes of the resource\
+            \ server, exceeded the deployment's request rate"
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: Internal server error
+        "502":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: "DataCite could not be reached or refused the draft lookup,\
+            \ whose errors are then in objects.dataCiteErrors, or the resource server's\
+            \ answer could not be used (upstreamServerError)"
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CedarError"
+          description: The graph database or another service the request depends on
+            is unavailable
+      security:
+      - api_key: []
+      summary: Read what the DOI form for an artifact needs
+      tags:
+      - DOIs
+  /datacite/doi-metadata/{id}:
     get:
       description: "Fetch what DataCite holds for a DOI, including affiliation detail.\
         \ A refusal of the request itself keeps DataCite's status, so a DOI DataCite\

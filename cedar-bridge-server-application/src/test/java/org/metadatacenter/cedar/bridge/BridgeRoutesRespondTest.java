@@ -17,6 +17,10 @@ import org.metadatacenter.cedar.util.dw.CedarServerReportResource;
 import org.metadatacenter.config.environment.CedarEnvironmentSource;
 import org.metadatacenter.util.test.RouteSurface;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -99,6 +103,31 @@ public class BridgeRoutesRespondTest {
         "http://127.0.0.1:" + SERVER.getLocalPort(),
         RouteSurface.endpoints(AUTHENTICATED),
         401);
+  }
+
+  /**
+   * The two DOI reads moved to paths named for what they return. The old read paths are gone, so
+   * asking them answers 404, or 405 where minting still holds the path. Minting itself keeps its
+   * path and verb, and still refuses a caller without credentials.
+   */
+  @Test
+  public void theRenamedDoiReadsLeaveMintingInPlace() throws Exception {
+    Assertions.assertEquals(405, status("GET", "/datacite/create-doi?source_artifact_id=x"));
+    Assertions.assertEquals(404, status("GET", "/datacite/get-doi-metadata/abcd-1234"));
+    Assertions.assertEquals(401, status("GET", "/datacite/doi-form?source_artifact_id=x"));
+    Assertions.assertEquals(401, status("GET", "/datacite/doi-metadata/abcd-1234"));
+    Assertions.assertEquals(401, status("POST", "/datacite/create-doi?source_artifact_id=x&state=draft"));
+  }
+
+  private static int status(String method, String pathAndQuery) throws Exception {
+    HttpRequest.BodyPublisher body = "POST".equals(method)
+        ? HttpRequest.BodyPublishers.ofString("{}") : HttpRequest.BodyPublishers.noBody();
+    HttpRequest request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + SERVER.getLocalPort() + pathAndQuery))
+        .header("Accept", "application/json")
+        .header("Content-Type", "application/json")
+        .method(method, body)
+        .build();
+    return HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.discarding()).statusCode();
   }
 
   /**

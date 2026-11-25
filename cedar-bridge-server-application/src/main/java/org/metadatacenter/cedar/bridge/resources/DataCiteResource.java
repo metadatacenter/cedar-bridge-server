@@ -34,6 +34,7 @@ import java.util.function.Supplier;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 import static org.metadatacenter.constant.CedarQueryParameters.QP_SOURCE_ARTIFACT_ID;
+import static org.metadatacenter.constant.CedarQueryParameters.QP_STATE;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 /**
@@ -65,7 +66,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
   @GET
   @Timed
-  @Path("/get-doi-metadata/{id}")
+  @Path("/doi-metadata/{id}")
   @Operation(summary = "Get a DOI's metadata from DataCite",
       description = "Fetch what DataCite holds for a DOI, including affiliation detail. A refusal of the "
           + "request itself keeps DataCite's status, so a DOI DataCite does not know is a 404. Every refusal "
@@ -114,8 +115,8 @@ public class DataCiteResource extends CedarMicroserviceResource {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @Timed
-  @Path("/create-doi")
-  @Operation(summary = "Begin minting a DOI for an artifact",
+  @Path("/doi-form")
+  @Operation(summary = "Read what the DOI form for an artifact needs",
       description = "Return everything the workbench needs to open the DOI form for one artifact: "
           + "the DataCite metadata template, the source artifact, and either the draft DOI already "
           + "started for it or a metadata instance pre-filled with what can be derived. Reads only; "
@@ -126,12 +127,12 @@ public class DataCiteResource extends CedarMicroserviceResource {
       @ApiResponse(responseCode = "400", description = "DataCite integration is disabled (dataCiteDOIDisabled), the "
           + "artifact is not eligible for a DOI, or the resource server refused a read (upstreamServerError)",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
-      @ApiResponse(responseCode = "401", description = "The request carries no valid credentials, the caller "
-          + "cannot edit the source artifact (noWriteAccessToArtifact), or the resource server refused a read "
-          + "(upstreamServerError)",
+      @ApiResponse(responseCode = "401", description = "The request carries no valid credentials, or the resource "
+          + "server refused a read (upstreamServerError)",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
-      @ApiResponse(responseCode = "403", description = "The caller cannot read the source artifact or the DataCite "
-          + "template (upstreamServerError), or lacks the template read permission",
+      @ApiResponse(responseCode = "403", description = "The caller cannot edit the source artifact "
+          + "(noWriteAccessToArtifact), cannot read the source artifact or the DataCite template "
+          + "(upstreamServerError), or lacks the template read permission",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "404", description = "The source artifact or DataCite template was not found",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
@@ -195,12 +196,12 @@ public class DataCiteResource extends CedarMicroserviceResource {
           + "objects.validationResult), or DataCite refused the metadata (invalidInput, with DataCite's errors in "
           + "objects.dataCiteErrors). The resource server refusing a read is also reported (upstreamServerError).",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
-      @ApiResponse(responseCode = "401", description = "The request carries no valid credentials, the caller "
-          + "cannot edit the source artifact (noWriteAccessToArtifact), or the resource server refused a read "
-          + "(upstreamServerError)",
+      @ApiResponse(responseCode = "401", description = "The request carries no valid credentials, or the resource "
+          + "server refused a read (upstreamServerError)",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
-      @ApiResponse(responseCode = "403", description = "The caller cannot read the source artifact or the DataCite "
-          + "template (upstreamServerError), or lacks the template read permission",
+      @ApiResponse(responseCode = "403", description = "The caller cannot edit the source artifact "
+          + "(noWriteAccessToArtifact), cannot read the source artifact or the DataCite template "
+          + "(upstreamServerError), or lacks the template read permission",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "404", description = "The source artifact or DataCite template was not found",
           content = @Content(schema = @Schema(implementation = CedarError.class))),
@@ -231,7 +232,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
       @QueryParam(QP_SOURCE_ARTIFACT_ID) String sourceArtifactId,
       @Parameter(description = "`draft` for a DOI that can still be changed, `publish` for a "
           + "findable and permanent one.", required = true)
-      @QueryParam("state") String state,
+      @QueryParam(QP_STATE) String state,
       // Hidden from the scanner, not from the spec: the body is described by the @RequestBody above.
       // Left unannotated, the scanner resolves JsonNode into a component of its own, which the
       // explicit request body then never references, and the spec carries an empty JsonNode schema.

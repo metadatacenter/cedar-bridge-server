@@ -52,7 +52,7 @@ class DoiEligibilityTest {
     Response response = eligibility.refusal(
         context, CedarResourceType.TEMPLATE, templateId, publishedTemplate);
 
-    assertEquals(Response.Status.UNAUTHORIZED.getStatusCode(), response.getStatus());
+    assertEquals(Response.Status.FORBIDDEN.getStatusCode(), response.getStatus());
     verifyNoInteractions(folderSession);
   }
 

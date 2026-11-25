@@ -65,7 +65,7 @@ public class ExternalAuthorityContractTest {
 
   /** The refusal of a page-number request, worded once and in the framework's structured error. */
   private static final String PAGE_BY_NUMBER_REFUSAL =
-      "This search pages by limit and offset. It does not accept page or pageSize.";
+      "Paging by page number is no longer supported. Send limit (1 to 500, default 100) and offset (default 0) instead.";
 
   private static final HttpClient CLIENT = HttpClient.newHttpClient();
 
@@ -106,6 +106,8 @@ public class ExternalAuthorityContractTest {
         authority + " did not answer a CEDAR error object: " + response.body());
     assertTrue(response.body().contains(PAGE_BY_NUMBER_REFUSAL),
         authority + " worded the pagination error differently: " + response.body());
+    assertTrue(response.body().matches("(?s).*\"(page|pageSize|page_size)\".*"),
+        authority + " did not name the parameter: " + response.body());
   }
 
   private static HttpResponse<String> get(String path) {
@@ -146,6 +148,12 @@ public class ExternalAuthorityContractTest {
   @MethodSource("authorities")
   public void everyAuthorityRefusesAPageSize(String authority) {
     assertRejectedForPagination(authority, get("/ext-auth/" + authority + "/search-by-name?q=x&pageSize=100"));
+  }
+
+  @ParameterizedTest(name = "{0} refuses a snake-case page size")
+  @MethodSource("authorities")
+  public void everyAuthorityRefusesASnakeCasePageSize(String authority) {
+    assertRejectedForPagination(authority, get("/ext-auth/" + authority + "/search-by-name?q=x&page_size=100"));
   }
 
   @ParameterizedTest(name = "{0} refuses a limit over 500")

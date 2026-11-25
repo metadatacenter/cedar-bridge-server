@@ -26,7 +26,7 @@ class OpenApiContractTest {
 
   @Test
   void doiMetadataReadDocumentsEveryAnswer() throws IOException {
-    JsonNode operation = readSpec().at("/paths/~1datacite~1get-doi-metadata~1{id}/get");
+    JsonNode operation = readSpec().at("/paths/~1datacite~1doi-metadata~1{id}/get");
     assertAnswers(operation, "200", "#/components/schemas/DataCiteDoiMetadata",
         "400", "401", "404", "406", "429", "500", "502", "503");
     assertTrue(operation.at("/responses/404/description").asText().contains("objects.dataCiteErrors"),
@@ -35,9 +35,30 @@ class OpenApiContractTest {
 
   @Test
   void doiFormStartDocumentsEveryAnswer() throws IOException {
-    JsonNode operation = readSpec().at("/paths/~1datacite~1create-doi/get");
+    JsonNode operation = readSpec().at("/paths/~1datacite~1doi-form/get");
     assertAnswers(operation, "200", "#/components/schemas/DoiFormStart",
         "400", "401", "403", "404", "406", "409", "429", "500", "502", "503");
+    assertWriteRefusalIsA403(operation);
+  }
+
+  /** The read routes are named for what they return, and the paths they replaced are gone. */
+  @Test
+  void theDoiReadsAreNamedForWhatTheyReturn() throws IOException {
+    JsonNode paths = readSpec().path("paths");
+    assertTrue(paths.path("/datacite/create-doi").path("get").isMissingNode(), paths.path("/datacite/create-doi").toString());
+    assertTrue(paths.path("/datacite/get-doi-metadata/{id}").isMissingNode(), paths.toString());
+    assertTrue(paths.path("/datacite/doi-form").path("post").isMissingNode(), paths.path("/datacite/doi-form").toString());
+  }
+
+  /** Minting keeps its path and its query parameters. */
+  @Test
+  void doiRegistrationKeepsItsPathAndParameters() throws IOException {
+    JsonNode operation = readSpec().at("/paths/~1datacite~1create-doi/post");
+    assertFalse(operation.isMissingNode());
+    Set<String> parameters = new TreeSet<>();
+    operation.path("parameters").forEach(parameter -> parameters.add(parameter.path("in").asText() + ":"
+        + parameter.path("name").asText()));
+    assertEquals(Set.of("query:source_artifact_id", "query:state"), parameters);
   }
 
   @Test
@@ -45,6 +66,7 @@ class OpenApiContractTest {
     JsonNode operation = readSpec().at("/paths/~1datacite~1create-doi/post");
     assertAnswers(operation, "201", "#/components/schemas/DoiRegistration",
         "400", "401", "403", "404", "406", "409", "415", "429", "500", "502", "503");
+    assertWriteRefusalIsA403(operation);
     for (String status : Set.of("400", "502")) {
       assertTrue(operation.at("/responses/" + status + "/description").asText().contains("objects.dataCiteErrors"),
           operation.at("/responses/" + status).toString());
@@ -119,6 +141,14 @@ class OpenApiContractTest {
     // A registry's own 503 is a 502, so a 503 is never a registry's answer passed on.
     String unavailable = operation.at("/responses/503/description").asText();
     assertFalse(unavailable.contains("upstreamServerError"), unavailable);
+  }
+
+  /** A caller who cannot edit the source artifact is refused with 403, not 401. */
+  private static void assertWriteRefusalIsA403(JsonNode operation) {
+    assertTrue(operation.at("/responses/403/description").asText().contains("noWriteAccessToArtifact"),
+        operation.at("/responses/403").toString());
+    assertFalse(operation.at("/responses/401/description").asText().contains("noWriteAccessToArtifact"),
+        operation.at("/responses/401").toString());
   }
 
   private static void assertAnswers(JsonNode operation, String successStatus, String success, String... refusals) {

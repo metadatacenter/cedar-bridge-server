@@ -39,7 +39,7 @@ public final class DoiEligibility {
     ResourcePermissionServiceSession permissionSession = dataServices.getResourcePermissionServiceSession(context);
     if (!permissionSession.userHasCapability(sourceArtifactId, ResourceCapability.UPDATE_RESOURCE)) {
       return CedarResponse
-          .unauthorized()
+          .forbidden()
           .errorKey(CedarErrorKey.NO_WRITE_ACCESS_TO_ARTIFACT)
           .message("You do not have permission to edit the artifact")
           .parameter(DataciteConstants.RESOURCE_ID, sourceArtifactId)
