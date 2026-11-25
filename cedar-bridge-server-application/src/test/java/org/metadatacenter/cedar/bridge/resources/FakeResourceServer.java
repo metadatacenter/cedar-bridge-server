@@ -96,7 +96,7 @@ final class FakeResourceServer implements AutoCloseable {
       } else if (path.equals("/command/validate")) {
         requests.add("validate");
         answer(exchange, 200, "{\"validates\":\"true\"}");
-      } else if (path.equals("/command/annotations/doi")) {
+      } else if (path.equals("/command/set-doi")) {
         requests.add("record DOI");
         recordDoi(exchange, JsonMapper.STRICT_MAPPER.readTree(body));
       } else {

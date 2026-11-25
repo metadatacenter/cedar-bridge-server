@@ -33,7 +33,7 @@ class DoiPublicationStepsTest {
 
   private static final String SOURCE_ID = "https://repo.metadatacenter.org/template-instances/source";
   private static final String DOI = "https://doi.org/10.1234/cedar.test";
-  private static final String COMMAND = "http://resource/command/annotations/doi";
+  private static final String COMMAND = "http://resource/command/set-doi";
 
   private CedarConfig cedarConfig;
   private CedarDataServices dataServices;
