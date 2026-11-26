@@ -133,7 +133,7 @@ abstract class AbstractDoiWorkflowTest {
     Neo4jDoiRegistrationStore store = new Neo4jDoiRegistrationStore(ScratchNeo4j.driver());
     stores.add(store);
     return new DataCiteResource(config, dataServices, dataCiteClient(),
-        ProxyUtil::proxyPost, store, suffixes) {
+        ProxyUtil::proxyPatch, store, suffixes) {
       @Override
       protected CedarRequestContext buildRequestContext() {
         return context;

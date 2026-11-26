@@ -11,5 +11,5 @@ import org.metadatacenter.rest.context.CedarRequestContext;
 @FunctionalInterface
 public interface DoiAnnotationWriter {
 
-  ClassicHttpResponse post(String url, CedarRequestContext context, String content) throws CedarProcessingException;
+  ClassicHttpResponse patch(String url, CedarRequestContext context, String content) throws CedarProcessingException;
 }

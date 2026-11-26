@@ -94,6 +94,7 @@ import static org.metadatacenter.constant.CedarQueryParameters.QP_Q;
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "External authorities")
 public class ExternalAuthorityResource extends CedarMicroserviceResource {
+  @Schema(name = "AuthorityVerificationRequest", additionalProperties = Schema.AdditionalPropertiesValue.FALSE)
   public record VerificationRequest(String iri) {}
 
   /** The default page size all seven have always used. */

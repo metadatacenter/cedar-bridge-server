@@ -515,14 +515,13 @@ public final class DoiMinting {
 
   /** Asks the resource server to record the DOI on the artifact, and answers its failure, or null on success. */
   Response recordOnArtifact(CedarRequestContext context, String sourceArtifactId, String doiName) {
-    String annotationUrl = cedarConfig.getMicroserviceUrlUtil().getResource().getCommandDOIUpdate();
+    String annotationUrl = cedarConfig.getMicroserviceUrlUtil().getResource().getArtifactAnnotations(sourceArtifactId);
     ObjectNode commandContent = JsonMapper.STRICT_MAPPER.createObjectNode();
-    commandContent.put(LinkedData.ID, CedarResourceAddress.selector(sourceArtifactId));
     commandContent.put(DataciteConstants.DOI, doiName);
 
     ClassicHttpResponse annotationResponse = null;
     try {
-      annotationResponse = annotations.post(annotationUrl, context, commandContent.toString());
+      annotationResponse = annotations.patch(annotationUrl, context, commandContent.toString());
       int statusCode = annotationResponse.getCode();
       if (Response.Status.Family.familyOf(statusCode) == Response.Status.Family.SUCCESSFUL) {
         return null;

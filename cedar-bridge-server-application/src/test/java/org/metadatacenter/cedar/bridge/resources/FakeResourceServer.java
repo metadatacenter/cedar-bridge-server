@@ -93,12 +93,14 @@ final class FakeResourceServer implements AutoCloseable {
       } else if (path.startsWith("/template-instances/") && sources.containsKey(path.substring(20))) {
         requests.add("read source");
         answer(exchange, 200, sources.get(path.substring(20)).toString());
-      } else if (path.equals("/command/validate")) {
+      } else if (path.startsWith("/artifact-validations/")) {
         requests.add("validate");
         answer(exchange, 200, "{\"validates\":\"true\"}");
-      } else if (path.equals("/command/set-doi")) {
+      } else if (path.endsWith("/annotations") && exchange.getRequestMethod().equals("PATCH")) {
         requests.add("record DOI");
-        recordDoi(exchange, JsonMapper.STRICT_MAPPER.readTree(body));
+        var annotation = (com.fasterxml.jackson.databind.node.ObjectNode) JsonMapper.STRICT_MAPPER.readTree(body);
+        annotation.put("@id", path.substring(1, path.length() - "/annotations".length()));
+        recordDoi(exchange, annotation);
       } else {
         requests.add("unexpected " + path);
         answer(exchange, 404, "{}");

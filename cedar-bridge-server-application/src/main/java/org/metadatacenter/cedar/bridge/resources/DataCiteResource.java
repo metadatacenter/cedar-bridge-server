@@ -52,7 +52,7 @@ public class DataCiteResource extends CedarMicroserviceResource {
 
   public DataCiteResource(CedarConfig cedarConfig, DoiRegistrationStore registrations) {
     this(cedarConfig, CedarDataServices.getInstance(),
-        new DataCiteHttpClient(cedarConfig.getBridgeConfig().getDataCite()), ProxyUtil::proxyPost, registrations,
+        new DataCiteHttpClient(cedarConfig.getBridgeConfig().getDataCite()), ProxyUtil::proxyPatch, registrations,
         new DoiSuffixes());
   }
 

@@ -33,7 +33,7 @@ class DoiPublicationStepsTest {
 
   private static final String SOURCE_ID = "https://repo.metadatacenter.org/template-instances/source";
   private static final String DOI = "https://doi.org/10.1234/cedar.test";
-  private static final String COMMAND = "http://resource/command/set-doi";
+  private static final String COMMAND = "http://resource/template-instances/source/annotations";
 
   private CedarConfig cedarConfig;
   private CedarDataServices dataServices;
@@ -43,7 +43,7 @@ class DoiPublicationStepsTest {
   @BeforeEach
   void setUp() {
     cedarConfig = mock(CedarConfig.class, RETURNS_DEEP_STUBS);
-    when(cedarConfig.getMicroserviceUrlUtil().getResource().getCommandDOIUpdate()).thenReturn(COMMAND);
+    when(cedarConfig.getMicroserviceUrlUtil().getResource().getArtifactAnnotations(org.mockito.ArgumentMatchers.anyString())).thenReturn(COMMAND);
     dataServices = mock(CedarDataServices.class);
     context = mock(CedarRequestContext.class);
     httpClient = new DataCiteHttpClient(mock(HttpClient.class), Duration.ofSeconds(1));
@@ -114,7 +114,7 @@ class DoiPublicationStepsTest {
 
     assertNull(response);
     assertEquals(COMMAND, postedUrl.get());
-    assertTrue(postedContent.get().contains(SOURCE_ID));
+    assertTrue(!postedContent.get().contains("@id"));
     assertTrue(postedContent.get().contains(DOI));
   }
 

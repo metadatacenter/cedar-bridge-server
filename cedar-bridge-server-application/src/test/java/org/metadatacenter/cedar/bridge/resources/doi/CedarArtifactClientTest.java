@@ -53,7 +53,7 @@ class CedarArtifactClientTest {
           exchange.getRequestHeaders().getFirst("Authorization"),
           exchange.getRequestHeaders().getFirst(CedarHeaderParameters.GLOBAL_REQUEST_ID_KEY),
           exchange.getRequestHeaders().getFirst("Accept"), body));
-      boolean validation = exchange.getRequestURI().getPath().equals("/command/validate");
+      boolean validation = exchange.getRequestURI().getPath().startsWith("/artifact-validations/");
       byte[] reply = (validation ? validationBody : readBody).getBytes(StandardCharsets.UTF_8);
       exchange.getResponseHeaders().set("Content-Type", "application/json");
       exchange.sendResponseHeaders(validation ? validationStatus : readStatus, reply.length);
@@ -137,7 +137,7 @@ class CedarArtifactClientTest {
     assertEquals(2, requests.size());
     CapturedRequest request = requests.get(1);
     assertEquals("POST", request.method());
-    assertEquals("/command/validate?resource_type=instance", request.uri());
+    assertEquals("/artifact-validations/instance", request.uri());
     assertEquals("Bearer incoming-token", request.authorization());
     assertEquals("doi-request-identity", request.requestId());
     var posted = JsonMapper.STRICT_MAPPER.readTree(request.body());

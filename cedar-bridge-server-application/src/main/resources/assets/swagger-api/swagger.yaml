@@ -498,7 +498,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/VerificationRequest"
+              $ref: "#/components/schemas/AuthorityVerificationRequest"
         required: true
       responses:
         "200":
@@ -951,6 +951,12 @@ components:
           type: string
         status:
           type: string
+    AuthorityVerificationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        iri:
+          type: string
     CedarError:
       type: object
       additionalProperties: false
@@ -1291,11 +1297,6 @@ components:
         schema:name:
           type: string
           description: Display name.
-    VerificationRequest:
-      type: object
-      properties:
-        iri:
-          type: string
   securitySchemes:
     api_key:
       description: "Your CEDAR API key, using the format 'apiKey <yourApiKey>'"

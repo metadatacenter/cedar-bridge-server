@@ -142,7 +142,7 @@ class DataCiteDoiRoutesTest {
       String path = exchange.getRequestURI().getPath();
       String reply;
       int status = 200;
-      if (path.equals("/command/validate")) {
+      if (path.startsWith("/artifact-validations/")) {
         sentToResource.add("validate");
         reply = validationReply;
       } else if (path.equals("/templates/" + TEMPLATE_ID)) {
@@ -202,7 +202,7 @@ class DataCiteDoiRoutesTest {
     when(dataCiteClient.send(any())).thenAnswer(call -> answerAsDataCite(call.getArgument(0)));
 
     annotationWriter = mock(DoiAnnotationWriter.class);
-    when(annotationWriter.post(anyString(), any(), anyString())).thenReturn(new BasicClassicHttpResponse(200));
+    when(annotationWriter.patch(anyString(), any(), anyString())).thenReturn(new BasicClassicHttpResponse(200));
     registrations = new InMemoryDoiRegistrationStore();
 
     resource = newResource();
@@ -288,11 +288,11 @@ class DataCiteDoiRoutesTest {
 
     ArgumentCaptor<String> url = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> command = ArgumentCaptor.forClass(String.class);
-    verify(annotationWriter).post(url.capture(), eq(context), command.capture());
-    assertEquals("http://127.0.0.1:" + resourceServer.getAddress().getPort() + "/command/set-doi",
+    verify(annotationWriter).patch(url.capture(), eq(context), command.capture());
+    assertEquals("http://127.0.0.1:" + resourceServer.getAddress().getPort() + "/template-instances/" + SOURCE_UUID + "/annotations",
         url.getValue());
     JsonNode recorded = JsonMapper.STRICT_MAPPER.readTree(command.getValue());
-    assertEquals("template-instances/" + SOURCE_UUID, recorded.path("@id").asText());
+    assertEquals(false, recorded.has("@id"));
     assertEquals("https://doi.org/" + DRAFT_DOI, recorded.path("doi").asText());
     assertRecorded(DRAFT_DOI, DoiRegistrationState.ATTACHED);
   }
@@ -621,7 +621,7 @@ class DataCiteDoiRoutesTest {
     dataCiteReplies.put(DataCiteCall.DRAFT_LOOKUP, new Reply(200, "{\"data\": []}"));
     String published = registered(NEW_DOI, "findable");
     dataCiteReplies.put(DataCiteCall.CREATE, new Reply(201, published));
-    when(annotationWriter.post(anyString(), any(), anyString()))
+    when(annotationWriter.patch(anyString(), any(), anyString()))
         .thenReturn(new BasicClassicHttpResponse(500), new BasicClassicHttpResponse(200));
 
     Response failed = resource.createDOI(SOURCE_ID, "publish", dataCiteInstance());
@@ -1075,7 +1075,7 @@ class DataCiteDoiRoutesTest {
   /** Asserts the DOI the last write-back recorded on the artifact. */
   private void assertAnnotated(String doiName) throws Exception {
     ArgumentCaptor<String> command = ArgumentCaptor.forClass(String.class);
-    verify(annotationWriter).post(anyString(), eq(context), command.capture());
+    verify(annotationWriter).patch(anyString(), eq(context), command.capture());
     assertEquals(doiName, JsonMapper.STRICT_MAPPER.readTree(command.getValue()).path("doi").asText());
   }
 

@@ -568,7 +568,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/VerificationRequest"
+                "$ref" : "#/components/schemas/AuthorityVerificationRequest"
               }
             }
           },
@@ -1148,6 +1148,15 @@
           }
         }
       },
+      "AuthorityVerificationRequest" : {
+        "type" : "object",
+        "additionalProperties" : false,
+        "properties" : {
+          "iri" : {
+            "type" : "string"
+          }
+        }
+      },
       "CedarError" : {
         "type" : "object",
         "additionalProperties" : false,
@@ -1358,14 +1367,6 @@
           "schema:name" : {
             "type" : "string",
             "description" : "Display name."
-          }
-        }
-      },
-      "VerificationRequest" : {
-        "type" : "object",
-        "properties" : {
-          "iri" : {
-            "type" : "string"
           }
         }
       }
